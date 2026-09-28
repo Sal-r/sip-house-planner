@@ -398,7 +398,6 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   min-height: 280px;
   padding: 18px;
   overflow: auto;
-  overscroll-behavior: contain;
   container-type: size;
   background: #f9fbfa;
 }
@@ -855,12 +854,16 @@ svg.tap-only .interior-door { cursor: pointer; }
   .hint-mouse { display: none; }
 }
 
-/* Wide screens (1500px+): a 24-column dashboard. Row 1 holds the intro and
-   the small panels; row 2 holds the plan and the two side stacks. */
+/* Wide screens (1500px+): a 24-column dashboard.
+   Row 1: intro, Footprint, Wall Thickness, Layout Checks.
+   Row 2: the plan (spanning rows 2-4), Spaces, and Selected Space. Sharing a
+          row keeps Spaces and Selected Space the same height.
+   Rows 3-4: Doorways and Windows split the left column evenly; Furniture &
+          Fixtures fills the wider right column for its longer names. */
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 200px auto;
+    grid-template-rows: 200px auto 1fr 1fr;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -927,14 +930,19 @@ svg.tap-only .interior-door { cursor: pointer; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 
-  .plan-card { grid-column: 1 / 16; grid-row: 2; min-width: 0; }
+  .plan-card { grid-column: 1 / 16; grid-row: 2 / 5; min-width: 0; }
   .plan-scroll { height: min(calc(100vh - 110px), 1100px); }
-  .side-stack { grid-column: 16 / 20; grid-row: 2; min-width: 0; }
-  .side-stack-2 { grid-column: 20 / 25; }
-
-  .doors-panel .panel-title { margin-bottom: 12px; }
-  .doors-panel .field-help.lead { margin: -3px 0 10px; }
-  .doors-panel #addDoor { margin-top: 6px; }
+  .side-stack { display: contents; }
+  .room-list-panel { grid-column: 16 / 20; grid-row: 2; }
+  .selected-panel { grid-column: 20 / 25; grid-row: 2; }
+  .doors-panel { grid-column: 16 / 20; grid-row: 3; }
+  .windows-panel { grid-column: 16 / 20; grid-row: 4; }
+  .items-panel { grid-column: 20 / 25; grid-row: 3 / 5; }
+  .room-list-panel,
+  .selected-panel,
+  .doors-panel,
+  .windows-panel,
+  .items-panel { align-self: stretch; min-width: 0; }
 
   .item-add { grid-template-columns: 1fr; }
   .item-add .primary-button { width: 100%; }
