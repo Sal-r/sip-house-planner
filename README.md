@@ -4,7 +4,7 @@ A browser-based floor plan tool for concept planning a SIP (structural insulated
 
 **Try it:** [sal-r.github.io/sip-house-planner](https://sal-r.github.io/sip-house-planner/)
 
-![SIP House Planner showing a color-coded main floor plan, the Spaces list, and layout checks](assets/screenshots/planner-desktop.png)
+![SIP House Planner showing a color-coded main floor plan, the Spaces panel, and layout checks](assets/screenshots/planner-desktop.png)
 
 It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependencies, and nothing to install. Your layout is saved in your own browser and is never uploaded anywhere.
 
@@ -14,7 +14,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Rooms:** add, name, move, and resize spaces on a plan drawn to scale with a 1′ grid. Rooms are color-coded by type (living space, bedroom, bathroom, entry, hallway or stairs, utility or storage).
 - **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness and per-side wall toggles.
 - **Doorways:** add interior doorways with hinge side and swing direction. Doorways on an outside wall are marked as entrances automatically.
-- **Windows:** place windows along the exterior walls.
+- **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall.
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer.
 - **Multiple floors:** basement, main floor, and an optional second floor, with a one-click option to align the staircases.
 - **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, and more.
@@ -36,9 +36,9 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 
 Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time, it loads the default layout. After that, your changes save automatically in that browser.
 
-- **Select** a room, doorway, window, or item by clicking it on the plan or in the side panels.
+- **Select** a room, doorway, window, or item by clicking it on the plan or picking it from the dropdown in its side panel. Each dropdown is grouped by floor and has an info box with the total and the count on each floor.
 - **Move** things by dragging them. On a touch screen, turn on **Drag to Move** first.
-- **Edit** the selected space's name, type, floor, walls, position, and size in **Selected Space**.
+- **Edit** the selected space's name, type, floor, walls, position, and size in the **Spaces** panel, under the dropdown.
 - **Keep a copy** with **Export Layout**. Use **Import Layout** to load it back, on this or any other browser.
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.
 - **Start over** with **Reset to Defaults**.

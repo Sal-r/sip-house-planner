@@ -9,13 +9,13 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The tab shows the grid favicon.
 
 ## Floors
-- [ ] Basement and Main Floor tabs switch the plan and the Selected Space panel.
+- [ ] Basement and Main Floor tabs switch the plan and the Spaces panel.
 - [ ] + Second Floor adds a Second Floor tab with stairs matching the main floor stairs.
 - [ ] Remove Second Floor asks for confirmation, then removes the floor.
 
 ## Footprint and walls
 - [ ] Changing Width and Depth resizes the footprint and updates the area figures.
-- [ ] Front of House moves the gold marker; Not Set hides it.
+- [ ] Front of House moves the FRONT OF HOUSE label; Not Set hides it.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 
 ## Units
@@ -25,8 +25,11 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The choice is remembered after refresh, and Print / PDF uses the chosen units.
 
 ## Rooms
-- [ ] Clicking a room on the plan or in the Spaces list selects it.
-- [ ] After typing in a field (for example, a door width), a single click on a row in any list selects that row.
+- [ ] Clicking a room on the plan or picking it from the Spaces dropdown selects it.
+- [ ] Picking a space, doorway, window, or item on another floor switches to that floor.
+- [ ] The info box above each dropdown shows the total and the count on each floor, and says "No ... yet" when empty.
+- [ ] After typing in a field (for example, a door width), a single pick from any dropdown selects that record.
+- [ ] The dropdowns keep keyboard focus while arrowing through them.
 - [ ] Dragging a room moves it in 6″ steps.
 - [ ] Name, Type, Floor, Partitions, Thickness, X, Y, Width, and Depth all update the plan.
 - [ ] Walls On checkboxes add and remove partition walls (exterior sides are grayed out).
@@ -38,6 +41,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Wall, Hinge, From Corner, Width, and Swing all update the doorway; dragging slides it along the wall.
 - [ ] A doorway on an outside wall shows the ENTRANCE label.
 - [ ] + Add Window, dragging, Wall, Width, From Corner, and Remove Window all work.
+- [ ] Dragging a window toward another wall moves it there, and it doesn't flicker between walls near a corner.
 
 ## Furniture and fixtures
 - [ ] + Add Item places the chosen preset in the selected room.
