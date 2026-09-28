@@ -1,0 +1,849 @@
+{
+  "app": "sip-house-planner",
+  "format": 1,
+  "exportedAt": "2026-09-28T00:30:42.674Z",
+  "layout": {
+    "schemaVersion": 3,
+    "width": 32,
+    "depth": 42,
+    "exteriorWall": 1,
+    "interiorWall": 0.375,
+    "zoom": 100,
+    "floor": "main",
+    "upperEnabled": false,
+    "selectedRoom": "living",
+    "selectedDoor": null,
+    "selectedFixture": "washer",
+    "scenario": "preferred",
+    "entranceMode": "front",
+    "frontSide": "north",
+    "windows": [],
+    "selectedWindow": null,
+    "showItems": true,
+    "selectedItem": null,
+    "doors": [
+      {
+        "id": "door-bed1",
+        "roomId": "bed1",
+        "side": "east",
+        "offset": 9.5,
+        "width": 3,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "id": "door-bath1",
+        "roomId": "bath1",
+        "side": "east",
+        "offset": 1.5,
+        "width": 3,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "id": "door-bed2",
+        "roomId": "bed2",
+        "side": "east",
+        "offset": 0.5,
+        "width": 3,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-mudroom",
+        "roomId": "mudroom",
+        "side": "north",
+        "offset": 0.5,
+        "width": 3,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-back-entry",
+        "roomId": "back-entry",
+        "side": "south",
+        "offset": 0.5,
+        "width": 3,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-basement-bath",
+        "roomId": "basement-bath",
+        "side": "east",
+        "offset": 1.5,
+        "width": 3,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "id": "door-secure",
+        "roomId": "secure",
+        "side": "east",
+        "offset": 9.5,
+        "width": 3,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "id": "door-flex",
+        "roomId": "flex",
+        "side": "west",
+        "offset": 13.5,
+        "width": 3,
+        "hinge": "start",
+        "swing": "in"
+      }
+    ],
+    "items": [
+      {
+        "id": "item-washer",
+        "name": "Washer / Dryer",
+        "floor": "basement",
+        "x": 1,
+        "y": 30.25,
+        "w": 2.5,
+        "h": 5
+      },
+      {
+        "id": "item-heater",
+        "name": "Water Heater",
+        "floor": "basement",
+        "x": 1,
+        "y": 36,
+        "w": 2,
+        "h": 2
+      },
+      {
+        "id": "item-handler",
+        "name": "Air Handler",
+        "floor": "basement",
+        "x": 1,
+        "y": 38.5,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "item-bed1-bed",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 1,
+        "y": 4.75,
+        "w": 6.75,
+        "h": 5
+      },
+      {
+        "id": "item-bed1-nightstand-1",
+        "name": "Nightstand",
+        "floor": "main",
+        "x": 1,
+        "y": 2.75,
+        "w": 1.5,
+        "h": 2
+      },
+      {
+        "id": "item-bed1-nightstand-2",
+        "name": "Nightstand",
+        "floor": "main",
+        "x": 1,
+        "y": 9.75,
+        "w": 1.5,
+        "h": 2
+      },
+      {
+        "id": "item-bed1-dresser",
+        "name": "Dresser",
+        "floor": "main",
+        "x": 5.5,
+        "y": 1,
+        "w": 5,
+        "h": 1.5
+      },
+      {
+        "id": "item-bed1-closet",
+        "name": "Reach-In Closet",
+        "floor": "main",
+        "x": 10.75,
+        "y": 3,
+        "w": 2,
+        "h": 6
+      },
+      {
+        "id": "item-bed1-desk",
+        "name": "Desk",
+        "floor": "main",
+        "x": 4,
+        "y": 11.75,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "id": "item-bed2-bed",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 1,
+        "y": 31.5,
+        "w": 6.75,
+        "h": 5
+      },
+      {
+        "id": "item-bed2-nightstand-1",
+        "name": "Nightstand",
+        "floor": "main",
+        "x": 1,
+        "y": 29.5,
+        "w": 1.5,
+        "h": 2
+      },
+      {
+        "id": "item-bed2-nightstand-2",
+        "name": "Nightstand",
+        "floor": "main",
+        "x": 1,
+        "y": 36.5,
+        "w": 1.5,
+        "h": 2
+      },
+      {
+        "id": "item-bed2-dresser",
+        "name": "Dresser",
+        "floor": "main",
+        "x": 5,
+        "y": 39.5,
+        "w": 5,
+        "h": 1.5
+      },
+      {
+        "id": "item-bed2-closet",
+        "name": "Reach-In Closet",
+        "floor": "main",
+        "x": 10.75,
+        "y": 32,
+        "w": 2,
+        "h": 6
+      },
+      {
+        "id": "item-bed2-desk",
+        "name": "Desk",
+        "floor": "main",
+        "x": 3,
+        "y": 27.25,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "id": "item-bath1-tub",
+        "name": "Tub / Shower",
+        "floor": "main",
+        "x": 1,
+        "y": 22.25,
+        "w": 2.5,
+        "h": 4.5
+      },
+      {
+        "id": "item-bath1-toilet",
+        "name": "Toilet",
+        "floor": "main",
+        "x": 4,
+        "y": 22.25,
+        "w": 1.75,
+        "h": 2.5
+      },
+      {
+        "id": "item-bath1-vanity",
+        "name": "Vanity",
+        "floor": "main",
+        "x": 6.25,
+        "y": 22.25,
+        "w": 2.5,
+        "h": 1.75
+      },
+      {
+        "id": "item-entry-bench",
+        "name": "Bench / Cubbies",
+        "floor": "main",
+        "x": 17.25,
+        "y": 1.5,
+        "w": 1.5,
+        "h": 4
+      },
+      {
+        "id": "item-back-entry-bench",
+        "name": "Bench / Cubbies",
+        "floor": "main",
+        "x": 17.25,
+        "y": 35.5,
+        "w": 1.5,
+        "h": 4
+      },
+      {
+        "id": "item-living-tv",
+        "name": "TV Console",
+        "floor": "main",
+        "x": 19.25,
+        "y": 1.5,
+        "w": 1.5,
+        "h": 5
+      },
+      {
+        "id": "item-living-sofa",
+        "name": "Sofa",
+        "floor": "main",
+        "x": 28,
+        "y": 1.25,
+        "w": 3,
+        "h": 7
+      },
+      {
+        "id": "item-living-coffee-table",
+        "name": "Coffee Table",
+        "floor": "main",
+        "x": 23.5,
+        "y": 2.75,
+        "w": 2,
+        "h": 4
+      },
+      {
+        "id": "item-living-chair-1",
+        "name": "Armchair",
+        "floor": "main",
+        "x": 21.5,
+        "y": 9.5,
+        "w": 3,
+        "h": 3
+      },
+      {
+        "id": "item-living-chair-2",
+        "name": "Armchair",
+        "floor": "main",
+        "x": 25,
+        "y": 9.5,
+        "w": 3,
+        "h": 3
+      },
+      {
+        "id": "item-dining-set",
+        "name": "Dining Table & 6 Chairs",
+        "floor": "main",
+        "x": 21,
+        "y": 19,
+        "w": 8,
+        "h": 6
+      },
+      {
+        "id": "item-kitchen-fridge",
+        "name": "Refrigerator",
+        "floor": "main",
+        "x": 19.25,
+        "y": 38.5,
+        "w": 3,
+        "h": 2.5
+      },
+      {
+        "id": "item-kitchen-counter-sink",
+        "name": "Counter / Sink",
+        "floor": "main",
+        "x": 22.25,
+        "y": 39,
+        "w": 6.75,
+        "h": 2
+      },
+      {
+        "id": "item-kitchen-counter-range",
+        "name": "Counter / Range",
+        "floor": "main",
+        "x": 29,
+        "y": 31,
+        "w": 2,
+        "h": 10
+      },
+      {
+        "id": "item-kitchen-island",
+        "name": "Kitchen Island",
+        "floor": "main",
+        "x": 21.5,
+        "y": 32.5,
+        "w": 4.5,
+        "h": 3
+      },
+      {
+        "id": "item-secure-safe",
+        "name": "Safe",
+        "floor": "basement",
+        "x": 1,
+        "y": 1,
+        "w": 3,
+        "h": 2.5
+      },
+      {
+        "id": "item-secure-shelves-1",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 4.5,
+        "y": 1,
+        "w": 6,
+        "h": 1.5
+      },
+      {
+        "id": "item-secure-shelves-2",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 1,
+        "y": 4,
+        "w": 1.5,
+        "h": 9
+      },
+      {
+        "id": "item-basement-bath-shower",
+        "name": "Shower",
+        "floor": "basement",
+        "x": 1.25,
+        "y": 22.25,
+        "w": 3,
+        "h": 4.5
+      },
+      {
+        "id": "item-basement-bath-toilet",
+        "name": "Toilet",
+        "floor": "basement",
+        "x": 5,
+        "y": 22.25,
+        "w": 1.75,
+        "h": 2.5
+      },
+      {
+        "id": "item-basement-bath-vanity",
+        "name": "Vanity",
+        "floor": "basement",
+        "x": 7.25,
+        "y": 22.25,
+        "w": 2,
+        "h": 1.75
+      },
+      {
+        "id": "item-laundry-sink",
+        "name": "Utility Sink",
+        "floor": "basement",
+        "x": 1,
+        "y": 27.5,
+        "w": 2,
+        "h": 2
+      },
+      {
+        "id": "item-laundry-table",
+        "name": "Folding Table",
+        "floor": "basement",
+        "x": 4.75,
+        "y": 31,
+        "w": 2,
+        "h": 4
+      },
+      {
+        "id": "item-storage-shelves-1",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 7,
+        "y": 31.25,
+        "w": 1.5,
+        "h": 9.75
+      },
+      {
+        "id": "item-storage-shelves-2",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 8.5,
+        "y": 39.5,
+        "w": 2.5,
+        "h": 1.5
+      },
+      {
+        "id": "item-pantry-shelves-1",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 17,
+        "y": 39.5,
+        "w": 12.5,
+        "h": 1.5
+      },
+      {
+        "id": "item-pantry-shelves-2",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 29.5,
+        "y": 31.25,
+        "w": 1.5,
+        "h": 9.75
+      },
+      {
+        "id": "item-pantry-freezer",
+        "name": "Chest Freezer",
+        "floor": "basement",
+        "x": 18,
+        "y": 31.5,
+        "w": 4,
+        "h": 2.5
+      },
+      {
+        "id": "item-flex-treadmill",
+        "name": "Treadmill",
+        "floor": "basement",
+        "x": 18,
+        "y": 1.5,
+        "w": 3,
+        "h": 6.5
+      },
+      {
+        "id": "item-flex-rack",
+        "name": "Weight Rack",
+        "floor": "basement",
+        "x": 23,
+        "y": 1,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "id": "item-flex-bench",
+        "name": "Weight Bench",
+        "floor": "basement",
+        "x": 24,
+        "y": 5,
+        "w": 2,
+        "h": 4.5
+      },
+      {
+        "id": "item-flex-sofa",
+        "name": "Sofa",
+        "floor": "basement",
+        "x": 20.5,
+        "y": 21,
+        "w": 7,
+        "h": 3
+      },
+      {
+        "id": "item-flex-coffee-table",
+        "name": "Coffee Table",
+        "floor": "basement",
+        "x": 22,
+        "y": 25,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "id": "item-flex-chair",
+        "name": "Armchair",
+        "floor": "basement",
+        "x": 27.75,
+        "y": 24,
+        "w": 3,
+        "h": 3
+      },
+      {
+        "id": "item-flex-tv",
+        "name": "TV Console",
+        "floor": "basement",
+        "x": 21,
+        "y": 29.25,
+        "w": 6,
+        "h": 1.5
+      }
+    ],
+    "rooms": [
+      {
+        "id": "bed1",
+        "name": "Bedroom 1",
+        "floor": "main",
+        "x": 1,
+        "y": 1,
+        "w": 12,
+        "h": 13,
+        "kind": "private"
+      },
+      {
+        "id": "mudroom",
+        "name": "Entry",
+        "floor": "main",
+        "x": 13,
+        "y": 1,
+        "w": 6,
+        "h": 6,
+        "kind": "entry",
+        "walls": {
+          "north": true,
+          "east": true,
+          "south": false,
+          "west": true
+        }
+      },
+      {
+        "id": "living",
+        "name": "Living Room",
+        "floor": "main",
+        "x": 19,
+        "y": 1,
+        "w": 12,
+        "h": 14,
+        "kind": "social"
+      },
+      {
+        "id": "hall",
+        "name": "Hallway",
+        "floor": "main",
+        "x": 13,
+        "y": 7,
+        "w": 6,
+        "h": 28,
+        "kind": "circulation"
+      },
+      {
+        "id": "stairs-main",
+        "name": "Stairs",
+        "floor": "main",
+        "x": 1,
+        "y": 14,
+        "w": 10,
+        "h": 8,
+        "kind": "circulation",
+        "walls": {
+          "north": true,
+          "east": false,
+          "south": true,
+          "west": true
+        },
+        "wallMode": "open"
+      },
+      {
+        "id": "side-hall",
+        "name": "Hall",
+        "floor": "main",
+        "x": 11,
+        "y": 14,
+        "w": 2,
+        "h": 13,
+        "kind": "circulation",
+        "wallMode": "open"
+      },
+      {
+        "id": "dining",
+        "name": "Dining Room",
+        "floor": "main",
+        "x": 19,
+        "y": 15,
+        "w": 12,
+        "h": 14,
+        "kind": "social"
+      },
+      {
+        "id": "bath1",
+        "name": "Bathroom",
+        "floor": "main",
+        "x": 1,
+        "y": 22,
+        "w": 10,
+        "h": 5,
+        "kind": "wet",
+        "walls": {
+          "north": true,
+          "east": true,
+          "south": true,
+          "west": true
+        }
+      },
+      {
+        "id": "bed2",
+        "name": "Bedroom 2",
+        "floor": "main",
+        "x": 1,
+        "y": 27,
+        "w": 12,
+        "h": 14,
+        "kind": "private"
+      },
+      {
+        "id": "kitchen",
+        "name": "Kitchen",
+        "floor": "main",
+        "x": 19,
+        "y": 29,
+        "w": 12,
+        "h": 12,
+        "kind": "social"
+      },
+      {
+        "id": "back-entry",
+        "name": "Back Entry",
+        "floor": "main",
+        "x": 13,
+        "y": 35,
+        "w": 6,
+        "h": 6,
+        "kind": "entry",
+        "wallMode": "enclosed",
+        "walls": {
+          "north": false,
+          "east": true,
+          "south": false,
+          "west": true
+        }
+      },
+      {
+        "id": "secure",
+        "name": "Secure Room",
+        "floor": "basement",
+        "x": 1,
+        "y": 1,
+        "w": 10,
+        "h": 13,
+        "kind": "utility",
+        "walls": {
+          "north": false,
+          "east": true,
+          "south": true,
+          "west": false
+        }
+      },
+      {
+        "id": "basement-hall",
+        "name": "Hallway",
+        "floor": "basement",
+        "x": 11,
+        "y": 1,
+        "w": 6,
+        "h": 40,
+        "kind": "circulation",
+        "wallMode": "open"
+      },
+      {
+        "id": "flex",
+        "name": "Flex Space",
+        "floor": "basement",
+        "x": 17,
+        "y": 1,
+        "w": 14,
+        "h": 30,
+        "kind": "utility",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "stairs-basement",
+        "name": "Stairs",
+        "floor": "basement",
+        "x": 1,
+        "y": 14,
+        "w": 10,
+        "h": 8,
+        "kind": "circulation",
+        "walls": {
+          "north": true,
+          "east": false,
+          "south": true,
+          "west": false
+        },
+        "wallMode": "open"
+      },
+      {
+        "id": "basement-bath",
+        "name": "Bathroom",
+        "floor": "basement",
+        "x": 1,
+        "y": 22,
+        "w": 10,
+        "h": 5,
+        "kind": "wet"
+      },
+      {
+        "id": "mech",
+        "name": "Mechanical / Laundry",
+        "floor": "basement",
+        "x": 1,
+        "y": 27,
+        "w": 6,
+        "h": 14,
+        "kind": "utility",
+        "walls": {
+          "north": false,
+          "east": false,
+          "south": false,
+          "west": false
+        }
+      },
+      {
+        "id": "basement-nook",
+        "name": "Hallway",
+        "floor": "basement",
+        "x": 7,
+        "y": 27,
+        "w": 4,
+        "h": 4,
+        "kind": "circulation",
+        "wallMode": "open"
+      },
+      {
+        "id": "storage",
+        "name": "Storage",
+        "floor": "basement",
+        "x": 7,
+        "y": 31,
+        "w": 4,
+        "h": 10,
+        "kind": "utility",
+        "walls": {
+          "north": true,
+          "east": false,
+          "south": true,
+          "west": false
+        }
+      },
+      {
+        "id": "pantry",
+        "name": "Storage",
+        "floor": "basement",
+        "x": 17,
+        "y": 31,
+        "w": 14,
+        "h": 10,
+        "kind": "utility",
+        "walls": {
+          "north": true,
+          "east": true,
+          "south": true,
+          "west": false
+        },
+        "wallMode": "open"
+      }
+    ],
+    "fixtures": [
+      {
+        "id": "washer",
+        "name": "Washer / Dryer",
+        "short": "W/D",
+        "floor": "basement",
+        "x": 25.5,
+        "y": 18.5
+      },
+      {
+        "id": "heater",
+        "name": "Water Heater",
+        "short": "WH",
+        "floor": "basement",
+        "x": 25.5,
+        "y": 13.5
+      },
+      {
+        "id": "handler",
+        "name": "Air Handler",
+        "short": "AH",
+        "floor": "basement",
+        "x": 29.4,
+        "y": 14.5
+      },
+      {
+        "id": "return",
+        "name": "Return grille",
+        "short": "R",
+        "floor": "main",
+        "x": 15,
+        "y": 18
+      }
+    ]
+  }
+}

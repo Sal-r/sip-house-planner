@@ -1,0 +1,2406 @@
+/*
+ * SIP House Planner
+ * A concept floor plan tool. Plain JavaScript, no build step, no dependencies.
+ *
+ * Coordinates are in feet. The origin is the top-left corner of the
+ * footprint, x grows to the right, and y grows toward the bottom.
+ * Sides are named by compass direction in the data (north = top of the plan).
+ *
+ * Sections
+ *   1. Constants
+ *   2. State: defaults, validation, and loading
+ *   3. Helpers and units
+ *   4. Geometry
+ *   5. Layout checks
+ *   6. Plan drawing (SVG)
+ *   7. UI panels and the main render
+ *   8. Confirmation dialog
+ *   9. Event handlers
+ *  10. Export, import, and print
+ *  11. Start-up
+ */
+(() => {
+  'use strict';
+
+  // ==========================================================================
+  // 1. Constants
+  // ==========================================================================
+
+  const STORAGE_KEY = 'sip-house-planner-v1';
+  // Earlier builds saved drafts under this key. Drafts found there are moved
+  // to STORAGE_KEY the first time the page loads.
+  const LEGACY_STORAGE_KEY = 'sals-sip-house-planner-v1';
+
+  const FLOORS = ['main', 'upper', 'basement'];
+  const SIDES = ['north', 'east', 'south', 'west'];
+  const SIDE_NAME = { north: 'top', east: 'right', south: 'bottom', west: 'left' };
+  const SIDE_LABEL = { north: 'Top', east: 'Right', south: 'Bottom', west: 'Left' };
+  const FLOOR_NAME = { main: 'Main Floor', upper: 'Second Floor', basement: 'Basement' };
+
+  const ZOOM_MIN = 50;
+  const ZOOM_MAX = 250;
+  const ZOOM_STEP = 25;
+
+  // Room fill colors by room type.
+  const ROOM_FILLS = {
+    social: '#fff1b3',
+    private: '#e3d5f2',
+    entry: '#ffd9b0',
+    wet: '#cfe3f7',
+    utility: '#d5eccb',
+    circulation: '#f8d3d3',
+  };
+
+  // [name, width, depth] in feet for each entry in the Add Item dropdown.
+  const ITEM_PRESETS = {
+    custom: ['Custom Box', 3, 3],
+    base: ['Base Cabinets', 6, 2],
+    island: ['Kitchen Island', 6, 3],
+    fridge: ['Refrigerator', 3, 2.5],
+    range: ['Range', 2.5, 2.5],
+    sofa: ['Sofa', 7, 3],
+    loveseat: ['Loveseat', 5, 3],
+    chair: ['Armchair', 3, 3],
+    coffee: ['Coffee Table', 4, 2],
+    dining: ['Dining Table', 6, 3.5],
+    queen: ['Queen Bed', 5, 6.75],
+    king: ['King Bed', 6.5, 6.75],
+    twin: ['Twin Bed', 3.25, 6.25],
+    dresser: ['Dresser', 5, 1.5],
+    desk: ['Desk', 5, 2.5],
+    toilet: ['Toilet', 1.75, 2.5],
+    vanity: ['Vanity', 3, 1.75],
+    tub: ['Tub / Shower', 5, 2.5],
+    washer: ['Washer / Dryer', 2.5, 2.5],
+    heater: ['Water Heater', 2, 2],
+    handler: ['Air Handler', 2.5, 2.5],
+    bench: ['Workbench', 6, 2.5],
+  };
+
+  // ==========================================================================
+  // 2. State: defaults, validation, and loading
+  // ==========================================================================
+
+  // Built-in fallback layout. The live default comes from default-layout.json
+  // (see loadDefaultLayout); this copy is used when that file can't be read,
+  // for example when index.html is opened straight from disk.
+  //
+  // `fixtures`, `selectedFixture`, `scenario`, and `entranceMode` are kept for
+  // compatibility with saved drafts and exported files. Fixtures were replaced
+  // by items, but sanitizeLayout still uses them to upgrade old drafts.
+  const createDefaultState = () => ({
+    schemaVersion: 3,
+    width: 32,
+    depth: 42,
+    exteriorWall: 1,
+    interiorWall: 0.375,
+    zoom: 100,
+    floor: 'main',
+    upperEnabled: false,
+    selectedRoom: 'living',
+    selectedDoor: null,
+    selectedFixture: 'washer',
+    scenario: 'preferred',
+    entranceMode: 'front',
+    frontSide: 'north',
+    windows: [],
+    selectedWindow: null,
+    showItems: true,
+    selectedItem: null,
+    doors: [
+      { id: 'door-bed1', roomId: 'bed1', side: 'east', offset: 9.5, width: 3, hinge: 'end', swing: 'in' },
+      { id: 'door-bath1', roomId: 'bath1', side: 'east', offset: 1.5, width: 3, hinge: 'end', swing: 'in' },
+      { id: 'door-bed2', roomId: 'bed2', side: 'east', offset: 0.5, width: 3, hinge: 'start', swing: 'in' },
+      { id: 'door-mudroom', roomId: 'mudroom', side: 'north', offset: 0.5, width: 3, hinge: 'start', swing: 'in' },
+      { id: 'door-back-entry', roomId: 'back-entry', side: 'south', offset: 0.5, width: 3, hinge: 'start', swing: 'in' },
+      { id: 'door-basement-bath', roomId: 'basement-bath', side: 'east', offset: 1.5, width: 3, hinge: 'end', swing: 'in' },
+      { id: 'door-secure', roomId: 'secure', side: 'east', offset: 9.5, width: 3, hinge: 'end', swing: 'in' },
+      { id: 'door-flex', roomId: 'flex', side: 'west', offset: 13.5, width: 3, hinge: 'start', swing: 'in' },
+    ],
+    items: [
+      { id: 'item-washer', name: 'Washer / Dryer', floor: 'basement', x: 1, y: 30.25, w: 2.5, h: 5 },
+      { id: 'item-heater', name: 'Water Heater', floor: 'basement', x: 1, y: 36, w: 2, h: 2 },
+      { id: 'item-handler', name: 'Air Handler', floor: 'basement', x: 1, y: 38.5, w: 2.5, h: 2.5 },
+      { id: 'item-bed1-bed', name: 'Queen Bed', floor: 'main', x: 1, y: 4.75, w: 6.75, h: 5 },
+      { id: 'item-bed1-nightstand-1', name: 'Nightstand', floor: 'main', x: 1, y: 2.75, w: 1.5, h: 2 },
+      { id: 'item-bed1-nightstand-2', name: 'Nightstand', floor: 'main', x: 1, y: 9.75, w: 1.5, h: 2 },
+      { id: 'item-bed1-dresser', name: 'Dresser', floor: 'main', x: 5.5, y: 1, w: 5, h: 1.5 },
+      { id: 'item-bed1-closet', name: 'Reach-In Closet', floor: 'main', x: 10.75, y: 3, w: 2, h: 6 },
+      { id: 'item-bed1-desk', name: 'Desk', floor: 'main', x: 4, y: 11.75, w: 4, h: 2 },
+      { id: 'item-bed2-bed', name: 'Queen Bed', floor: 'main', x: 1, y: 31.5, w: 6.75, h: 5 },
+      { id: 'item-bed2-nightstand-1', name: 'Nightstand', floor: 'main', x: 1, y: 29.5, w: 1.5, h: 2 },
+      { id: 'item-bed2-nightstand-2', name: 'Nightstand', floor: 'main', x: 1, y: 36.5, w: 1.5, h: 2 },
+      { id: 'item-bed2-dresser', name: 'Dresser', floor: 'main', x: 5, y: 39.5, w: 5, h: 1.5 },
+      { id: 'item-bed2-closet', name: 'Reach-In Closet', floor: 'main', x: 10.75, y: 32, w: 2, h: 6 },
+      { id: 'item-bed2-desk', name: 'Desk', floor: 'main', x: 3, y: 27.25, w: 4, h: 2 },
+      { id: 'item-bath1-tub', name: 'Tub / Shower', floor: 'main', x: 1, y: 22.25, w: 2.5, h: 4.5 },
+      { id: 'item-bath1-toilet', name: 'Toilet', floor: 'main', x: 4, y: 22.25, w: 1.75, h: 2.5 },
+      { id: 'item-bath1-vanity', name: 'Vanity', floor: 'main', x: 6.25, y: 22.25, w: 2.5, h: 1.75 },
+      { id: 'item-entry-bench', name: 'Bench / Cubbies', floor: 'main', x: 17.25, y: 1.5, w: 1.5, h: 4 },
+      { id: 'item-back-entry-bench', name: 'Bench / Cubbies', floor: 'main', x: 17.25, y: 35.5, w: 1.5, h: 4 },
+      { id: 'item-living-tv', name: 'TV Console', floor: 'main', x: 19.25, y: 1.5, w: 1.5, h: 5 },
+      { id: 'item-living-sofa', name: 'Sofa', floor: 'main', x: 28, y: 1.25, w: 3, h: 7 },
+      { id: 'item-living-coffee-table', name: 'Coffee Table', floor: 'main', x: 23.5, y: 2.75, w: 2, h: 4 },
+      { id: 'item-living-chair-1', name: 'Armchair', floor: 'main', x: 21.5, y: 9.5, w: 3, h: 3 },
+      { id: 'item-living-chair-2', name: 'Armchair', floor: 'main', x: 25, y: 9.5, w: 3, h: 3 },
+      { id: 'item-dining-set', name: 'Dining Table & 6 Chairs', floor: 'main', x: 21, y: 19, w: 8, h: 6 },
+      { id: 'item-kitchen-fridge', name: 'Refrigerator', floor: 'main', x: 19.25, y: 38.5, w: 3, h: 2.5 },
+      { id: 'item-kitchen-counter-sink', name: 'Counter / Sink', floor: 'main', x: 22.25, y: 39, w: 6.75, h: 2 },
+      { id: 'item-kitchen-counter-range', name: 'Counter / Range', floor: 'main', x: 29, y: 31, w: 2, h: 10 },
+      { id: 'item-kitchen-island', name: 'Kitchen Island', floor: 'main', x: 21.5, y: 32.5, w: 4.5, h: 3 },
+      { id: 'item-secure-safe', name: 'Safe', floor: 'basement', x: 1, y: 1, w: 3, h: 2.5 },
+      { id: 'item-secure-shelves-1', name: 'Storage Shelves', floor: 'basement', x: 4.5, y: 1, w: 6, h: 1.5 },
+      { id: 'item-secure-shelves-2', name: 'Storage Shelves', floor: 'basement', x: 1, y: 4, w: 1.5, h: 9 },
+      { id: 'item-basement-bath-shower', name: 'Shower', floor: 'basement', x: 1.25, y: 22.25, w: 3, h: 4.5 },
+      { id: 'item-basement-bath-toilet', name: 'Toilet', floor: 'basement', x: 5, y: 22.25, w: 1.75, h: 2.5 },
+      { id: 'item-basement-bath-vanity', name: 'Vanity', floor: 'basement', x: 7.25, y: 22.25, w: 2, h: 1.75 },
+      { id: 'item-laundry-sink', name: 'Utility Sink', floor: 'basement', x: 1, y: 27.5, w: 2, h: 2 },
+      { id: 'item-laundry-table', name: 'Folding Table', floor: 'basement', x: 4.75, y: 31, w: 2, h: 4 },
+      { id: 'item-storage-shelves-1', name: 'Storage Shelves', floor: 'basement', x: 7, y: 31.25, w: 1.5, h: 9.75 },
+      { id: 'item-storage-shelves-2', name: 'Storage Shelves', floor: 'basement', x: 8.5, y: 39.5, w: 2.5, h: 1.5 },
+      { id: 'item-pantry-shelves-1', name: 'Storage Shelves', floor: 'basement', x: 17, y: 39.5, w: 12.5, h: 1.5 },
+      { id: 'item-pantry-shelves-2', name: 'Storage Shelves', floor: 'basement', x: 29.5, y: 31.25, w: 1.5, h: 9.75 },
+      { id: 'item-pantry-freezer', name: 'Chest Freezer', floor: 'basement', x: 18, y: 31.5, w: 4, h: 2.5 },
+      { id: 'item-flex-treadmill', name: 'Treadmill', floor: 'basement', x: 18, y: 1.5, w: 3, h: 6.5 },
+      { id: 'item-flex-rack', name: 'Weight Rack', floor: 'basement', x: 23, y: 1, w: 4, h: 2 },
+      { id: 'item-flex-bench', name: 'Weight Bench', floor: 'basement', x: 24, y: 5, w: 2, h: 4.5 },
+      { id: 'item-flex-sofa', name: 'Sofa', floor: 'basement', x: 20.5, y: 21, w: 7, h: 3 },
+      { id: 'item-flex-coffee-table', name: 'Coffee Table', floor: 'basement', x: 22, y: 25, w: 4, h: 2 },
+      { id: 'item-flex-chair', name: 'Armchair', floor: 'basement', x: 27.75, y: 24, w: 3, h: 3 },
+      { id: 'item-flex-tv', name: 'TV Console', floor: 'basement', x: 21, y: 29.25, w: 6, h: 1.5 },
+    ],
+    rooms: [
+      { id: 'bed1', name: 'Bedroom 1', floor: 'main', x: 1, y: 1, w: 12, h: 13, kind: 'private' },
+      { id: 'mudroom', name: 'Entry', floor: 'main', x: 13, y: 1, w: 6, h: 6, kind: 'entry', walls: { north: true, east: true, south: false, west: true } },
+      { id: 'living', name: 'Living Room', floor: 'main', x: 19, y: 1, w: 12, h: 14, kind: 'social' },
+      { id: 'hall', name: 'Hallway', floor: 'main', x: 13, y: 7, w: 6, h: 28, kind: 'circulation' },
+      { id: 'stairs-main', name: 'Stairs', floor: 'main', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: true }, wallMode: 'open' },
+      { id: 'side-hall', name: 'Hall', floor: 'main', x: 11, y: 14, w: 2, h: 13, kind: 'circulation', wallMode: 'open' },
+      { id: 'dining', name: 'Dining Room', floor: 'main', x: 19, y: 15, w: 12, h: 14, kind: 'social' },
+      { id: 'bath1', name: 'Bathroom', floor: 'main', x: 1, y: 22, w: 10, h: 5, kind: 'wet', walls: { north: true, east: true, south: true, west: true } },
+      { id: 'bed2', name: 'Bedroom 2', floor: 'main', x: 1, y: 27, w: 12, h: 14, kind: 'private' },
+      { id: 'kitchen', name: 'Kitchen', floor: 'main', x: 19, y: 29, w: 12, h: 12, kind: 'social' },
+      { id: 'back-entry', name: 'Back Entry', floor: 'main', x: 13, y: 35, w: 6, h: 6, kind: 'entry', wallMode: 'enclosed', walls: { north: false, east: true, south: false, west: true } },
+      { id: 'secure', name: 'Secure Room', floor: 'basement', x: 1, y: 1, w: 10, h: 13, kind: 'utility', walls: { north: false, east: true, south: true, west: false } },
+      { id: 'basement-hall', name: 'Hallway', floor: 'basement', x: 11, y: 1, w: 6, h: 40, kind: 'circulation', wallMode: 'open' },
+      { id: 'flex', name: 'Flex Space', floor: 'basement', x: 17, y: 1, w: 14, h: 30, kind: 'utility', wallMode: 'enclosed' },
+      { id: 'stairs-basement', name: 'Stairs', floor: 'basement', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: false }, wallMode: 'open' },
+      { id: 'basement-bath', name: 'Bathroom', floor: 'basement', x: 1, y: 22, w: 10, h: 5, kind: 'wet' },
+      { id: 'mech', name: 'Mechanical / Laundry', floor: 'basement', x: 1, y: 27, w: 6, h: 14, kind: 'utility', walls: { north: false, east: false, south: false, west: false } },
+      { id: 'basement-nook', name: 'Hallway', floor: 'basement', x: 7, y: 27, w: 4, h: 4, kind: 'circulation', wallMode: 'open' },
+      { id: 'storage', name: 'Storage', floor: 'basement', x: 7, y: 31, w: 4, h: 10, kind: 'utility', walls: { north: true, east: false, south: true, west: false } },
+      { id: 'pantry', name: 'Storage', floor: 'basement', x: 17, y: 31, w: 14, h: 10, kind: 'utility', walls: { north: true, east: true, south: true, west: false }, wallMode: 'open' },
+    ],
+    fixtures: [
+      { id: 'washer', name: 'Washer / Dryer', short: 'W/D', floor: 'basement', x: 25.5, y: 18.5 },
+      { id: 'heater', name: 'Water Heater', short: 'WH', floor: 'basement', x: 25.5, y: 13.5 },
+      { id: 'handler', name: 'Air Handler', short: 'AH', floor: 'basement', x: 29.4, y: 14.5 },
+      { id: 'return', name: 'Return grille', short: 'R', floor: 'main', x: 15, y: 18 },
+    ],
+  });
+
+  const isValidFloor = floor => FLOORS.includes(floor);
+  const hasFiniteBox = obj => ['x', 'y', 'w', 'h'].every(key => Number.isFinite(obj[key]));
+
+  /**
+   * Validates a saved layout (browser draft, imported file, or
+   * default-layout.json) and upgrades older formats to schema version 3.
+   * Returns a clean state object, or null if the data isn't a layout.
+   */
+  function sanitizeLayout(saved) {
+    const isLayout = saved
+      && Number.isFinite(saved.width)
+      && Number.isFinite(saved.depth)
+      && Array.isArray(saved.rooms)
+      && Array.isArray(saved.fixtures);
+    if (!isLayout) return null;
+
+    const base = createDefaultState();
+
+    // Schema 1 stored only edits to the built-in rooms; merge them in.
+    const rooms = saved.schemaVersion >= 2
+      ? saved.rooms.filter(r => r && typeof r.id === 'string' && typeof r.name === 'string'
+          && isValidFloor(r.floor) && hasFiniteBox(r))
+      : base.rooms.map(r => ({ ...r, ...saved.rooms.find(x => x.id === r.id) }));
+
+    const doors = Array.isArray(saved.doors)
+      ? saved.doors.filter(d => d && typeof d.id === 'string' && typeof d.roomId === 'string'
+          && Number.isFinite(d.offset) && Number.isFinite(d.width))
+      : [];
+
+    const state = {
+      ...base,
+      ...saved,
+      schemaVersion: 3,
+      rooms,
+      doors,
+      fixtures: base.fixtures.map(f => ({ ...f, ...saved.fixtures.find(x => x.id === f.id) })),
+    };
+
+    state.windows = Array.isArray(saved.windows)
+      ? saved.windows.filter(w => w && typeof w.id === 'string' && isValidFloor(w.floor)
+          && SIDES.includes(w.side) && Number.isFinite(w.offset) && Number.isFinite(w.width) && w.width > 0)
+      : [];
+
+    if (Array.isArray(saved.items)) {
+      state.items = saved.items.filter(it => it && typeof it.id === 'string' && typeof it.name === 'string'
+        && isValidFloor(it.floor) && hasFiniteBox(it));
+    } else {
+      // Drafts from before items existed: turn the old fixture markers into items.
+      const sizes = {
+        washer: [2.5, 2.5, 'Washer / Dryer'],
+        heater: [2, 2, 'Water Heater'],
+        handler: [2.5, 2.5, 'Air Handler'],
+      };
+      state.items = state.fixtures.filter(f => sizes[f.id]).map(f => {
+        const [w, h, name] = sizes[f.id];
+        return {
+          id: `item-${f.id}`,
+          name,
+          floor: f.floor,
+          x: Math.round((f.x - w / 2) * 4) / 4,
+          y: Math.round((f.y - h / 2) * 4) / 4,
+          w,
+          h,
+        };
+      });
+    }
+
+    state.rooms = state.rooms.map(r => {
+      const room = { ...r };
+      if (!(Number.isFinite(room.wallT) && room.wallT >= 0 && room.wallT <= 1)) delete room.wallT;
+      if (room.walls && typeof room.walls === 'object') {
+        room.walls = Object.fromEntries(SIDES.map(side => [side, room.walls[side] !== false]));
+      } else {
+        delete room.walls;
+      }
+      return room;
+    });
+
+    if (!Number.isFinite(state.exteriorWall) || state.exteriorWall < 0 || state.exteriorWall > 2) state.exteriorWall = 1;
+    if (!Number.isFinite(state.interiorWall) || state.interiorWall < 0 || state.interiorWall > 1) state.interiorWall = 0.5;
+    if (![...SIDES, 'none'].includes(state.frontSide)) state.frontSide = 'north';
+    if (!Number.isFinite(state.zoom) || state.zoom < ZOOM_MIN || state.zoom > ZOOM_MAX) state.zoom = 100;
+    if (!['main', 'basement', ...(state.upperEnabled ? ['upper'] : [])].includes(state.floor)) state.floor = 'main';
+    return state;
+  }
+
+  /** Moves a value from an old localStorage key to a new one, once. */
+  function migrateStorageKey(oldKey, newKey) {
+    try {
+      if (localStorage.getItem(newKey) !== null) return;
+      const old = localStorage.getItem(oldKey);
+      if (old === null) return;
+      localStorage.setItem(newKey, old);
+      localStorage.removeItem(oldKey);
+    } catch (_) {
+      // Storage can be unavailable (private mode, blocked cookies). Nothing to migrate.
+    }
+  }
+
+  migrateStorageKey(LEGACY_STORAGE_KEY, STORAGE_KEY);
+
+  let state = createDefaultState();
+  let hasSavedDraft = false;
+  try {
+    const saved = sanitizeLayout(JSON.parse(localStorage.getItem(STORAGE_KEY)));
+    if (saved) {
+      state = saved;
+      hasSavedDraft = true;
+    }
+  } catch (_) {
+    // A corrupt browser draft simply starts fresh.
+  }
+
+  const saveState = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_) {
+      // Storage full or unavailable: keep working without saving.
+    }
+  };
+
+  /**
+   * Reads default-layout.json. Returns null when the page is opened from disk
+   * (browsers block fetch on file:// URLs) or when the file is missing or
+   * invalid, so callers fall back to the built-in layout.
+   * To change the default, export a layout and save it as default-layout.json.
+   */
+  async function loadDefaultLayout() {
+    if (location.protocol === 'file:') return null;
+    try {
+      const response = await fetch('./default-layout.json', { cache: 'no-store' });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const next = sanitizeLayout(data && data.layout ? data.layout : data);
+      if (next) {
+        next.floor = 'main';
+        next.selectedDoor = null;
+        next.selectedItem = null;
+      }
+      return next;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ==========================================================================
+  // 3. Helpers
+  // ==========================================================================
+
+  const $ = id => document.getElementById(id);
+  const svg = $('plan');
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  const findRoom = id => state.rooms.find(r => r.id === id);
+  const findDoor = id => state.doors.find(d => d.id === id);
+  const findWindow = id => state.windows.find(w => w.id === id);
+  const findItem = id => state.items.find(it => it.id === id);
+
+  const newId = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const floorName = floor => FLOOR_NAME[floor];
+  const floorOrder = () => (state.upperEnabled ? ['main', 'upper', 'basement'] : ['main', 'basement']);
+  const isHorizontalSide = side => side === 'north' || side === 'south';
+  const capitalize = text => text[0].toUpperCase() + text.slice(1);
+
+  const roundTo = (n, step) => Math.round(n / step) * step;
+
+  // Number formatting for labels.
+  const nice = n => (Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10));
+  const ft2 = n => String(Math.round(n * 100) / 100);
+  const inches = ft => String(Math.round(ft * 12 * 100) / 100);
+
+  /** Overlapping area of two boxes. */
+  const intersection = (a, b) =>
+    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x))
+    * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+  // A room is open plan (no partition walls) or enclosed. Living spaces and
+  // the main hallway default to open.
+  const wallMode = r => r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed');
+  const roomWallThickness = r => (Number.isFinite(r.wallT) ? r.wallT : state.interiorWall);
+  const hasSide = (r, side) => r.walls?.[side] !== false;
+  const sidePosition = (r, side) => (
+    side === 'north' ? r.y : side === 'south' ? r.y + r.h : side === 'west' ? r.x : r.x + r.w
+  );
+
+  /** True when a room side sits on the exterior SIP wall. */
+  const isExteriorSide = (r, side) => {
+    const e = state.exteriorWall;
+    const pos = sidePosition(r, side);
+    const limit = isHorizontalSide(side) ? state.depth : state.width;
+    return pos <= e + 0.001 || pos >= limit - e - 0.001;
+  };
+
+  // --- Units ------------------------------------------------------------------
+  // Layouts are always stored in feet. Metric only changes what is shown and
+  // how typed values are read, so drafts and exported files work in either.
+  // The choice is a browser preference, not part of the layout.
+
+  const UNITS_KEY = 'sip-house-planner-units';
+  const CM_PER_FT = 30.48;
+  const M_PER_FT = 0.3048;
+  const SQM_PER_SQFT = 0.09290304;
+
+  function initialUnits() {
+    try {
+      const saved = localStorage.getItem(UNITS_KEY);
+      if (saved === 'imperial' || saved === 'metric') return saved;
+    } catch (_) {
+      // Storage unavailable: fall through to the browser language.
+    }
+    // Feet where the browser's region is the US (or Liberia or Myanmar),
+    // metric elsewhere. maximize() fills in the likely region, so "en" -> US
+    // and "de" -> DE.
+    let region = 'US';
+    try {
+      region = new Intl.Locale((navigator.language || 'en-US').split('@')[0]).maximize().region || 'US';
+    } catch (_) {
+      // Unparseable language tag: keep the default.
+    }
+    return ['US', 'LR', 'MM'].includes(region) ? 'imperial' : 'metric';
+  }
+
+  let units = initialUnits();
+  const isMetric = () => units === 'metric';
+
+  const roundText = (n, decimals) => String(Math.round(n * 10 ** decimals) / 10 ** decimals);
+  const meters = ft => roundText(ft * M_PER_FT, 2);
+  const metricSnap = (ft, stepCm) => Math.round(ft * CM_PER_FT / stepCm) * stepCm / CM_PER_FT;
+
+  // Snapping: rooms and footprint 6″ or 10 cm; doorways 6″ or 5 cm;
+  // items and windows 3″ or 5 cm.
+  const snap = ft => (isMetric() ? metricSnap(ft, 10) : Math.round(ft * 2) / 2);
+  const doorSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 2) / 2);
+  const itemSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
+
+  /** Keyboard nudge distance in feet. Windows use the finer step. */
+  const nudgeStep = (shift, fine) => (isMetric()
+    ? (shift ? 0.25 : fine ? 0.05 : 0.1) / M_PER_FT
+    : (shift ? 1 : fine ? 0.25 : 0.5));
+
+  // Display text
+  const fmtLength = ft => (isMetric() ? `${meters(ft)} m` : `${nice(ft)}′`);
+  const fmtSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${nice(w)}′ × ${nice(h)}′`);
+  const fmtItemSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${ft2(w)}′ × ${ft2(h)}′`);
+  const fmtArea = (sqft, grouped = true) => {
+    const value = Math.round(isMetric() ? sqft * SQM_PER_SQFT : sqft);
+    return `${grouped ? value.toLocaleString() : value} ${isMetric() ? 'm²' : 'sq ft'}`;
+  };
+  const gridSquareText = () => (isMetric() ? '25 cm' : '1′');
+
+  // Screen reader text
+  const spokenSize = (w, h, precise = false) => {
+    if (isMetric()) return `${meters(w)} by ${meters(h)} meters`;
+    const f = precise ? ft2 : nice;
+    return `${f(w)} by ${f(h)} feet`;
+  };
+  const spokenLength = ft => (isMetric() ? `${meters(ft)} meter` : `${nice(ft)} foot`);
+  const spokenArea = sqft => (isMetric()
+    ? `${Math.round(sqft * SQM_PER_SQFT)} square meters`
+    : `${Math.round(sqft)} square feet`);
+
+  // Form fields. Lengths are feet or meters; wall thicknesses are inches or
+  // centimeters. `valid` is the accepted range when it differs from the
+  // field's min and max attributes.
+  const FIELDS = {
+    houseWidth: { kind: 'length', imperial: { min: 24, max: 80, step: 1 }, metric: { min: 7.4, max: 24.3, step: 0.1 } },
+    houseDepth: { kind: 'length', imperial: { min: 24, max: 80, step: 1 }, metric: { min: 7.4, max: 24.3, step: 0.1 } },
+    exteriorWall: { kind: 'thickness', imperial: { min: 0, max: 24, step: 0.25 }, metric: { min: 0, max: 60, step: 0.5 } },
+    interiorWall: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
+    roomWallT: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
+    roomX: { kind: 'length', imperial: { step: 0.5, valid: [-80, 80] }, metric: { step: 0.1, valid: [-24.4, 24.4] } },
+    roomY: { kind: 'length', imperial: { step: 0.5, valid: [-80, 80] }, metric: { step: 0.1, valid: [-24.4, 24.4] } },
+    roomW: { kind: 'length', imperial: { min: 2, max: 80, step: 0.5 }, metric: { min: 0.6, max: 24.4, step: 0.1 } },
+    roomH: { kind: 'length', imperial: { min: 2, max: 80, step: 0.5 }, metric: { min: 0.6, max: 24.4, step: 0.1 } },
+    itemX: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
+    itemY: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
+    itemW: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
+    itemH: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
+    doorOffset: { kind: 'length', imperial: { min: 0, step: 0.5, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
+    doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.5 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
+    windowOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
+    windowWidth: { kind: 'length', imperial: { min: 1, max: 20, step: 0.25, valid: [1, 80] }, metric: { min: 0.3, max: 6, step: 0.05, valid: [0.3, 24.4] } },
+  };
+
+  /** A length in feet, shown in a form field. */
+  const lengthField = (ft, precise = false) => (isMetric() ? meters(ft) : precise ? ft2(ft) : nice(ft));
+  /** A wall thickness in feet, shown in a form field (inches or centimeters). */
+  const thicknessField = ft => (isMetric() ? roundText(ft * CM_PER_FT, 1) : inches(ft));
+
+  /**
+   * Reads a form field in the current units and returns feet, or null when
+   * the value is out of range. Thicknesses are rounded to ¼″ or 0.5 cm.
+   */
+  function readField(id, raw) {
+    const field = FIELDS[id];
+    const limits = field[units];
+    const [lo, hi] = limits.valid || [limits.min, limits.max];
+    const n = Number(raw);
+    if (!Number.isFinite(n) || (lo !== undefined && n < lo) || (hi !== undefined && n > hi)) return null;
+    if (field.kind === 'thickness') return isMetric() ? roundTo(n, 0.5) / CM_PER_FT : roundTo(n, 0.25) / 12;
+    return isMetric() ? n / M_PER_FT : n;
+  }
+
+  /** Updates unit labels, field limits, and unit-dependent text in the page. */
+  function applyUnits() {
+    $('unitsImperial').setAttribute('aria-pressed', String(!isMetric()));
+    $('unitsMetric').setAttribute('aria-pressed', String(isMetric()));
+    for (const label of document.querySelectorAll('[data-unit]')) {
+      const thickness = label.dataset.unit === 'thickness';
+      label.textContent = isMetric() ? (thickness ? 'cm' : 'm') : (thickness ? 'in' : 'ft');
+    }
+    for (const [id, field] of Object.entries(FIELDS)) {
+      const limits = field[units];
+      for (const attr of ['min', 'max', 'step']) {
+        if (limits[attr] === undefined) $(id).removeAttribute(attr);
+        else $(id).setAttribute(attr, String(limits[attr]));
+      }
+    }
+    for (const option of $('itemPreset').options) {
+      const [name, w, h] = ITEM_PRESETS[option.value];
+      option.textContent = `${name} · ${fmtItemSize(w, h)}`;
+    }
+    $('unitName').textContent = isMetric() ? 'Meters' : 'Feet';
+    $('gridLegend').textContent = `1 square = ${gridSquareText()}`;
+    $('itemSnapLabel').textContent = isMetric() ? '5 cm' : '3″';
+  }
+
+  // ==========================================================================
+  // 4. Geometry
+  // ==========================================================================
+
+  /** Area covered by the union of rectangles, clipped to bounds (sweep line). */
+  function unionArea(rects, bounds) {
+    if (bounds.w <= 0 || bounds.h <= 0) return 0;
+    const minX = bounds.x;
+    const maxX = bounds.x + bounds.w;
+    const minY = bounds.y;
+    const maxY = bounds.y + bounds.h;
+    const clampX = x => Math.max(minX, Math.min(maxX, x));
+
+    const xs = [minX, maxX];
+    for (const r of rects) xs.push(clampX(r.x), clampX(r.x + r.w));
+    xs.sort((a, b) => a - b);
+
+    let area = 0;
+    for (let i = 1; i < xs.length; i++) {
+      const left = xs[i - 1];
+      const right = xs[i];
+      if (right - left < 0.0001) continue;
+      const intervals = rects
+        .filter(r => r.x < right && r.x + r.w > left)
+        .map(r => [Math.max(minY, r.y), Math.min(maxY, r.y + r.h)])
+        .filter(([a, b]) => b > a)
+        .sort((a, b) => a[0] - b[0]);
+      let length = 0;
+      let end = 0;
+      for (const [a, b] of intervals) {
+        length += Math.max(0, b - Math.max(a, end));
+        end = Math.max(end, b);
+      }
+      area += (right - left) * length;
+    }
+    return area;
+  }
+
+  /** Opening, hinge, and swing geometry for a doorway on a room side. */
+  function doorGeometry(d) {
+    const r = findRoom(d.roomId);
+    if (!r) return null;
+    const side = d.side || 'east';
+    const horizontal = isHorizontalSide(side);
+    const axis = sidePosition(r, side);
+    const start = horizontal ? { x: r.x + d.offset, y: axis } : { x: axis, y: r.y + d.offset };
+    const end = horizontal ? { x: start.x + d.width, y: axis } : { x: axis, y: start.y + d.width };
+    const hinge = d.hinge === 'end' ? end : start;
+    const far = d.hinge === 'end' ? start : end;
+    const inward = { north: { x: 0, y: 1 }, south: { x: 0, y: -1 }, west: { x: 1, y: 0 }, east: { x: -1, y: 0 } }[side]
+      || { x: -1, y: 0 };
+    const normal = d.swing === 'out' ? { x: -inward.x, y: -inward.y } : inward;
+    return {
+      room: r,
+      side,
+      horizontal,
+      axis,
+      start,
+      end,
+      hinge,
+      far,
+      open: { x: hinge.x + normal.x * d.width, y: hinge.y + normal.y * d.width },
+      length: horizontal ? r.w : r.h,
+    };
+  }
+
+  /** Doorways on a floor that sit in the exterior wall (entrances). */
+  function entranceDoors(floor) {
+    return state.doors.filter(d => {
+      const r = findRoom(d.roomId);
+      return r && r.floor === floor && isExteriorSide(r, d.side || 'east');
+    });
+  }
+
+  /**
+   * Builds the partition walls for one floor: every enclosed room side that
+   * isn't on the exterior wall, merged where rooms share a wall, with doorway
+   * openings cut out. Also returns the areas used by the metrics.
+   */
+  function wallModel(floor) {
+    const e = state.exteriorWall;
+    const W = state.width;
+    const H = state.depth;
+    const shell = { x: e, y: e, w: Math.max(0, W - 2 * e), h: Math.max(0, H - 2 * e) };
+
+    // 1. Raw wall segments from each enclosed room.
+    const raw = [];
+    for (const r of state.rooms.filter(room => room.floor === floor && wallMode(room) === 'enclosed')) {
+      const t = roomWallThickness(r);
+      for (const side of ['north', 'south', 'west', 'east']) {
+        if (!hasSide(r, side)) continue;
+        const horizontal = isHorizontalSide(side);
+        const pos = sidePosition(r, side);
+        if (horizontal ? (pos <= e + 0.001 || pos >= H - e - 0.001) : (pos <= e + 0.001 || pos >= W - e - 0.001)) continue;
+        const start = Math.max(e, horizontal ? r.x : r.y);
+        const end = Math.min(horizontal ? W - e : H - e, horizontal ? r.x + r.w : r.y + r.h);
+        if (end > start + 0.01) raw.push({ o: horizontal ? 'h' : 'v', pos, start, end, t });
+      }
+    }
+
+    // 2. Group collinear segments of the same thickness.
+    const grouped = new Map();
+    for (const seg of raw) {
+      const key = `${seg.o}:${seg.pos.toFixed(3)}:${seg.t.toFixed(4)}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(seg);
+    }
+
+    // 3. Merge overlapping segments, then cut doorway openings.
+    const segments = [];
+    for (const group of grouped.values()) {
+      group.sort((a, b) => a.start - b.start);
+      const merged = [];
+      for (const seg of group) {
+        const last = merged.at(-1);
+        if (last && seg.start <= last.end + 0.01) last.end = Math.max(last.end, seg.end);
+        else merged.push({ ...seg });
+      }
+
+      const openings = state.doors
+        .filter(d => {
+          const g = doorGeometry(d);
+          return g && g.room.floor === floor && wallMode(g.room) === 'enclosed'
+            && (g.horizontal ? 'h' : 'v') === group[0].o && Math.abs(g.axis - group[0].pos) < 0.01;
+        })
+        .map(d => {
+          const g = doorGeometry(d);
+          return { start: g.horizontal ? g.start.x : g.start.y, end: g.horizontal ? g.end.x : g.end.y };
+        })
+        .sort((a, b) => a.start - b.start);
+
+      for (const seg of merged) {
+        let cursor = seg.start;
+        for (const opening of openings) {
+          if (opening.end <= cursor || opening.start >= seg.end) continue;
+          if (opening.start > cursor + 0.01) segments.push({ ...seg, start: cursor, end: Math.min(opening.start, seg.end) });
+          cursor = Math.max(cursor, opening.end);
+          if (cursor >= seg.end) break;
+        }
+        if (cursor < seg.end - 0.01) segments.push({ ...seg, start: cursor });
+      }
+    }
+
+    const rects = segments.map(s => (s.o === 'h'
+      ? { x: s.start, y: s.pos - s.t / 2, w: s.end - s.start, h: s.t }
+      : { x: s.pos - s.t / 2, y: s.start, w: s.t, h: s.end - s.start }));
+
+    return {
+      shell,
+      raw,
+      segments,
+      rects,
+      shellArea: shell.w * shell.h,
+      partitionArea: unionArea(rects, shell),
+    };
+  }
+
+  /** Approximate floor area of a room box after subtracting partition walls. */
+  function approximateRoomClear(r, model) {
+    const s = model.shell;
+    const x = Math.max(r.x, s.x);
+    const y = Math.max(r.y, s.y);
+    const right = Math.min(r.x + r.w, s.x + s.w);
+    const bottom = Math.min(r.y + r.h, s.y + s.h);
+    const bounds = { x, y, w: Math.max(0, right - x), h: Math.max(0, bottom - y) };
+    return Math.max(0, bounds.w * bounds.h - unionArea(model.rects, bounds));
+  }
+
+  /** Where a window sits in the exterior wall. Offsets run from the top or left end. */
+  function windowGeometry(w) {
+    const W = state.width;
+    const H = state.depth;
+    const e = state.exteriorWall > 0 ? state.exteriorWall : 0.4;
+    const horizontal = isHorizontalSide(w.side);
+    const a = w.offset;
+    const rect = w.side === 'north' ? { x: a, y: 0, w: w.width, h: e }
+      : w.side === 'south' ? { x: a, y: H - e, w: w.width, h: e }
+      : w.side === 'west' ? { x: 0, y: a, w: e, h: w.width }
+      : { x: W - e, y: a, w: e, h: w.width };
+    return { horizontal, length: horizontal ? W : H, start: a, end: a + w.width, rect, e };
+  }
+
+  /** Turns the whole house 90° clockwise on every floor. */
+  function rotateClockwise() {
+    const W = state.width;
+    const H = state.depth;
+    const next = { north: 'east', east: 'south', south: 'west', west: 'north' };
+    const turn = box => {
+      const x = H - (box.y + box.h);
+      const y = box.x;
+      box.x = x;
+      box.y = y;
+      [box.w, box.h] = [box.h, box.w];
+    };
+
+    for (const d of state.doors) {
+      const r = findRoom(d.roomId);
+      if (!r) continue;
+      const side = d.side || 'east';
+      if (side === 'east' || side === 'west') {
+        d.offset = r.h - d.offset - d.width;
+        d.hinge = d.hinge === 'end' ? 'start' : 'end';
+      }
+      d.side = next[side];
+    }
+    for (const w of state.windows) {
+      if (w.side === 'east' || w.side === 'west') w.offset = H - w.offset - w.width;
+      w.side = next[w.side];
+    }
+    for (const r of state.rooms) {
+      turn(r);
+      if (r.walls) {
+        r.walls = {
+          north: r.walls.west !== false,
+          east: r.walls.north !== false,
+          south: r.walls.east !== false,
+          west: r.walls.south !== false,
+        };
+      }
+    }
+    for (const it of state.items) turn(it);
+    for (const f of state.fixtures || []) {
+      const x = H - f.y;
+      const y = f.x;
+      f.x = x;
+      f.y = y;
+    }
+    if (next[state.frontSide]) state.frontSide = next[state.frontSide];
+    state.width = H;
+    state.depth = W;
+  }
+
+  // ==========================================================================
+  // 5. Layout checks
+  //    Each check returns { level: 'good' | 'warning' | 'error', text }.
+  // ==========================================================================
+
+  function windowChecks() {
+    const out = [];
+    const e = state.exteriorWall;
+    const windows = state.windows.filter(w => w.floor === state.floor);
+
+    for (const w of windows) {
+      const g = windowGeometry(w);
+      if (g.start < e - 0.01 || g.end > g.length - e + 0.01) {
+        out.push({ level: 'warning', text: `A window on the ${SIDE_NAME[w.side]} wall runs into a corner or past the wall.` });
+      }
+    }
+
+    for (let i = 0; i < windows.length; i++) {
+      for (let j = i + 1; j < windows.length; j++) {
+        const a = windows[i];
+        const b = windows[j];
+        if (a.side === b.side && Math.min(a.offset + a.width, b.offset + b.width) - Math.max(a.offset, b.offset) > 0.05) {
+          out.push({ level: 'warning', text: `Two windows overlap on the ${SIDE_NAME[a.side]} wall.` });
+        }
+      }
+    }
+
+    for (const d of entranceDoors(state.floor)) {
+      const g = doorGeometry(d);
+      if (!g) continue;
+      const a = g.horizontal ? Math.min(g.start.x, g.end.x) : Math.min(g.start.y, g.end.y);
+      const b = a + d.width;
+      for (const w of windows) {
+        if (w.side === g.side && Math.min(b, w.offset + w.width) - Math.max(a, w.offset) > 0.05) {
+          out.push({ level: 'warning', text: `A window overlaps the entrance door on the ${SIDE_NAME[w.side]} wall.` });
+        }
+      }
+    }
+    return out;
+  }
+
+  /** Items are checked against walls, the footprint, and each other. */
+  function itemChecks(model) {
+    const out = [];
+    const bad = new Set();
+    const e = state.exteriorWall;
+    const W = state.width;
+    const H = state.depth;
+    const items = state.items.filter(it => it.floor === state.floor);
+
+    const walls = model.rects.map(r => ({ ...r, kind: 'an interior wall' }));
+    if (e > 0) {
+      walls.push(
+        { x: 0, y: 0, w: W, h: e, kind: 'the exterior wall' },
+        { x: 0, y: H - e, w: W, h: e, kind: 'the exterior wall' },
+        { x: 0, y: e, w: e, h: H - 2 * e, kind: 'the exterior wall' },
+        { x: W - e, y: e, w: e, h: H - 2 * e, kind: 'the exterior wall' },
+      );
+    }
+
+    for (const it of items) {
+      if (it.x < -0.01 || it.y < -0.01 || it.x + it.w > W + 0.01 || it.y + it.h > H + 0.01) {
+        out.push({ level: 'error', text: `${it.name} extends outside the footprint.` });
+        bad.add(it.id);
+        continue;
+      }
+      const hit = walls.find(wall => intersection(it, wall) > 0.01);
+      if (hit) {
+        out.push({ level: 'error', text: `${it.name} overlaps ${hit.kind}.` });
+        bad.add(it.id);
+      }
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i];
+        const b = items[j];
+        if (intersection(a, b) > 0.01) {
+          out.push({ level: 'warning', text: `${a.name} overlaps ${b.name}.` });
+          bad.add(a.id);
+          bad.add(b.id);
+        }
+      }
+    }
+    return { out, bad };
+  }
+
+  /** True when two boxes touch along an edge (or overlap) by more than 6″. */
+  function roomsConnect(a, b) {
+    const xOverlap = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+    const yOverlap = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    const xGap = Math.max(0, a.x - (b.x + b.w), b.x - (a.x + a.w));
+    const yGap = Math.max(0, a.y - (b.y + b.h), b.y - (a.y + a.h));
+    return (xOverlap > 0.5 && yGap <= 0.15) || (yOverlap > 0.5 && xGap <= 0.15);
+  }
+
+  const sameBox = (a, b) =>
+    Math.abs(a.x - b.x) <= 0.5 && Math.abs(a.y - b.y) <= 0.5 && Math.abs(a.w - b.w) <= 0.5 && Math.abs(a.h - b.h) <= 0.5;
+
+  /** All layout checks for the current floor, shown in the Layout Checks panel. */
+  function layoutChecks(model) {
+    const out = [];
+    const rooms = state.rooms.filter(r => r.floor === state.floor);
+
+    // Footprint, size, and overlap
+    for (const r of rooms) {
+      if (r.x < 0 || r.y < 0 || r.x + r.w > state.width + 0.01 || r.y + r.h > state.depth + 0.01) {
+        out.push({ level: 'error', text: `${r.name} extends beyond the ${fmtSize(state.width, state.depth)} footprint.` });
+      }
+      if (r.w < 3 || r.h < 3) {
+        out.push({ level: 'warning', text: `${r.name} has a side under ${fmtLength(3)}. Check access and intended use.` });
+      }
+    }
+    for (let i = 0; i < rooms.length; i++) {
+      for (let j = i + 1; j < rooms.length; j++) {
+        if (intersection(rooms[i], rooms[j]) > 0.15) {
+          out.push({ level: 'error', text: `${rooms[i].name} overlaps ${rooms[j].name} by ${fmtArea(intersection(rooms[i], rooms[j]), false)}.` });
+        }
+      }
+    }
+
+    // Main floor circulation: walk from the hallway through connected
+    // hallway spaces and make sure entries and stairs are reachable.
+    if (state.floor === 'main') {
+      const path = findRoom('hall');
+      const stairs = findRoom('stairs-main');
+      const pathOnMain = path?.floor === 'main';
+      if (pathOnMain && path.w < 3.5) {
+        out.push({ level: 'warning', text: `The circulation path is ${fmtLength(path.w)} wide. Check passage and turning space.` });
+      }
+
+      const reach = new Set();
+      if (pathOnMain) {
+        const circulation = rooms.filter(r => r.kind === 'circulation' && !r.id.startsWith('stairs'));
+        const queue = [path];
+        reach.add(path.id);
+        while (queue.length) {
+          const current = queue.shift();
+          for (const r of circulation) {
+            if (!reach.has(r.id) && roomsConnect(current, r)) {
+              reach.add(r.id);
+              queue.push(r);
+            }
+          }
+        }
+      }
+      const reached = target => [...reach].some(id => roomsConnect(findRoom(id), target));
+
+      if (pathOnMain) {
+        for (const r of rooms.filter(room => room.kind === 'entry')) {
+          if (!reached(r)) out.push({ level: 'warning', text: `${r.name} isn’t connected to the hallway.` });
+        }
+      }
+      if (pathOnMain && stairs?.floor === 'main' && !reached(stairs)) {
+        out.push({ level: 'warning', text: 'The circulation path no longer reaches the stairs.' });
+      }
+    }
+
+    // Stairs line up between floors
+    const mainStairs = findRoom('stairs-main');
+    const basementStairs = findRoom('stairs-basement');
+    if (!mainStairs || mainStairs.floor !== 'main' || !basementStairs || basementStairs.floor !== 'basement') {
+      out.push({ level: 'warning', text: 'Main-to-basement stairs are missing from one of the floors.' });
+    } else if (!sameBox(mainStairs, basementStairs)) {
+      out.push({ level: 'error', text: 'Main and basement stairs do not line up. Align them before treating either floor as feasible.' });
+    }
+    if (state.upperEnabled) {
+      const upperStairs = findRoom('stairs-upper');
+      if (!mainStairs || mainStairs.floor !== 'main' || !upperStairs || upperStairs.floor !== 'upper') {
+        out.push({ level: 'warning', text: 'The second floor needs a stair connection to the main floor.' });
+      } else if (!sameBox(mainStairs, upperStairs)) {
+        out.push({ level: 'warning', text: 'Second-floor and main-floor stair footprints do not line up.' });
+      }
+    }
+
+    // Basement mechanical room
+    const mech = findRoom('mech');
+    const bath = findRoom('basement-bath');
+    if (state.floor === 'basement') {
+      if (mech?.floor === 'basement' && (Math.min(mech.w, mech.h) < 5 || mech.w * mech.h < 56)) {
+        out.push({ level: 'warning', text: `Mechanical room is under about ${fmtArea(56, false)} or narrower than ${fmtLength(5)}; service access needs review.` });
+      }
+      const adjacent = mech && bath && (
+        intersection({ x: mech.x, y: mech.y, w: mech.w + 0.05, h: mech.h + 0.05 }, bath) >= 0.01
+        || Math.abs(mech.y + mech.h - bath.y) <= 0.5
+        || Math.abs(bath.y + bath.h - mech.y) <= 0.5
+        || Math.abs(mech.x + mech.w - bath.x) <= 0.5
+        || Math.abs(bath.x + bath.w - mech.x) <= 0.5
+      );
+      if (mech?.floor === 'basement' && bath?.floor === 'basement' && !adjacent) {
+        out.push({ level: 'warning', text: 'Bath and mechanical room are no longer adjacent; laundry plumbing may be less direct.' });
+      }
+    }
+
+    // Windows and entrances
+    out.push(...windowChecks());
+    if (!FLOORS.some(floor => entranceDoors(floor).length)) {
+      out.push({ level: 'warning', text: 'No entrance yet. Add a doorway on an outside wall.' });
+    }
+
+    // Doorways on this floor
+    const doors = state.doors.filter(d => findRoom(d.roomId)?.floor === state.floor);
+    for (const d of doors) {
+      const g = doorGeometry(d);
+      if (!g) continue;
+      const a = g.horizontal ? g.start.x : g.start.y;
+      const b = a + d.width;
+      const onWall = model.raw.some(s => s.o === (g.horizontal ? 'h' : 'v')
+        && Math.abs(s.pos - g.axis) < 0.01 && s.start < b && s.end > a);
+      if (wallMode(g.room) === 'enclosed' && !onWall && !isExteriorSide(g.room, g.side)) {
+        out.push({ level: 'warning', text: `Door on ${g.room.name} is on a side with no wall. Turn that wall on or move the doorway.` });
+      }
+      if (wallMode(g.room) !== 'enclosed') {
+        out.push({ level: 'warning', text: `${g.room.name} is open plan; its doorway has no partition wall to cut.` });
+      }
+      if (d.offset < 0.5 || d.offset + d.width > g.length - 0.5) {
+        out.push({ level: 'warning', text: `Door on ${g.room.name} is too close to a corner or extends past the wall.` });
+      }
+      if (d.width < 2.5) {
+        out.push({ level: 'warning', text: `Door on ${g.room.name} is under ${fmtLength(2.5)} wide. Check the intended access.` });
+      }
+    }
+    for (let i = 0; i < doors.length; i++) {
+      for (let j = i + 1; j < doors.length; j++) {
+        const a = doorGeometry(doors[i]);
+        const b = doorGeometry(doors[j]);
+        if (!a || !b || a.horizontal !== b.horizontal || Math.abs(a.axis - b.axis) > 0.01) continue;
+        const startA = a.horizontal ? a.start.x : a.start.y;
+        const startB = b.horizontal ? b.start.x : b.start.y;
+        if (Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
+          out.push({ level: 'warning', text: 'Two doorway openings overlap on the same wall.' });
+        }
+      }
+    }
+
+    if (!out.length) {
+      out.push({ level: 'good', text: 'No obvious overlaps or placement conflicts found. Door swings, clearances, structure, and code still need review.' });
+    }
+    return out;
+  }
+
+  // ==========================================================================
+  // 6. Plan drawing (SVG)
+  // ==========================================================================
+
+  function element(tag, attrs = {}, parent = svg) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, String(value));
+    parent.appendChild(el);
+    return el;
+  }
+
+  function label(x, y, value, className, parent = svg) {
+    const el = element('text', { x, y, class: className }, parent);
+    el.textContent = value;
+    return el;
+  }
+
+  /** Splits a room name into at most two lines that fit the room box. */
+  function roomLabelLines(r) {
+    const max = r.w < 7 ? 9 : 20;
+    let lines = [];
+    let current = '';
+    for (const word of r.name.split(' ')) {
+      if ((current + ' ' + word).trim().length > max && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = (current + ' ' + word).trim();
+      }
+    }
+    if (current) lines.push(current);
+    lines = lines.slice(0, 2).map(line => (line.length > max ? `${line.slice(0, max - 1)}…` : line));
+    if (r.name.length > lines.join(' ').length && lines.length === 2) lines[1] = `${lines[1].slice(0, max - 1)}…`;
+    return lines;
+  }
+
+  function drawRoom(r) {
+    const group = element('g', {
+      'data-room': r.id,
+      'data-focus-key': `plan-room:${r.id}`,
+      role: 'button',
+      tabindex: '0',
+      'aria-label': `${r.name}, ${spokenSize(r.w, r.h)}. Select or drag to move.`,
+    });
+    element('rect', {
+      x: r.x,
+      y: r.y,
+      width: r.w,
+      height: r.h,
+      rx: 0.15,
+      fill: ROOM_FILLS[r.kind] || ROOM_FILLS.utility,
+      stroke: '#8aa7ac',
+      class: `room ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
+    }, group);
+
+    const lines = roomLabelLines(r);
+    const centerX = r.x + r.w / 2;
+    const centerY = r.y + r.h / 2;
+    const spacing = 0.82;
+    const top = centerY - (lines.length - 1) * spacing / 2 - 0.2;
+    for (let i = 0; i < lines.length; i++) {
+      const text = label(centerX, top + i * spacing, lines[i], 'room-label', group);
+      text.setAttribute('text-anchor', 'middle');
+      if (r.w < 7) text.setAttribute('font-size', '.56px');
+    }
+    const dims = label(centerX, top + lines.length * spacing + 0.12, fmtSize(r.w, r.h), 'room-dim', group);
+    dims.setAttribute('text-anchor', 'middle');
+    element('title', {}, group).textContent = `${r.name}: ${spokenSize(r.w, r.h)}, ${spokenArea(r.w * r.h)}`;
+  }
+
+  function drawExteriorWalls() {
+    const e = state.exteriorWall;
+    const W = state.width;
+    const H = state.depth;
+    if (e <= 0) return;
+    element('rect', { x: 0, y: 0, width: W, height: e, class: 'exterior-wall' });
+    element('rect', { x: 0, y: H - e, width: W, height: e, class: 'exterior-wall' });
+    element('rect', { x: 0, y: e, width: e, height: H - 2 * e, class: 'exterior-wall' });
+    element('rect', { x: W - e, y: e, width: e, height: H - 2 * e, class: 'exterior-wall' });
+  }
+
+  function drawInteriorDoor(d) {
+    const g = doorGeometry(d);
+    if (!g) return;
+    const group = element('g', {
+      'data-door': d.id,
+      'data-focus-key': `plan-door:${d.id}`,
+      class: `interior-door ${state.selectedDoor === d.id ? 'selected' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      'aria-label': `${spokenLength(d.width)} doorway on the ${SIDE_NAME[g.side] || g.side} wall of ${g.room.name}`,
+    });
+
+    // Quarter-circle swing path from the closed leaf to the open leaf.
+    const a1 = Math.atan2(g.far.y - g.hinge.y, g.far.x - g.hinge.x);
+    const a2 = Math.atan2(g.open.y - g.hinge.y, g.open.x - g.hinge.x);
+    let turn = a2 - a1;
+    while (turn > Math.PI) turn -= Math.PI * 2;
+    while (turn < -Math.PI) turn += Math.PI * 2;
+    let path = '';
+    for (let i = 0; i <= 16; i++) {
+      const a = a1 + turn * i / 16;
+      path += `${i ? 'L' : 'M'}${(g.hinge.x + Math.cos(a) * d.width).toFixed(3)} ${(g.hinge.y + Math.sin(a) * d.width).toFixed(3)} `;
+    }
+
+    element('path', { d: path, class: 'door-swing' }, group);
+    // Wider invisible stroke so the swing is easy to grab.
+    element('path', { d: path, fill: 'none', stroke: 'transparent', 'stroke-width': 0.7 }, group);
+    element('line', { x1: g.hinge.x, y1: g.hinge.y, x2: g.open.x, y2: g.open.y, class: 'door-leaf' }, group);
+    element('circle', { cx: g.hinge.x, cy: g.hinge.y, r: 0.13, class: 'door-hinge' }, group);
+    element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} doorway, swings ${d.swing === 'out' ? 'out' : 'in'}`;
+  }
+
+  function drawWindow(w) {
+    const g = windowGeometry(w);
+    const r = g.rect;
+    const group = element('g', {
+      'data-window': w.id,
+      'data-focus-key': `plan-window:${w.id}`,
+      class: `window ${state.selectedWindow === w.id ? 'selected' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      'aria-label': `${spokenLength(w.width)} window on the ${SIDE_NAME[w.side]} wall`,
+    });
+    element('rect', { x: r.x, y: r.y, width: r.w, height: r.h, class: 'window-frame' }, group);
+
+    const inset = g.e * 0.28;
+    if (g.horizontal) {
+      for (const y of [r.y + inset, r.y + r.h - inset]) {
+        element('line', { x1: r.x, y1: y, x2: r.x + r.w, y2: y, class: 'window-pane' }, group);
+      }
+      element('line', { x1: r.x, y1: r.y + r.h / 2, x2: r.x + r.w, y2: r.y + r.h / 2, class: 'window-glass' }, group);
+    } else {
+      for (const x of [r.x + inset, r.x + r.w - inset]) {
+        element('line', { x1: x, y1: r.y, x2: x, y2: r.y + r.h, class: 'window-pane' }, group);
+      }
+      element('line', { x1: r.x + r.w / 2, y1: r.y, x2: r.x + r.w / 2, y2: r.y + r.h, class: 'window-glass' }, group);
+    }
+    element('title', {}, group).textContent = `Window: ${fmtLength(w.width)} on the ${SIDE_NAME[w.side]} wall, ${fmtLength(w.offset)} from the corner`;
+  }
+
+  function drawFrontSide() {
+    const side = state.frontSide;
+    const W = state.width;
+    const H = state.depth;
+    const o = 0.45;
+    if (!side || side === 'none') return;
+    const line = {
+      north: { x1: 0, y1: -o, x2: W, y2: -o },
+      south: { x1: 0, y1: H + o, x2: W, y2: H + o },
+      west: { x1: -o, y1: 0, x2: -o, y2: H },
+      east: { x1: W + o, y1: 0, x2: W + o, y2: H },
+    }[side];
+    element('line', { ...line, class: 'front-side' });
+    const [x, y, rotation] = {
+      north: [W / 2, -2.2, 0],
+      south: [W / 2, H + 2.85, 0],
+      west: [-2.6, H / 2, -90],
+      east: [W + 2.35, H / 2, 90],
+    }[side];
+    const text = label(x, y, 'FRONT OF HOUSE', 'front-label');
+    if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
+  }
+
+  function drawEntrance(d) {
+    const g = doorGeometry(d);
+    if (!g) return;
+    const W = state.width;
+    const H = state.depth;
+    const mid = g.horizontal ? (g.start.x + g.end.x) / 2 : (g.start.y + g.end.y) / 2;
+    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1, 0]
+      : g.side === 'south' ? [mid, H + 0.85, 0]
+      : g.side === 'west' ? [-0.8, mid, -90]
+      : [W + 0.95, mid, 90];
+    if (g.horizontal) {
+      const lineY = g.side === 'north' ? -0.12 : H + 0.12;
+      element('line', { x1: g.start.x, y1: lineY, x2: g.end.x, y2: lineY, class: 'door-line' });
+    } else {
+      const lineX = g.side === 'west' ? -0.12 : W + 0.12;
+      element('line', { x1: lineX, y1: g.start.y, x2: lineX, y2: g.end.y, class: 'door-line' });
+    }
+    const text = label(x, y, 'ENTRANCE', 'door-label entrance-label');
+    if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
+  }
+
+  function drawItems(model) {
+    const { bad } = itemChecks(model);
+    for (const it of state.items.filter(item => item.floor === state.floor)) {
+      const group = element('g', {
+        'data-item': it.id,
+        'data-focus-key': `plan-item:${it.id}`,
+        class: `item ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
+        role: 'button',
+        tabindex: '0',
+        'aria-label': `${it.name}, ${spokenSize(it.w, it.h, true)}. Select or drag to move.`,
+      });
+      element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
+      const size = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
+      const maxChars = Math.max(4, Math.floor(it.w / (size * 0.62)));
+      const name = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
+      const text = label(it.x + it.w / 2, it.y + it.h / 2, name, 'item-label', group);
+      text.setAttribute('font-size', `${size}px`);
+      element('title', {}, group).textContent = `${it.name}: ${fmtItemSize(it.w, it.h)}`;
+    }
+  }
+
+  /** Grid: 1′ squares with a heavier line every 5′, or 25 cm squares with a heavier line every 1 m. */
+  function drawGrid(W, H) {
+    const step = isMetric() ? 0.25 / M_PER_FT : 1;
+    const major = isMetric() ? 4 : 5;
+    for (let i = 1; i * step < W - 1e-6; i++) {
+      const x = i * step;
+      element('line', { x1: x, x2: x, y1: 0, y2: H, class: i % major === 0 ? 'grid-major' : 'grid-line' });
+    }
+    for (let i = 1; i * step < H - 1e-6; i++) {
+      const y = i * step;
+      element('line', { x1: 0, x2: W, y1: y, y2: y, class: i % major === 0 ? 'grid-major' : 'grid-line' });
+    }
+  }
+
+  /** Draws the current floor. The SVG uses feet as its units. */
+  function renderPlan(model) {
+    const W = state.width;
+    const H = state.depth;
+    svg.replaceChildren();
+    svg.setAttribute('viewBox', `-3 -3 ${W + 6} ${H + 6}`);
+    // Fit the plan inside the scroll box (a size container), then apply zoom.
+    const ratio = ((W + 6) / (H + 6)).toFixed(5);
+    svg.setAttribute('style', `width:calc(min(100cqw, 100cqh * ${ratio}) * ${state.zoom / 100});min-width:0;max-height:none;height:auto;aspect-ratio:${W + 6}/${H + 6};margin:0 auto`);
+
+    element('rect', { x: 0, y: 0, width: W, height: H, class: 'outline' });
+    drawGrid(W, H);
+
+    for (const r of state.rooms.filter(room => room.floor === state.floor)) drawRoom(r);
+    for (const s of model.segments) {
+      element('line', s.o === 'h'
+        ? { x1: s.start, y1: s.pos, x2: s.end, y2: s.pos, class: 'partition-wall', 'stroke-width': s.t }
+        : { x1: s.pos, y1: s.start, x2: s.pos, y2: s.end, class: 'partition-wall', 'stroke-width': s.t });
+    }
+    drawExteriorWalls();
+    for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) drawInteriorDoor(d);
+    for (const w of state.windows.filter(win => win.floor === state.floor)) drawWindow(w);
+    drawFrontSide();
+    for (const d of entranceDoors(state.floor)) drawEntrance(d);
+    if (state.showItems !== false) drawItems(model);
+
+    // Overall dimensions
+    element('line', { x1: 0, y1: H + 1.25, x2: W, y2: H + 1.25, class: 'dimension' });
+    label(W / 2, H + 2.15, fmtLength(W), 'dimension-text');
+    const depthLabel = label(-1.85, H / 2, fmtLength(H), 'dimension-text');
+    depthLabel.setAttribute('transform', `rotate(-90 -1.85 ${H / 2})`);
+  }
+
+  // ==========================================================================
+  // 7. UI panels and the main render
+  // ==========================================================================
+
+  /**
+   * Updates a panel list in place. Each row is matched to its existing
+   * element by `key`, so rows survive a redraw. This matters when a field
+   * saves on blur: clicking a row blurs the field, the save redraws the
+   * lists, and the click still reaches the same row element.
+   *
+   * A row is { key, className } plus either `text`, or `name` and `size` for
+   * two-part rows. Clickable rows also have `onSelect`, which must depend only
+   * on values in the key because it is attached once, when the row is created.
+   * `tag` defaults to 'button'.
+   */
+  function syncList(list, rows) {
+    const existing = new Map([...list.children].map(el => [el.dataset.focusKey, el]));
+    rows.forEach((row, index) => {
+      const el = existing.get(row.key) || createRow(row);
+      updateRow(el, row);
+      // Move only when out of place; moving an element can drop its focus.
+      if (list.children[index] !== el) list.insertBefore(el, list.children[index] || null);
+    });
+    while (list.children.length > rows.length) list.lastElementChild.remove();
+  }
+
+  function createRow(row) {
+    const el = document.createElement(row.tag || 'button');
+    el.dataset.focusKey = row.key;
+    if (el.tagName === 'BUTTON') {
+      el.type = 'button';
+      el.addEventListener('click', row.onSelect);
+    }
+    if (row.size !== undefined) el.append(document.createElement('span'), document.createElement('small'));
+    return el;
+  }
+
+  function updateRow(el, row) {
+    el.className = row.className;
+    if (row.pressed !== undefined) el.setAttribute('aria-pressed', String(row.pressed));
+    if (row.size !== undefined) {
+      el.children[0].textContent = row.name;
+      el.children[1].textContent = row.size;
+    } else {
+      el.textContent = row.text;
+    }
+  }
+
+  function fillChecks(listEl, checks) {
+    listEl.replaceChildren();
+    for (const check of checks) {
+      const li = document.createElement('li');
+      li.className = check.level;
+      li.textContent = check.text;
+      listEl.append(li);
+    }
+  }
+
+  /** Spaces panel: every room, grouped by floor. */
+  function renderRoomList() {
+    const rows = [];
+    for (const floor of floorOrder()) {
+      const group = state.rooms.filter(r => r.floor === floor);
+      rows.push({ key: `heading:${floor}`, tag: 'div', className: 'room-list-heading', text: `${floorName(floor)} · ${group.length}` });
+      if (!group.length) rows.push({ key: `empty:${floor}`, tag: 'p', className: 'room-list-empty', text: 'No spaces yet.' });
+      for (const r of group) {
+        const active = state.selectedRoom === r.id && state.floor === floor;
+        const id = r.id;
+        rows.push({
+          key: `room-row:${floor}:${id}`,
+          className: `room-row ${active ? 'active' : ''}`,
+          pressed: active,
+          name: r.name,
+          size: fmtSize(r.w, r.h),
+          onSelect: () => {
+            state.floor = floor;
+            state.selectedRoom = id;
+            render();
+          },
+        });
+      }
+    }
+    syncList($('roomList'), rows);
+    $('roomCount').textContent = `${state.rooms.length} spaces`;
+  }
+
+  /** Selected Space panel. */
+  function renderSelectedRoom(model) {
+    const room = findRoom(state.selectedRoom);
+    for (const id of ['roomName', 'roomKind', 'roomFloor', 'roomWalls', 'roomWallT', 'roomX', 'roomY', 'roomW', 'roomH', 'duplicateRoom', 'deleteRoom']) {
+      $(id).disabled = !room;
+    }
+    $('roomName').value = room?.name || '';
+    $('roomKind').value = room?.kind || 'utility';
+    $('roomFloor').value = room?.floor || state.floor;
+    $('roomWalls').value = room ? wallMode(room) : 'open';
+    for (const [key, id] of [['x', 'roomX'], ['y', 'roomY'], ['w', 'roomW'], ['h', 'roomH']]) {
+      $(id).value = room ? lengthField(room[key]) : '';
+    }
+
+    const wallsHidden = !room || wallMode(room) !== 'enclosed';
+    $('wallControls').hidden = wallsHidden;
+    $('wallTLabel').hidden = wallsHidden;
+    $('roomWallT').value = room && Number.isFinite(room.wallT) ? thicknessField(room.wallT) : '';
+    $('roomWallT').placeholder = `${thicknessField(state.interiorWall)} (default)`;
+
+    for (const box of document.querySelectorAll('.wall-side')) {
+      const side = box.dataset.side;
+      const exterior = !!room && isExteriorSide(room, side);
+      box.checked = !!room && !exterior && hasSide(room, side);
+      box.disabled = !room || exterior;
+      const wrapper = box.closest('label');
+      wrapper.classList.toggle('exterior', exterior);
+      wrapper.title = exterior ? `${box.dataset.label}: exterior SIP wall, no partition added` : '';
+    }
+
+    $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
+    $('selectedClear').textContent = room
+      ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
+      : 'Add a space to edit it.';
+  }
+
+  /** Interior Doorways panel. */
+  function renderDoorList() {
+    const doors = state.doors.filter(d => findRoom(d.roomId)?.floor === state.floor);
+    if (!doors.some(d => d.id === state.selectedDoor)) state.selectedDoor = null;
+    $('doorCount').textContent = `${doors.length} on this floor`;
+
+    syncList($('doorList'), doors.map(d => {
+      const id = d.id;
+      return {
+        key: `door-row:${id}`,
+        className: `door-row ${id === state.selectedDoor ? 'active' : ''}`,
+        text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}`,
+        onSelect: () => {
+          state.selectedDoor = id;
+          state.selectedRoom = findDoor(id).roomId;
+          render();
+        },
+      };
+    }));
+
+    const selected = findDoor(state.selectedDoor);
+    const room = findRoom(state.selectedRoom);
+    $('addDoor').disabled = !room || wallMode(room) !== 'enclosed';
+    $('addDoor').title = room && wallMode(room) === 'open' ? 'Set the selected room to Enclosed Walls to add a doorway.' : '';
+    $('doorEditor').hidden = !selected;
+    if (selected) {
+      $('doorSide').value = selected.side;
+      $('doorHinge').value = selected.hinge;
+      $('doorOffset').value = lengthField(selected.offset);
+      $('doorWidth').value = lengthField(selected.width);
+      $('doorSwing').value = selected.swing;
+    }
+  }
+
+  /** Windows panel. */
+  function renderWindowList() {
+    const windows = state.windows.filter(w => w.floor === state.floor);
+    if (!windows.some(w => w.id === state.selectedWindow)) state.selectedWindow = null;
+    $('windowCount').textContent = `${windows.length} on this floor`;
+
+    const sorted = [...windows].sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side) || a.offset - b.offset);
+    syncList($('windowList'), sorted.map(w => {
+      const id = w.id;
+      return {
+        key: `window-row:${id}`,
+        className: `door-row ${id === state.selectedWindow ? 'active' : ''}`,
+        text: `${capitalize(SIDE_NAME[w.side])} Wall · ${fmtLength(w.width)} at ${fmtLength(w.offset)}`,
+        onSelect: () => {
+          state.selectedWindow = id;
+          render();
+        },
+      };
+    }));
+
+    const selected = findWindow(state.selectedWindow);
+    $('windowEditor').hidden = !selected;
+    if (selected) {
+      $('windowSide').value = selected.side;
+      $('windowOffset').value = lengthField(selected.offset);
+      $('windowWidth').value = lengthField(selected.width);
+    }
+  }
+
+  /** Furniture & Fixtures panel. */
+  function renderItemList(model) {
+    const items = state.items.filter(it => it.floor === state.floor);
+    if (!items.some(it => it.id === state.selectedItem)) state.selectedItem = null;
+    const { out, bad } = itemChecks(model);
+    $('itemCount').textContent = `${items.length} on this floor`;
+
+    const rows = items.map(it => {
+      const id = it.id;
+      return {
+        key: `item-row:${id}`,
+        className: `room-row ${id === state.selectedItem ? 'active' : ''} ${bad.has(id) ? 'item-bad' : ''}`,
+        name: it.name,
+        size: fmtItemSize(it.w, it.h),
+        onSelect: () => {
+          state.selectedItem = id;
+          render();
+        },
+      };
+    });
+    if (!items.length) rows.push({ key: 'empty', tag: 'p', className: 'room-list-empty', text: 'No items on this floor yet.' });
+    syncList($('itemList'), rows);
+
+    const selected = findItem(state.selectedItem);
+    $('itemEditor').hidden = !selected;
+    if (selected) {
+      $('itemName').value = selected.name;
+      $('itemX').value = lengthField(selected.x, true);
+      $('itemY').value = lengthField(selected.y, true);
+      $('itemW').value = lengthField(selected.w, true);
+      $('itemH').value = lengthField(selected.h, true);
+    }
+
+    const emptyText = items.length ? 'No items overlap walls or each other.' : 'Add an item to check it against walls and other items.';
+    fillChecks($('itemIssues'), out.length ? out : [{ level: 'good', text: emptyText }]);
+    $('showItems').checked = state.showItems !== false;
+  }
+
+  function renderMetrics(model) {
+    const footprint = state.width * state.depth;
+    $('footprintArea').textContent = fmtArea(footprint);
+    $('shellArea').textContent = fmtArea(model.shellArea);
+    $('clearArea').textContent = fmtArea(Math.max(0, model.shellArea - model.partitionArea));
+    $('aboveGradeArea').textContent = fmtArea(footprint * (state.upperEnabled ? 2 : 1));
+  }
+
+  // Keyboard users keep their place: when a render rebuilds the element that
+  // had focus (a list row or a shape on the plan), focus moves to its
+  // replacement. Mouse and touch behavior is unchanged.
+  let usingKeyboard = false;
+  document.addEventListener('keydown', () => { usingKeyboard = true; }, true);
+  document.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
+
+  /** Redraws everything from state and saves the draft. */
+  function render() {
+    const focusKey = usingKeyboard ? document.activeElement?.dataset?.focusKey : null;
+
+    const rooms = state.rooms.filter(r => r.floor === state.floor);
+    if (!rooms.some(r => r.id === state.selectedRoom)) state.selectedRoom = rooms[0]?.id || null;
+
+    // Floor tabs and header controls
+    for (const [id, floor] of [['mainTab', 'main'], ['upperTab', 'upper'], ['basementTab', 'basement']]) {
+      $(id).setAttribute('aria-selected', String(state.floor === floor));
+    }
+    $('upperTab').hidden = !state.upperEnabled;
+    $('addFloor').hidden = state.upperEnabled;
+    $('removeFloor').hidden = !state.upperEnabled;
+    $('roomFloor').querySelector('[value="upper"]').hidden = !state.upperEnabled;
+    $('selectedFloor').textContent = floorName(state.floor);
+
+    // Units, footprint, walls, and zoom
+    applyUnits();
+    $('frontSide').value = state.frontSide || 'north';
+    $('houseWidth').value = lengthField(state.width);
+    $('houseDepth').value = lengthField(state.depth);
+    $('exteriorWall').value = thicknessField(state.exteriorWall);
+    $('interiorWall').value = thicknessField(state.interiorWall);
+    $('zoomLabel').textContent = `${state.zoom}%`;
+    $('zoomOut').disabled = state.zoom <= ZOOM_MIN;
+    $('zoomIn').disabled = state.zoom >= ZOOM_MAX;
+    $('scaleLabel').textContent = `${fmtSize(state.width, state.depth)} footprint`;
+
+    renderRoomList();
+    const model = wallModel(state.floor);
+    renderSelectedRoom(model);
+    renderMetrics(model);
+
+    const findings = layoutChecks(model);
+    $('checkCount').textContent = findings.some(x => x.level !== 'good') ? `${findings.length} to review` : 'No conflicts';
+    fillChecks($('issues'), findings);
+
+    renderPlan(model);
+    renderDoorList();
+    renderWindowList();
+    renderItemList(model);
+    saveState();
+
+    if (focusKey && document.activeElement?.dataset?.focusKey !== focusKey) {
+      document.querySelector(`[data-focus-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
+    }
+  }
+
+  // ==========================================================================
+  // 8. Confirmation dialog
+  // ==========================================================================
+
+  let pendingConfirmation = null;
+  let confirmationSource = null;
+
+  /**
+   * Shows the confirmation dialog. With infoOnly, it's a one-button notice.
+   * Focus returns to `source` when the dialog closes.
+   */
+  function askConfirmation(title, detail, actionLabel, action, source, infoOnly = false) {
+    pendingConfirmation = action;
+    confirmationSource = source || null;
+    $('confirmCancel').hidden = infoOnly;
+    $('confirmYes').classList.toggle('confirm-neutral', infoOnly);
+    $('confirmTitle').textContent = title;
+    $('confirmDetail').textContent = detail;
+    $('confirmYes').textContent = actionLabel;
+    $('confirmOverlay').hidden = false;
+    $('confirmCancel').focus();
+  }
+
+  function closeConfirmation(restoreFocus = true) {
+    $('confirmOverlay').hidden = true;
+    pendingConfirmation = null;
+    if (restoreFocus) confirmationSource?.focus();
+    confirmationSource = null;
+  }
+
+  $('confirmCancel').addEventListener('click', () => closeConfirmation());
+  $('confirmYes').addEventListener('click', () => {
+    const action = pendingConfirmation;
+    const source = confirmationSource;
+    closeConfirmation(false);
+    action?.();
+    source?.focus();
+  });
+  $('confirmOverlay').addEventListener('click', e => {
+    if (e.target === $('confirmOverlay')) closeConfirmation();
+  });
+  $('confirmOverlay').addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeConfirmation();
+    }
+    if (e.key === 'Tab') {
+      // Keep focus inside the dialog.
+      const first = $('confirmCancel');
+      const last = $('confirmYes');
+      if ((e.shiftKey && document.activeElement === first) || (!e.shiftKey && document.activeElement === last)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    }
+  });
+
+  // ==========================================================================
+  // 9. Event handlers
+  // ==========================================================================
+
+  /** Registers a change handler that parses the field as a number. */
+  function onNumberChange(id, handler) {
+    $(id).addEventListener('change', e => {
+      handler(Number(e.target.value), e.target.value);
+      render();
+    });
+  }
+
+  // --- Floors ---------------------------------------------------------------
+
+  const openFloor = floor => {
+    state.floor = floor;
+    render();
+  };
+  $('mainTab').addEventListener('click', () => openFloor('main'));
+  $('upperTab').addEventListener('click', () => openFloor('upper'));
+  $('basementTab').addEventListener('click', () => openFloor('basement'));
+
+  $('addFloor').addEventListener('click', () => {
+    if (state.upperEnabled) return;
+    const main = findRoom('stairs-main');
+    state.upperEnabled = true;
+    state.rooms.push({
+      id: 'stairs-upper',
+      name: 'Stairs',
+      floor: 'upper',
+      x: main?.x ?? 18,
+      y: main?.y ?? 12,
+      w: main?.w ?? 6,
+      h: main?.h ?? 12,
+      kind: 'circulation',
+    });
+    state.floor = 'upper';
+    state.selectedRoom = 'stairs-upper';
+    render();
+  });
+
+  $('removeFloor').addEventListener('click', () => {
+    if (!state.upperEnabled) return;
+    const count = state.rooms.filter(r => r.floor === 'upper').length;
+    askConfirmation('Remove Second Floor?', `This will remove ${count} space${count === 1 ? '' : 's'} and their doorways on that floor.`, 'Remove Second Floor', () => {
+      const upperIds = new Set(state.rooms.filter(r => r.floor === 'upper').map(r => r.id));
+      state.doors = state.doors.filter(d => !upperIds.has(d.roomId));
+      state.rooms = state.rooms.filter(r => r.floor !== 'upper');
+      state.items = state.items.filter(it => it.floor !== 'upper');
+      state.windows = state.windows.filter(w => w.floor !== 'upper');
+      state.upperEnabled = false;
+      state.floor = 'main';
+      state.selectedRoom = findRoom('living')?.id || null;
+      render();
+    }, $('removeFloor'));
+  });
+
+  // --- Footprint and wall thickness -----------------------------------------
+
+  for (const [id, key] of [['houseWidth', 'width'], ['houseDepth', 'depth']]) {
+    onNumberChange(id, (_, raw) => {
+      const ft = readField(id, raw);
+      if (ft !== null) state[key] = snap(ft);
+    });
+  }
+  // Wall thicknesses are entered in inches or centimeters and stored in feet.
+  for (const [id, key] of [['exteriorWall', 'exteriorWall'], ['interiorWall', 'interiorWall']]) {
+    onNumberChange(id, (_, raw) => {
+      const ft = raw.trim() === '' ? null : readField(id, raw);
+      if (ft !== null) state[key] = ft;
+    });
+  }
+  $('frontSide').addEventListener('change', e => {
+    state.frontSide = e.target.value;
+    render();
+  });
+
+  // --- Rooms ----------------------------------------------------------------
+
+  /** First spot on a 2′ grid where a w × h box doesn't overlap any room. */
+  function freePosition(floor, w, h) {
+    const rooms = state.rooms.filter(r => r.floor === floor);
+    for (let y = 0; y <= state.depth - h; y += 2) {
+      for (let x = 0; x <= state.width - w; x += 2) {
+        const trial = { x, y, w, h };
+        if (rooms.every(r => intersection(trial, r) < 0.01)) return { x, y };
+      }
+    }
+    return { x: 0, y: 0 };
+  }
+
+  /** Adds a new room, or a copy of `source`, on the current floor. */
+  function createRoom(source) {
+    const floor = state.floor;
+    const w = source?.w ?? 10;
+    const h = source?.h ?? 10;
+    const pos = freePosition(floor, w, h);
+    const room = {
+      id: newId('space'),
+      name: source ? `${source.name} Copy` : `New Room ${state.rooms.filter(r => r.floor === floor).length + 1}`,
+      floor,
+      x: pos.x,
+      y: pos.y,
+      w,
+      h,
+      kind: source?.kind || 'utility',
+      wallMode: source ? wallMode(source) : 'enclosed',
+      ...(source && Number.isFinite(source.wallT) ? { wallT: source.wallT } : {}),
+      ...(source?.walls ? { walls: { ...source.walls } } : {}),
+    };
+    state.rooms.push(room);
+    state.selectedRoom = room.id;
+    render();
+    $('roomName').focus();
+    $('roomName').select();
+  }
+
+  $('addRoom').addEventListener('click', () => createRoom());
+  $('duplicateRoom').addEventListener('click', () => {
+    const room = findRoom(state.selectedRoom);
+    if (room) createRoom(room);
+  });
+  $('deleteRoom').addEventListener('click', () => {
+    const room = findRoom(state.selectedRoom);
+    if (!room) return;
+    const id = room.id;
+    askConfirmation(`Remove ${room.name}?`, 'This will also remove any doorway attached to this space.', 'Remove Room', () => {
+      state.rooms = state.rooms.filter(r => r.id !== id);
+      state.doors = state.doors.filter(d => d.roomId !== id);
+      state.selectedRoom = null;
+      render();
+    }, $('deleteRoom'));
+  });
+
+  /** Registers a change handler that edits the selected room. */
+  function onRoomChange(id, handler) {
+    $(id).addEventListener('change', e => {
+      const room = findRoom(state.selectedRoom);
+      if (room) handler(room, e.target.value);
+      render();
+    });
+  }
+
+  onRoomChange('roomName', (room, value) => {
+    const name = value.trim().slice(0, 48);
+    if (name) room.name = name;
+  });
+  onRoomChange('roomKind', (room, value) => { room.kind = value; });
+  onRoomChange('roomWalls', (room, value) => { room.wallMode = value; });
+  onRoomChange('roomFloor', (room, value) => {
+    if (floorOrder().includes(value)) {
+      room.floor = value;
+      state.floor = value;
+    }
+  });
+  for (const [id, key] of [['roomX', 'x'], ['roomY', 'y'], ['roomW', 'w'], ['roomH', 'h']]) {
+    onRoomChange(id, (room, value) => {
+      const ft = readField(id, value);
+      if (ft !== null) room[key] = snap(ft);
+    });
+  }
+  // An empty room thickness uses the interior default.
+  $('roomWallT').addEventListener('change', e => {
+    const room = findRoom(state.selectedRoom);
+    if (!room) return;
+    const value = e.target.value.trim();
+    const ft = readField('roomWallT', value);
+    if (value === '') delete room.wallT;
+    else if (ft !== null) room.wallT = ft;
+    render();
+  });
+  for (const box of document.querySelectorAll('.wall-side')) {
+    box.addEventListener('change', () => {
+      const room = findRoom(state.selectedRoom);
+      if (!room || box.disabled) return;
+      room.walls = { north: true, east: true, south: true, west: true, ...room.walls, [box.dataset.side]: box.checked };
+      render();
+    });
+  }
+  $('alignStairs').addEventListener('click', () => {
+    const main = findRoom('stairs-main');
+    if (main) {
+      for (const id of ['stairs-basement', 'stairs-upper']) {
+        const other = findRoom(id);
+        if (other) for (const key of ['x', 'y', 'w', 'h']) other[key] = main[key];
+      }
+    }
+    render();
+  });
+
+  // --- Doorways -------------------------------------------------------------
+
+  $('addDoor').addEventListener('click', () => {
+    const room = findRoom(state.selectedRoom);
+    if (!room || wallMode(room) !== 'enclosed') return;
+    const side = room.x > state.width / 2 ? 'west' : 'east';
+    const width = Math.min(3, Math.max(2, room.h - 1));
+    const door = {
+      id: newId('door'),
+      roomId: room.id,
+      side,
+      offset: doorSnap(Math.max(0.5, (room.h - width) / 2)),
+      width,
+      hinge: 'start',
+      swing: 'in',
+    };
+    state.doors.push(door);
+    state.selectedDoor = door.id;
+    render();
+    $('doorOffset').focus();
+  });
+
+  /** Registers a change handler that edits the selected doorway. */
+  function onDoorChange(id, handler) {
+    $(id).addEventListener('change', e => {
+      const door = findDoor(state.selectedDoor);
+      if (door) handler(door, e.target.value);
+      render();
+    });
+  }
+
+  onDoorChange('doorSide', (door, value) => {
+    door.side = value;
+    const room = findRoom(door.roomId);
+    const length = isHorizontalSide(door.side) ? room.w : room.h;
+    door.offset = doorSnap(Math.max(0.5, (length - door.width) / 2));
+  });
+  onDoorChange('doorHinge', (door, value) => { door.hinge = value; });
+  onDoorChange('doorSwing', (door, value) => { door.swing = value; });
+  for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
+    onDoorChange(id, (door, value) => {
+      const ft = readField(id, value);
+      if (ft !== null) door[key] = doorSnap(ft);
+    });
+  }
+  $('removeDoor').addEventListener('click', () => {
+    if (!state.selectedDoor) return;
+    state.doors = state.doors.filter(d => d.id !== state.selectedDoor);
+    state.selectedDoor = null;
+    render();
+  });
+
+  // --- Windows --------------------------------------------------------------
+
+  $('addWindow').addEventListener('click', () => {
+    const room = findRoom(state.selectedRoom);
+    const W = state.width;
+    const H = state.depth;
+    const e = state.exteriorWall;
+    let side = 'north';
+    let offset = W / 2 - 1.5;
+    let width = 3;
+    // Start on the selected room's outside wall when it has one.
+    if (room && room.floor === state.floor) {
+      const exteriorSide = SIDES.find(s => isExteriorSide(room, s));
+      if (exteriorSide) {
+        side = exteriorSide;
+        const horizontal = isHorizontalSide(side);
+        const a = Math.max(e, horizontal ? room.x : room.y);
+        const b = Math.min((horizontal ? W : H) - e, horizontal ? room.x + room.w : room.y + room.h);
+        width = Math.max(1, Math.min(3, b - a - 1));
+        offset = a + (b - a - width) / 2;
+      }
+    }
+    const win = { id: newId('window'), floor: state.floor, side, offset: itemSnap(offset), width };
+    state.windows.push(win);
+    state.selectedWindow = win.id;
+    render();
+  });
+
+  $('windowSide').addEventListener('change', e => {
+    const win = findWindow(state.selectedWindow);
+    if (win) {
+      win.side = e.target.value;
+      const g = windowGeometry(win);
+      win.offset = itemSnap(Math.min(Math.max(0, win.offset), g.length - win.width));
+    }
+    render();
+  });
+  for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
+    $(id).addEventListener('change', e => {
+      const win = findWindow(state.selectedWindow);
+      const ft = readField(id, e.target.value);
+      if (win && ft !== null) win[key] = itemSnap(ft);
+      render();
+    });
+  }
+  $('removeWindow').addEventListener('click', () => {
+    if (!state.selectedWindow) return;
+    state.windows = state.windows.filter(w => w.id !== state.selectedWindow);
+    state.selectedWindow = null;
+    render();
+  });
+
+  // --- Furniture and fixtures -----------------------------------------------
+
+  $('showItems').addEventListener('change', e => {
+    state.showItems = e.target.checked;
+    render();
+  });
+
+  $('addItem').addEventListener('click', () => {
+    const [name, w, h] = ITEM_PRESETS[$('itemPreset').value] || ITEM_PRESETS.custom;
+    const room = findRoom(state.selectedRoom);
+    let x = 1.5;
+    let y = 1.5;
+    // Center new items in the selected room.
+    if (room && room.floor === state.floor) {
+      x = itemSnap(room.x + room.w / 2 - w / 2);
+      y = itemSnap(room.y + room.h / 2 - h / 2);
+    }
+    const item = { id: newId('item'), name, floor: state.floor, x, y, w, h };
+    state.items.push(item);
+    state.selectedItem = item.id;
+    state.showItems = true;
+    render();
+  });
+
+  $('itemName').addEventListener('change', e => {
+    const item = findItem(state.selectedItem);
+    if (item) {
+      const name = e.target.value.trim().slice(0, 40);
+      if (name) item.name = name;
+    }
+    render();
+  });
+  for (const [id, key] of [['itemX', 'x'], ['itemY', 'y'], ['itemW', 'w'], ['itemH', 'h']]) {
+    $(id).addEventListener('change', e => {
+      const ft = readField(id, e.target.value);
+      const item = findItem(state.selectedItem);
+      if (item && ft !== null) item[key] = itemSnap(ft);
+      render();
+    });
+  }
+  $('rotateItem').addEventListener('click', () => {
+    const item = findItem(state.selectedItem);
+    if (!item) return;
+    const cx = item.x + item.w / 2;
+    const cy = item.y + item.h / 2;
+    [item.w, item.h] = [item.h, item.w];
+    item.x = itemSnap(cx - item.w / 2);
+    item.y = itemSnap(cy - item.h / 2);
+    render();
+  });
+  $('duplicateItem').addEventListener('click', () => {
+    const item = findItem(state.selectedItem);
+    if (!item) return;
+    const copy = { ...item, id: newId('item'), name: `${item.name} Copy`, x: item.x + 0.5, y: item.y + 0.5 };
+    state.items.push(copy);
+    state.selectedItem = copy.id;
+    render();
+  });
+  $('removeItem').addEventListener('click', () => {
+    const item = findItem(state.selectedItem);
+    if (!item) return;
+    state.items = state.items.filter(x => x.id !== item.id);
+    state.selectedItem = null;
+    render();
+  });
+
+  // --- Rotate and zoom ------------------------------------------------------
+
+  $('rotateRight').addEventListener('click', () => {
+    rotateClockwise();
+    render();
+  });
+  $('rotateLeft').addEventListener('click', () => {
+    rotateClockwise();
+    rotateClockwise();
+    rotateClockwise();
+    render();
+  });
+  $('zoomOut').addEventListener('click', () => {
+    state.zoom = Math.max(ZOOM_MIN, state.zoom - ZOOM_STEP);
+    render();
+  });
+  $('zoomIn').addEventListener('click', () => {
+    state.zoom = Math.min(ZOOM_MAX, state.zoom + ZOOM_STEP);
+    render();
+  });
+
+  // --- Units -----------------------------------------------------------------
+
+  function setUnits(next) {
+    if (next === units) return;
+    units = next;
+    try {
+      localStorage.setItem(UNITS_KEY, units);
+    } catch (_) {
+      // Storage unavailable: the choice lasts until the page is closed.
+    }
+    render();
+  }
+  $('unitsImperial').addEventListener('click', () => setUnits('imperial'));
+  $('unitsMetric').addEventListener('click', () => setUnits('metric'));
+
+  // --- Plan: select, drag, and keyboard nudges -----------------------------
+
+  const SHAPE_SELECTOR = '[data-door], [data-window], [data-room], [data-item]';
+  let drag = null;
+
+  /** Pointer position in plan units (feet). */
+  function planPoint(event) {
+    const p = svg.createSVGPoint();
+    p.x = event.clientX;
+    p.y = event.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  // On touch screens, dragging is off by default so swiping scrolls the page;
+  // the Drag to Move switch turns it on.
+  const touchUI = matchMedia('(pointer: coarse)').matches;
+  let dragMode = !touchUI;
+  const applyDragMode = () => {
+    svg.classList.toggle('tap-only', !dragMode);
+    $('dragMode').checked = dragMode;
+  };
+  $('dragMode').addEventListener('change', e => {
+    dragMode = e.target.checked;
+    applyDragMode();
+  });
+  applyDragMode();
+
+  function selectShape(group) {
+    if (group.dataset.door) {
+      state.selectedDoor = group.dataset.door;
+      state.selectedRoom = findDoor(group.dataset.door).roomId;
+    } else if (group.dataset.window) {
+      state.selectedWindow = group.dataset.window;
+    } else if (group.dataset.room) {
+      state.selectedRoom = group.dataset.room;
+      state.selectedDoor = null;
+      state.selectedWindow = null;
+    } else if (group.dataset.item) {
+      state.selectedItem = group.dataset.item;
+    }
+  }
+
+  // Tap mode: a tap selects.
+  svg.addEventListener('click', e => {
+    if (dragMode) return;
+    const group = e.target.closest(SHAPE_SELECTOR);
+    if (!group) return;
+    selectShape(group);
+    render();
+  });
+
+  svg.addEventListener('pointerdown', e => {
+    if (!dragMode && e.pointerType !== 'mouse') return;
+    const group = e.target.closest(SHAPE_SELECTOR);
+    if (!group) return;
+    const p = planPoint(e);
+    if (group.dataset.door) {
+      const d = findDoor(group.dataset.door);
+      const g = doorGeometry(d);
+      state.selectedDoor = d.id;
+      state.selectedRoom = d.roomId;
+      drag = { type: 'door', id: d.id, delta: (g.horizontal ? p.x - g.room.x : p.y - g.room.y) - d.offset };
+    } else if (group.dataset.window) {
+      const w = findWindow(group.dataset.window);
+      const g = windowGeometry(w);
+      state.selectedWindow = w.id;
+      drag = { type: 'window', id: w.id, delta: (g.horizontal ? p.x : p.y) - w.offset };
+    } else if (group.dataset.room) {
+      const r = findRoom(group.dataset.room);
+      state.selectedRoom = r.id;
+      state.selectedDoor = null;
+      state.selectedWindow = null;
+      drag = { type: 'room', id: r.id, dx: p.x - r.x, dy: p.y - r.y };
+    } else {
+      const it = findItem(group.dataset.item);
+      state.selectedItem = it.id;
+      drag = { type: 'item', id: it.id, dx: p.x - it.x, dy: p.y - it.y };
+    }
+    svg.setPointerCapture(e.pointerId);
+    render();
+    e.preventDefault();
+  });
+
+  svg.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const p = planPoint(e);
+    if (drag.type === 'room') {
+      const r = findRoom(drag.id);
+      r.x = snap(p.x - drag.dx);
+      r.y = snap(p.y - drag.dy);
+    } else if (drag.type === 'item') {
+      const it = findItem(drag.id);
+      it.x = itemSnap(p.x - drag.dx);
+      it.y = itemSnap(p.y - drag.dy);
+    } else if (drag.type === 'window') {
+      const w = findWindow(drag.id);
+      const g = windowGeometry(w);
+      w.offset = itemSnap(Math.max(0, Math.min(g.length - w.width, (g.horizontal ? p.x : p.y) - drag.delta)));
+    } else {
+      const d = findDoor(drag.id);
+      const g = doorGeometry(d);
+      d.offset = doorSnap(Math.max(0, Math.min(g.length - d.width, (g.horizontal ? p.x - g.room.x : p.y - g.room.y) - drag.delta)));
+    }
+    render();
+  });
+
+  svg.addEventListener('pointerup', () => { drag = null; });
+  svg.addEventListener('pointercancel', () => { drag = null; });
+
+  // Keyboard: Enter or Space selects a focused shape. Arrow keys move it 6″
+  // or 10 cm (windows 3″ or 5 cm); Shift moves 1′ or 25 cm. Doorways and
+  // windows slide along their wall.
+  svg.addEventListener('keydown', e => {
+    if (!['Enter', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const group = e.target.closest(SHAPE_SELECTOR);
+    if (!group) return;
+    e.preventDefault();
+    const isArrow = e.key.startsWith('Arrow');
+
+    if (group.dataset.window) {
+      state.selectedWindow = group.dataset.window;
+      if (isArrow) {
+        const w = findWindow(state.selectedWindow);
+        const g = windowGeometry(w);
+        const amount = nudgeStep(e.shiftKey, true);
+        const forward = g.horizontal ? e.key === 'ArrowRight' : e.key === 'ArrowDown';
+        const back = g.horizontal ? e.key === 'ArrowLeft' : e.key === 'ArrowUp';
+        if (forward || back) w.offset = Math.max(0, Math.min(g.length - w.width, w.offset + (forward ? amount : -amount)));
+      }
+      render();
+      return;
+    }
+
+    if (group.dataset.room) {
+      state.selectedRoom = group.dataset.room;
+    } else if (group.dataset.door) {
+      state.selectedDoor = group.dataset.door;
+      state.selectedRoom = findDoor(state.selectedDoor).roomId;
+    } else {
+      state.selectedItem = group.dataset.item;
+    }
+
+    if (isArrow) {
+      const amount = nudgeStep(e.shiftKey, false);
+      if (group.dataset.door) {
+        const d = findDoor(group.dataset.door);
+        const g = doorGeometry(d);
+        const forward = g.horizontal ? e.key === 'ArrowRight' : e.key === 'ArrowDown';
+        const back = g.horizontal ? e.key === 'ArrowLeft' : e.key === 'ArrowUp';
+        if (forward || back) d.offset = Math.max(0, Math.min(g.length - d.width, d.offset + (forward ? amount : -amount)));
+      } else {
+        const shape = group.dataset.room ? findRoom(group.dataset.room) : findItem(group.dataset.item);
+        if (e.key === 'ArrowUp') shape.y -= amount;
+        if (e.key === 'ArrowDown') shape.y += amount;
+        if (e.key === 'ArrowLeft') shape.x -= amount;
+        if (e.key === 'ArrowRight') shape.x += amount;
+      }
+    }
+    render();
+  });
+
+  // --- Top bar menu (collapsed into a Menu button on narrow screens) ---------
+
+  const closeMenu = () => {
+    $('actionMenu').classList.remove('open');
+    $('menuToggle').setAttribute('aria-expanded', 'false');
+  };
+  $('menuToggle').addEventListener('click', e => {
+    e.stopPropagation();
+    const open = !$('actionMenu').classList.contains('open');
+    $('actionMenu').classList.toggle('open', open);
+    $('menuToggle').setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#actionMenu') && !e.target.closest('#menuToggle')) closeMenu();
+  });
+  $('actionMenu').addEventListener('click', e => {
+    if (e.target.closest('button')) closeMenu();
+  });
+
+  $('reset').addEventListener('click', () => askConfirmation(
+    'Reset to Defaults?',
+    'Your current layout in this browser will be replaced with the default layout. Export it first if you want to keep a copy.',
+    'Reset to Defaults',
+    async () => {
+      state = (await loadDefaultLayout()) || createDefaultState();
+      render();
+    },
+    $('reset'),
+  ));
+
+  // ==========================================================================
+  // 10. Export, import, and print
+  // ==========================================================================
+
+  $('exportLayout').addEventListener('click', () => {
+    const data = { app: 'sip-house-planner', format: 1, exportedAt: new Date().toISOString(), layout: state };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sip-house-layout-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  });
+
+  $('importLayout').addEventListener('click', () => $('importFile').click());
+  $('importFile').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    let next = null;
+    try {
+      const data = JSON.parse(await file.text());
+      next = sanitizeLayout(data && data.layout ? data.layout : data);
+    } catch (_) {
+      // Not JSON: handled below.
+    }
+    if (!next) {
+      askConfirmation('Couldn’t Import That File', 'It isn’t a layout exported from SIP House Planner, or it’s damaged. Nothing was changed.', 'OK', null, $('importLayout'), true);
+      return;
+    }
+    const count = next.rooms.length;
+    askConfirmation('Import This Layout?', `“${file.name}” has ${count} space${count === 1 ? '' : 's'}. It will replace the layout currently in this browser.`, 'Import Layout', () => {
+      state = next;
+      render();
+    }, $('importLayout'));
+  });
+
+  /** Builds one print page per floor (letter, landscape) in #printSheets. */
+  function buildPrintSheets() {
+    const host = $('printSheets');
+    host.replaceChildren();
+
+    // Print without selection highlights, then restore the selection.
+    const keep = {
+      floor: state.floor,
+      room: state.selectedRoom,
+      door: state.selectedDoor,
+      item: state.selectedItem,
+      window: state.selectedWindow,
+    };
+    state.selectedRoom = null;
+    state.selectedDoor = null;
+    state.selectedItem = null;
+    state.selectedWindow = null;
+
+    const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const ratio = `${state.width + 6}/${state.depth + 6}`;
+    for (const floor of floorOrder()) {
+      state.floor = floor;
+      const model = wallModel(floor);
+      renderPlan(model);
+      const clone = svg.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.removeAttribute('tabindex');
+      clone.setAttribute('style', `display:block;width:auto;height:100%;max-width:100%;aspect-ratio:${ratio};margin:0 auto`);
+
+      const page = document.createElement('section');
+      page.className = 'print-page';
+
+      const head = document.createElement('header');
+      head.className = 'print-head';
+      const title = document.createElement('h1');
+      title.textContent = floorName(floor);
+      const meta = document.createElement('p');
+      meta.textContent = `SIP House Planner · ${fmtSize(state.width, state.depth)} footprint · approx. ${fmtArea(Math.max(0, model.shellArea - model.partitionArea))} after walls · ${date}`;
+      head.append(title, meta);
+
+      const plan = document.createElement('div');
+      plan.className = 'print-plan';
+      plan.append(clone);
+
+      const list = document.createElement('ul');
+      list.className = 'print-rooms';
+      for (const r of state.rooms.filter(room => room.floor === floor)) {
+        const li = document.createElement('li');
+        const name = document.createElement('strong');
+        name.textContent = r.name;
+        li.append(name, ` ${fmtSize(r.w, r.h)}`);
+        list.append(li);
+      }
+
+      const note = document.createElement('p');
+      note.className = 'print-note';
+      note.textContent = `Concept sketch only. 1 grid square = ${gridSquareText()}. Not a construction document.`;
+
+      page.append(head, plan, list, note);
+      host.append(page);
+    }
+
+    state.floor = keep.floor;
+    state.selectedWindow = keep.window;
+    state.selectedRoom = keep.room;
+    state.selectedDoor = keep.door;
+    state.selectedItem = keep.item;
+    render();
+  }
+
+  $('printPlan').addEventListener('click', () => {
+    buildPrintSheets();
+    window.print();
+  });
+
+  // ==========================================================================
+  // 11. Start-up
+  // ==========================================================================
+
+  render();
+  // First visit (no browser draft): load default-layout.json when served.
+  if (!hasSavedDraft) {
+    loadDefaultLayout().then(next => {
+      if (next) {
+        state = next;
+        render();
+      }
+    });
+  }
+})();
+
+// ============================================================================
+// Plan area resize handle
+// Drag the bar under the plan to change its height, double-click to fit the
+// whole plan, or use the Up and Down arrow keys (Shift for bigger steps).
+// The height is remembered in this browser.
+// ============================================================================
+(() => {
+  'use strict';
+
+  const scroll = document.querySelector('.plan-scroll');
+  const handle = document.getElementById('planResize');
+  if (!scroll || !handle) return;
+
+  const STORAGE_KEY = 'sip-house-planner-plan-height';
+  const LEGACY_STORAGE_KEY = 'sals-sip-house-planner-height';
+  const MIN_HEIGHT = 280;
+
+  const currentHeight = () => scroll.getBoundingClientRect().height;
+  const updateAria = h => handle.setAttribute('aria-valuenow', String(Math.round(h)));
+
+  const apply = h => {
+    h = Math.max(MIN_HEIGHT, Math.round(h));
+    scroll.style.height = `${h}px`;
+    updateAria(h);
+    return h;
+  };
+
+  const save = h => {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(Math.round(h)));
+    } catch (_) {
+      // Storage unavailable: the height just won't be remembered.
+    }
+  };
+
+  try {
+    if (localStorage.getItem(STORAGE_KEY) === null) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy !== null) {
+        localStorage.setItem(STORAGE_KEY, legacy);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
+    const saved = Number(localStorage.getItem(STORAGE_KEY));
+    if (Number.isFinite(saved) && saved >= MIN_HEIGHT) apply(saved);
+  } catch (_) {
+    // Storage unavailable: keep the default height.
+  }
+  handle.setAttribute('aria-valuemin', String(MIN_HEIGHT));
+  updateAria(currentHeight());
+
+  let start = null;
+  handle.addEventListener('pointerdown', e => {
+    start = { y: e.clientY, h: currentHeight() };
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('dragging');
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove', e => {
+    if (start) apply(start.h + e.clientY - start.y);
+  });
+  const end = () => {
+    if (!start) return;
+    start = null;
+    handle.classList.remove('dragging');
+    save(currentHeight());
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+
+  // Double-click: fit the height to the plan at the current width.
+  handle.addEventListener('dblclick', () => {
+    const style = getComputedStyle(scroll);
+    const viewBox = document.getElementById('plan').viewBox.baseVal;
+    const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const contentWidth = scroll.clientWidth - padX;
+    if (viewBox && viewBox.width && contentWidth > 0) {
+      const scrollbar = scroll.offsetHeight - scroll.clientHeight;
+      save(apply(contentWidth * viewBox.height / viewBox.width + padY + scrollbar + 2));
+    }
+  });
+
+  handle.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const step = e.shiftKey ? 100 : 25;
+    save(apply(currentHeight() + (e.key === 'ArrowDown' ? step : -step)));
+  });
+})();

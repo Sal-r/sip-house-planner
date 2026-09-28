@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SIP House Planner</title>
+  <meta name="description" content="A browser-based floor plan tool for concept planning SIP houses, small homes, and apartments. Lay out rooms, walls, doorways, windows, and furniture across multiple floors, in feet or metric.">
+  <meta name="theme-color" content="#102c38">
+  <link rel="canonical" href="https://sal-r.github.io/sip-house-planner/">
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+
+  <!-- Link previews (Open Graph and X/Twitter). These URLs must be absolute. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SIP House Planner">
+  <meta property="og:title" content="SIP House Planner">
+  <meta property="og:description" content="Floor plans in your browser for SIP homes, houses, and apartments: rooms, walls, doorways, windows, furniture, and multiple floors, in feet or metric.">
+  <meta property="og:url" content="https://sal-r.github.io/sip-house-planner/">
+  <meta property="og:image" content="https://sal-r.github.io/sip-house-planner/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SIP House Planner showing a color-coded floor plan with rooms, doorways, and layout checks.">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">▦</span>
+      <div>
+        <strong>SIP House Planner</strong>
+        <span>Floor Plans for SIP Homes and More</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="private-pill">My Workspace</span>
+      <button id="menuToggle" type="button" class="quiet-button menu-toggle" aria-expanded="false" aria-controls="actionMenu">Menu</button>
+      <div id="actionMenu" class="action-menu">
+        <button id="printPlan" type="button" class="quiet-button">Print / PDF</button>
+        <button id="exportLayout" type="button" class="quiet-button">Export Layout</button>
+        <button id="importLayout" type="button" class="quiet-button">Import Layout</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <button id="reset" type="button" class="quiet-button">Reset to Defaults</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="canvas-section" aria-label="Scaled floor plan">
+      <div class="intro">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Working Plan · <span id="unitName">Feet</span></p>
+            <h1>Explore the Layout</h1>
+            <p>
+              <span class="hint-mouse">Drag a space to move it. Select one to rename, resize, or move it.</span>
+              <span class="hint-touch">Tap a space to select it. Turn on Drag to Move to reposition things.</span>
+            </p>
+          </div>
+          <div class="floor-controls">
+            <div class="floor-tabs">
+              <div class="floor-tab-list" role="tablist" aria-label="Floor">
+                <button id="basementTab" role="tab" aria-selected="false" type="button">Basement</button>
+                <button id="mainTab" role="tab" aria-selected="true" type="button">Main Floor</button>
+                <button id="upperTab" role="tab" aria-selected="false" type="button" hidden>Second Floor</button>
+              </div>
+              <button id="addFloor" class="add-floor-button" type="button">+ Second Floor</button>
+            </div>
+          </div>
+        </div>
+        <div class="metric-row" aria-live="polite">
+          <div><span>Gross Footprint / Floor</span><strong id="footprintArea">&nbsp;</strong></div>
+          <div><span>Inside Exterior Walls</span><strong id="shellArea">&nbsp;</strong></div>
+          <div><span>Approx. Floor After Walls</span><strong id="clearArea">&nbsp;</strong></div>
+          <div><span>Gross Above Grade</span><strong id="aboveGradeArea">&nbsp;</strong></div>
+        </div>
+        <p class="metric-note">Approximate areas use the editable wall widths and doorway openings. Room boxes may extend into the wall band; exact clear dimensions, structure, and code need professional review.</p>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-toolbar">
+          <span id="scaleLabel">32′ × 42′ footprint</span>
+          <span class="toolbar-right">
+            <label class="layer-toggle move-toggle" title="When off, swiping the plan scrolls the page and a tap selects. Turn on to drag rooms, items, doors, and windows.">
+              <input id="dragMode" type="checkbox"> Drag to Move
+            </label>
+            <label class="layer-toggle"><input id="showItems" type="checkbox" checked> Show Items</label>
+            <span class="legend-square" aria-hidden="true"></span>
+            <span id="gridLegend">1 square = 1′</span>
+            <span class="unit-toggle" role="group" aria-label="Units">
+              <button id="unitsImperial" type="button" aria-pressed="true" title="Feet and inches">ft</button><button id="unitsMetric" type="button" aria-pressed="false" title="Meters and centimeters">m</button>
+            </span>
+            <button id="rotateLeft" class="zoom-button" type="button" aria-label="Rotate the whole house left" title="Rotate the whole house 90° left">↺</button><button id="rotateRight" class="zoom-button rotate-gap" type="button" aria-label="Rotate the whole house right" title="Rotate the whole house 90° right">↻</button><button id="zoomOut" class="zoom-button" type="button" aria-label="Zoom out">−</button><output id="zoomLabel" aria-label="Zoom level">100%</output><button id="zoomIn" class="zoom-button" type="button" aria-label="Zoom in">+</button>
+          </span>
+        </div>
+        <div class="plan-scroll">
+          <svg id="plan" role="group" aria-label="Editable scaled floor plan" tabindex="0"></svg>
+        </div>
+        <div id="planResize" class="plan-resize" role="separator" aria-orientation="horizontal" aria-label="Resize plan area" tabindex="0" title="Drag to resize. Double-click to fit the whole plan."></div>
+        <p class="plan-note">Room dimensions are nominal plan boxes and all areas are approximate. Items snap to <span id="itemSnapLabel">3″</span> steps. Walls consume space inside them; the area figures subtract the drawn walls approximately. Concept sketch only. Drag the bar under the plan to resize it; double-click the bar to fit the plan to the full width. At 100% zoom the plan scales to fit the box.</p>
+      </div>
+    </section>
+
+    <aside class="sidebar" aria-label="Planning controls">
+      <section class="panel dimensions-panel">
+        <div class="panel-title"><h2>Footprint</h2><span>Editable</span></div>
+        <div class="two-fields">
+          <label>Width <span data-unit="length">ft</span><input id="houseWidth" type="number" min="24" max="80" step="1" inputmode="decimal"></label>
+          <label>Depth <span data-unit="length">ft</span><input id="houseDepth" type="number" min="24" max="80" step="1" inputmode="decimal"></label>
+        </div>
+        <label class="select-label front-select">Front of House
+          <select id="frontSide">
+            <option value="north">Top</option>
+            <option value="east">Right</option>
+            <option value="south">Bottom</option>
+            <option value="west">Left</option>
+            <option value="none">Not Set</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="panel walls-panel">
+        <div class="panel-title"><h2>Wall Thickness</h2><span>Approximate</span></div>
+        <div class="two-fields">
+          <label>Exterior <span data-unit="thickness">in</span><input id="exteriorWall" type="number" min="0" max="24" step="0.25" inputmode="decimal"></label>
+          <label>Interior <span data-unit="thickness">in</span><input id="interiorWall" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
+        </div>
+        <p class="field-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+      </section>
+
+      <div class="side-stack">
+        <section class="panel room-list-panel">
+          <div class="panel-title"><h2>Spaces</h2><span id="roomCount">&nbsp;</span></div>
+          <div id="roomList" class="room-list" role="group" aria-label="Rooms by floor"></div>
+          <button id="addRoom" class="primary-button" type="button">+ Add Room</button>
+          <button id="removeFloor" class="quiet-danger" type="button" hidden>Remove Second Floor</button>
+        </section>
+
+        <section class="panel items-panel">
+          <div class="panel-title"><h2>Furniture &amp; Fixtures</h2><span id="itemCount">0 on this floor</span></div>
+          <p class="field-help lead">Items sit on their own layer above the rooms. They are only checked against walls and each other. New items start in the selected room.</p>
+          <div class="item-add">
+            <select id="itemPreset" aria-label="Item Type">
+              <option value="custom">Custom Box · 3′ × 3′</option>
+              <option value="base">Base Cabinets · 6′ × 2′</option>
+              <option value="island">Kitchen Island · 6′ × 3′</option>
+              <option value="fridge">Refrigerator · 3′ × 2.5′</option>
+              <option value="range">Range · 2.5′ × 2.5′</option>
+              <option value="sofa">Sofa · 7′ × 3′</option>
+              <option value="loveseat">Loveseat · 5′ × 3′</option>
+              <option value="chair">Armchair · 3′ × 3′</option>
+              <option value="coffee">Coffee Table · 4′ × 2′</option>
+              <option value="dining">Dining Table · 6′ × 3.5′</option>
+              <option value="queen">Queen Bed · 5′ × 6.75′</option>
+              <option value="king">King Bed · 6.5′ × 6.75′</option>
+              <option value="twin">Twin Bed · 3.25′ × 6.25′</option>
+              <option value="dresser">Dresser · 5′ × 1.5′</option>
+              <option value="desk">Desk · 5′ × 2.5′</option>
+              <option value="toilet">Toilet · 1.75′ × 2.5′</option>
+              <option value="vanity">Vanity · 3′ × 1.75′</option>
+              <option value="tub">Tub / Shower · 5′ × 2.5′</option>
+              <option value="washer">Washer / Dryer · 2.5′ × 2.5′</option>
+              <option value="heater">Water Heater · 2′ × 2′</option>
+              <option value="handler">Air Handler · 2.5′ × 2.5′</option>
+              <option value="bench">Workbench · 6′ × 2.5′</option>
+            </select>
+            <button id="addItem" class="primary-button" type="button">+ Add Item</button>
+          </div>
+          <div id="itemList" class="room-list item-list" role="group" aria-label="Items on this floor"></div>
+          <div id="itemEditor" class="door-editor" hidden>
+            <label class="select-label">Name<input id="itemName" type="text" maxlength="40" autocomplete="off"></label>
+            <div class="four-fields">
+              <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
+              <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
+              <label>Width <span data-unit="length">ft</span><input id="itemW" type="number" min="0.5" max="80" step="0.25"></label>
+              <label>Depth <span data-unit="length">ft</span><input id="itemH" type="number" min="0.5" max="80" step="0.25"></label>
+            </div>
+            <div class="room-actions">
+              <button id="rotateItem" class="inline-button" type="button">Rotate 90°</button>
+              <button id="duplicateItem" class="inline-button" type="button">Duplicate</button>
+              <button id="removeItem" class="delete-button" type="button">Remove</button>
+            </div>
+          </div>
+          <h3 class="item-checks-title">Item Checks</h3>
+          <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
+        </section>
+      </div>
+
+      <div class="side-stack side-stack-2">
+        <section class="panel selected-panel">
+          <div class="panel-title"><h2>Selected Space</h2><span id="selectedFloor">Main Floor</span></div>
+          <label class="select-label">Name
+            <input id="roomName" type="text" maxlength="48" autocomplete="off" placeholder="Room Name" list="roomNameIdeas">
+            <datalist id="roomNameIdeas">
+              <option value="Living Room"><option value="Family Room"><option value="Great Room"><option value="Den">
+              <option value="Dining Room"><option value="Kitchen"><option value="Pantry"><option value="Breakfast Nook">
+              <option value="Primary Bedroom"><option value="Bedroom"><option value="Guest Bedroom"><option value="Nursery">
+              <option value="Office"><option value="Study"><option value="Primary Bath"><option value="Full Bath">
+              <option value="Three-Quarter Bath"><option value="Half Bath"><option value="Powder Room"><option value="Walk-In Closet">
+              <option value="Closet"><option value="Linen Closet"><option value="Coat Closet"><option value="Entry">
+              <option value="Foyer"><option value="Mudroom"><option value="Back Entry"><option value="Hallway">
+              <option value="Stairs"><option value="Landing"><option value="Laundry Room"><option value="Mechanical Room">
+              <option value="Utility Room"><option value="Storage"><option value="Garage"><option value="Workshop">
+              <option value="Flex Space"><option value="Bonus Room"><option value="Rec Room"><option value="Media Room">
+              <option value="Gym"><option value="Secure Room"><option value="Reading Nook">
+            </datalist>
+          </label>
+          <div class="two-fields compact-row">
+            <label>Type
+              <select id="roomKind">
+                <option value="social">Living Space</option>
+                <option value="private">Bedroom</option>
+                <option value="wet">Bathroom</option>
+                <option value="entry">Entry / Exit</option>
+                <option value="circulation">Hallway / Stairs</option>
+                <option value="utility">Utility / Storage</option>
+              </select>
+            </label>
+            <label>Floor
+              <select id="roomFloor">
+                <option value="main">Main Floor</option>
+                <option value="upper" hidden>Second Floor</option>
+                <option value="basement">Basement</option>
+              </select>
+            </label>
+          </div>
+          <div class="two-fields compact-row">
+            <label>Partitions
+              <select id="roomWalls">
+                <option value="enclosed">Enclosed Walls</option>
+                <option value="open">Open Plan</option>
+              </select>
+            </label>
+            <label id="wallTLabel" class="wt-label">Thickness <span data-unit="thickness">in</span><input id="roomWallT" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
+          </div>
+          <div id="wallControls" class="wall-controls">
+            <fieldset class="wall-checks" title="Grayed-out sides sit on the exterior SIP wall, so no partition is added. A wall shared with a neighboring room shows if either room has it checked.">
+              <legend>Walls On <span>gray = exterior SIP wall</span></legend>
+              <label class="wall-check"><input type="checkbox" class="wall-side" data-side="west" data-label="Left"> Left</label>
+              <label class="wall-check"><input type="checkbox" class="wall-side" data-side="east" data-label="Right"> Right</label>
+              <label class="wall-check"><input type="checkbox" class="wall-side" data-side="north" data-label="Top"> Top</label>
+              <label class="wall-check"><input type="checkbox" class="wall-side" data-side="south" data-label="Bottom"> Bottom</label>
+            </fieldset>
+          </div>
+          <div class="four-fields room-coordinates">
+            <label>X <span data-unit="length">ft</span><input id="roomX" type="number" step="0.5"></label>
+            <label>Y <span data-unit="length">ft</span><input id="roomY" type="number" step="0.5"></label>
+            <label>Width <span data-unit="length">ft</span><input id="roomW" type="number" min="2" max="80" step="0.5"></label>
+            <label>Depth <span data-unit="length">ft</span><input id="roomH" type="number" min="2" max="80" step="0.5"></label>
+          </div>
+          <p id="selectedClear" class="field-help"></p>
+          <div class="room-actions">
+            <button id="duplicateRoom" class="inline-button" type="button">Duplicate</button>
+            <button id="alignStairs" class="inline-button" type="button" title="Match every floor's stairs to the main floor stairs">Align All Staircases</button>
+            <button id="deleteRoom" class="delete-button" type="button">Remove</button>
+          </div>
+        </section>
+
+        <section class="panel doors-panel">
+          <div class="panel-title"><h2>Interior Doorways</h2><span id="doorCount">0 on this floor</span></div>
+          <p class="field-help lead">Adds a doorway to the selected room. The quarter circle shows the swing.</p>
+          <button id="addDoor" class="primary-button" type="button">+ Add Doorway</button>
+          <div id="doorList" class="door-list" role="group" aria-label="Doorways on this floor"></div>
+          <div id="doorEditor" class="door-editor" hidden>
+            <div class="two-fields">
+              <label>Wall
+                <select id="doorSide">
+                  <option value="north">Top</option>
+                  <option value="east">Right</option>
+                  <option value="south">Bottom</option>
+                  <option value="west">Left</option>
+                </select>
+              </label>
+              <label>Hinge
+                <select id="doorHinge">
+                  <option value="start">Start of Opening</option>
+                  <option value="end">End of Opening</option>
+                </select>
+              </label>
+            </div>
+            <div class="two-fields">
+              <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.5"></label>
+              <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.5"></label>
+            </div>
+            <label class="select-label">Swing
+              <select id="doorSwing">
+                <option value="in">Into Selected Room</option>
+                <option value="out">Out of Selected Room</option>
+              </select>
+            </label>
+            <button id="removeDoor" class="delete-button" type="button">Remove Doorway</button>
+          </div>
+        </section>
+
+        <section class="panel windows-panel">
+          <div class="panel-title"><h2>Windows</h2><span id="windowCount">0 on this floor</span></div>
+          <p class="field-help lead">Windows sit in the outside walls. A new window starts on the selected room’s outside wall.</p>
+          <button id="addWindow" class="primary-button" type="button">+ Add Window</button>
+          <div id="windowList" class="door-list" role="group" aria-label="Windows on this floor"></div>
+          <div id="windowEditor" class="door-editor" hidden>
+            <div class="two-fields">
+              <label>Wall
+                <select id="windowSide">
+                  <option value="north">Top</option>
+                  <option value="east">Right</option>
+                  <option value="south">Bottom</option>
+                  <option value="west">Left</option>
+                </select>
+              </label>
+              <label>Width <span data-unit="length">ft</span><input id="windowWidth" type="number" min="1" max="20" step="0.25"></label>
+            </div>
+            <label class="select-label">From Corner <span><span data-unit="length">ft</span>, from the top or left end</span><input id="windowOffset" type="number" min="0" step="0.25"></label>
+            <button id="removeWindow" class="delete-button" type="button">Remove Window</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel findings">
+        <div class="panel-title"><h2>Layout Checks</h2><span id="checkCount">&nbsp;</span></div>
+        <ul id="issues" aria-live="polite"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <div id="confirmOverlay" class="confirm-overlay" hidden>
+    <div class="confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmDetail">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmDetail"></p>
+      <div class="confirm-actions">
+        <button id="confirmCancel" class="quiet-button" type="button">Cancel</button>
+        <button id="confirmYes" class="confirm-danger" type="button">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Changes save in this browser on this device.</span>
+    <span>SIP envelope, structural spans, HVAC design, plumbing, code, and real clearances require a local design team.</span>
+  </footer>
+
+  <div id="printSheets" class="print-sheets" aria-hidden="true"></div>
+</body>
+</html>

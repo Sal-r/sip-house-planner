@@ -1,0 +1,20 @@
+Copyright (c) 2026 Sal-r. All rights reserved.
+
+You may use the hosted version of SIP House Planner at
+https://sal-r.github.io/sip-house-planner/ free of charge.
+
+The source code, design, and other files in this repository are not licensed
+for reuse. No permission is granted to copy, modify, merge, publish,
+distribute, sublicense, or sell them, in whole or in part, without prior
+written permission from the copyright holder. Viewing and forking this
+repository on GitHub is permitted as described in GitHub's Terms of Service.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+SIP House Planner is a concept planning tool. It does not produce construction
+documents, and its output must not be relied on for structural, code, or
+construction decisions.

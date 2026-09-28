@@ -1,0 +1,19 @@
+SIP House Planner: running it on your own computer (Windows)
+
+1. Keep all of the files together in one folder.
+2. Double-click Start-Planner.bat.
+3. Your browser opens the planner at http://127.0.0.1:8000
+4. Leave the "SIP House Planner" command window open while you work.
+   Close it when you are done.
+
+The launcher needs Python 3 (Anaconda, Miniconda, or python.org all work).
+If it cannot find Python, open Start-Planner.bat in Notepad and follow the
+note at the top.
+
+Your work saves automatically in this browser. Use Export Layout to keep a
+copy or to move a layout between computers or browsers.
+
+You can also open index.html directly, but it will use the built-in layout
+instead of default-layout.json.
+
+Online version: https://sal-r.github.io/sip-house-planner/

@@ -1,0 +1,17 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Layouts exported from the app (keeps personal drafts out of the repo).
+# default-layout.json is not matched by this pattern, so it stays tracked.
+sip-house-layout-*.json
