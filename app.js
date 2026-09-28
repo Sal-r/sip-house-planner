@@ -77,6 +77,28 @@
     bench: ['Workbench', 6, 2.5],
   };
 
+  // Suggested sizes for the menu in each panel. Choosing one applies it to the
+  // selected space, doorway, window, or item. Rooms vary too much for a long
+  // list, so only the two bathrooms are offered.
+  const ROOM_PRESETS = {
+    halfBath: ['Half Bath', 'wet', 5, 5],
+    fullBath: ['Full Bath', 'wet', 5, 8],
+  };
+  const DOOR_PRESETS = {
+    closet: ['Closet', 2],
+    bathroom: ['Bathroom', 2.5],
+    standard: ['Standard', 3],
+    double: ['Double', 5],
+    wideDouble: ['Wide Double', 6],
+  };
+  const WINDOW_PRESETS = {
+    small: ['Small', 2],
+    standard: ['Standard', 3],
+    wide: ['Wide', 4],
+    large: ['Large', 6],
+    picture: ['Picture', 8],
+  };
+
   // ==========================================================================
   // 2. State: defaults, validation, and loading
   // ==========================================================================
@@ -517,10 +539,6 @@
         else $(id).setAttribute(attr, String(limits[attr]));
       }
     }
-    for (const option of $('itemPreset').options) {
-      const [name, w, h] = ITEM_PRESETS[option.value];
-      option.textContent = `${name} · ${fmtItemSize(w, h)}`;
-    }
     $('unitName').textContent = isMetric() ? 'Meters' : 'Feet';
     $('gridLegend').textContent = `1 square = ${gridSquareText()}`;
     $('itemSnapLabel').textContent = isMetric() ? '5 cm' : '3″';
@@ -706,6 +724,38 @@
       : w.side === 'west' ? { x: 0, y: a, w: e, h: w.width }
       : { x: W - e, y: a, w: e, h: w.width };
     return { horizontal, length: horizontal ? W : H, start: a, end: a + w.width, rect, e };
+  }
+
+  /**
+   * The room a window belongs to: the room whose outside wall the window
+   * overlaps most. If it overlaps none, the nearest one. The selected room
+   * wins a tie. Returns null when no room touches that wall.
+   */
+  function roomBesideWindow(w) {
+    const horizontal = isHorizontalSide(w.side);
+    let best = null;
+    let bestScore = -Infinity;
+    for (const r of state.rooms) {
+      if (r.floor !== w.floor || !isExteriorSide(r, w.side)) continue;
+      const start = horizontal ? r.x : r.y;
+      const end = start + (horizontal ? r.w : r.h);
+      // Positive: how far the window overlaps the room. Negative: the gap.
+      const score = Math.min(end, w.offset + w.width) - Math.max(start, w.offset);
+      if (score > bestScore || (score === bestScore && r.id === state.selectedRoom)) {
+        best = r;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /** Slides a window along its wall so it is centered on the room's side of that wall. */
+  function centerWindowOnRoom(w, room) {
+    const horizontal = isHorizontalSide(w.side);
+    const start = horizontal ? room.x : room.y;
+    const span = horizontal ? room.w : room.h;
+    const wallLength = horizontal ? state.width : state.depth;
+    w.offset = Math.max(0, Math.min(wallLength - w.width, start + (span - w.width) / 2));
   }
 
   /** Turns the whole house 90° clockwise on every floor. */
@@ -1277,6 +1327,26 @@
     select.value = selectedValue || '';
   }
 
+  /**
+   * Fills a "Suggested sizes" menu. `presets` is [{ value, text }]. The menu
+   * shows the preset the selected record already matches, or the placeholder
+   * when it matches none, so it is never stale. It is off when nothing is selected.
+   */
+  function fillPresets(select, presets, enabled, matchingKey) {
+    const signature = JSON.stringify(presets);
+    if (select.dataset.signature !== signature) {
+      select.dataset.signature = signature;
+      select.replaceChildren(new Option('Suggested sizes', ''));
+      for (const preset of presets) select.append(new Option(preset.text, preset.value));
+    }
+    select.value = matchingKey || '';
+    select.disabled = !enabled;
+  }
+
+  const sameSize = (a, b) => Math.abs(a - b) < 0.001;
+  /** True when two boxes are the same size, either way around. */
+  const sameSizeBox = (w1, h1, w2, h2) => (sameSize(w1, w2) && sameSize(h1, h2)) || (sameSize(w1, h2) && sameSize(h1, w2));
+
   /** Info box text: the total, then how many are on each floor. */
   function fillInfo(box, total, singular, plural, countsByFloor) {
     const heading = document.createElement('strong');
@@ -1326,6 +1396,15 @@
     for (const id of ['roomName', 'roomKind', 'roomFloor', 'roomWalls', 'roomWallT', 'roomX', 'roomY', 'roomW', 'roomH', 'duplicateRoom', 'deleteRoom']) {
       $(id).disabled = !room;
     }
+    fillPresets(
+      $('roomPreset'),
+      Object.entries(ROOM_PRESETS).map(([value, [name, , w, h]]) => ({ value, text: `${name} · ${fmtSize(w, h)}` })),
+      !!room,
+      room && Object.keys(ROOM_PRESETS).find(key => {
+        const [name, , w, h] = ROOM_PRESETS[key];
+        return room.name === name && sameSizeBox(room.w, room.h, w, h);
+      }),
+    );
     $('roomName').value = room?.name || '';
     $('roomKind').value = room?.kind || 'utility';
     $('roomFloor').value = room?.floor || state.floor;
@@ -1372,6 +1451,12 @@
     $('doorSelect').disabled = !state.doors.length;
 
     const selected = findDoor(state.selectedDoor);
+    fillPresets(
+      $('doorPreset'),
+      Object.entries(DOOR_PRESETS).map(([value, [name, width]]) => ({ value, text: `${name} · ${fmtLength(width)}` })),
+      !!selected,
+      selected && Object.keys(DOOR_PRESETS).find(key => sameSize(selected.width, DOOR_PRESETS[key][1])),
+    );
     const room = findRoom(state.selectedRoom);
     $('addDoor').disabled = !room || wallMode(room) !== 'enclosed';
     $('addDoor').title = room && wallMode(room) === 'open' ? 'Set the selected room to Enclosed Walls to add a doorway.' : '';
@@ -1401,7 +1486,17 @@
     $('windowSelect').disabled = !state.windows.length;
 
     const selected = findWindow(state.selectedWindow);
+    fillPresets(
+      $('windowPreset'),
+      Object.entries(WINDOW_PRESETS).map(([value, [name, width]]) => ({ value, text: `${name} · ${fmtLength(width)}` })),
+      !!selected,
+      selected && Object.keys(WINDOW_PRESETS).find(key => sameSize(selected.width, WINDOW_PRESETS[key][1])),
+    );
     $('windowEditor').hidden = !selected;
+    const centerRoom = selected && roomBesideWindow(selected);
+    $('centerWindow').disabled = !centerRoom;
+    $('centerWindow').textContent = centerRoom ? `Center on ${centerRoom.name}` : 'Center on Room';
+    $('centerWindow').title = centerRoom ? '' : 'No room touches this wall.';
     if (selected) {
       $('windowSide').value = selected.side;
       $('windowOffset').value = lengthField(selected.offset);
@@ -1433,6 +1528,13 @@
     $('itemSelect').disabled = !state.items.length;
 
     const selected = findItem(state.selectedItem);
+    const itemPresets = Object.entries(ITEM_PRESETS).filter(([key]) => key !== 'custom');
+    fillPresets(
+      $('itemPreset'),
+      itemPresets.map(([value, [name, w, h]]) => ({ value, text: `${name} · ${fmtItemSize(w, h)}` })),
+      !!selected,
+      selected && itemPresets.find(([, [name, w, h]]) => selected.name === name && sameSizeBox(selected.w, selected.h, w, h))?.[0],
+    );
     $('itemEditor').hidden = !selected;
     if (selected) {
       $('itemName').value = selected.name;
@@ -1684,6 +1786,56 @@
     $('roomName').select();
   }
 
+  // Suggested sizes: applied to the selected record. Windows, doorways, and
+  // items resize around their middle so they stay where they are.
+  $('roomPreset').addEventListener('change', e => {
+    const preset = ROOM_PRESETS[e.target.value];
+    const room = findRoom(state.selectedRoom);
+    if (room && preset) {
+      const [name, kind, w, h] = preset;
+      Object.assign(room, { name, kind, w, h });
+    }
+    render();
+  });
+
+  $('doorPreset').addEventListener('change', e => {
+    const preset = DOOR_PRESETS[e.target.value];
+    const door = findDoor(state.selectedDoor);
+    if (door && preset) {
+      const width = preset[1];
+      const wallLength = doorGeometry(door).length;
+      const centered = door.offset + door.width / 2 - width / 2;
+      door.width = width;
+      door.offset = doorSnap(Math.max(0, Math.min(wallLength - width, centered)));
+    }
+    render();
+  });
+
+  $('windowPreset').addEventListener('change', e => {
+    const preset = WINDOW_PRESETS[e.target.value];
+    const win = findWindow(state.selectedWindow);
+    if (win && preset) {
+      const width = preset[1];
+      const wallLength = windowGeometry(win).length;
+      const centered = win.offset + win.width / 2 - width / 2;
+      win.width = width;
+      win.offset = itemSnap(Math.max(0, Math.min(wallLength - width, centered)));
+    }
+    render();
+  });
+
+  $('itemPreset').addEventListener('change', e => {
+    const preset = ITEM_PRESETS[e.target.value];
+    const item = findItem(state.selectedItem);
+    if (item && preset && e.target.value !== 'custom') {
+      const [name, w, h] = preset;
+      const centerX = item.x + item.w / 2;
+      const centerY = item.y + item.h / 2;
+      Object.assign(item, { name, w, h, x: itemSnap(centerX - w / 2), y: itemSnap(centerY - h / 2) });
+    }
+    render();
+  });
+
   // Picking from a dropdown also switches to that record's floor.
   $('roomSelect').addEventListener('change', e => {
     const room = findRoom(e.target.value);
@@ -1896,6 +2048,13 @@
     }
     render();
   });
+  $('centerWindow').addEventListener('click', () => {
+    const win = findWindow(state.selectedWindow);
+    const room = win && roomBesideWindow(win);
+    if (!room) return;
+    centerWindowOnRoom(win, room);
+    render();
+  });
   for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
     $(id).addEventListener('change', e => {
       const win = findWindow(state.selectedWindow);
@@ -1919,7 +2078,7 @@
   });
 
   $('addItem').addEventListener('click', () => {
-    const [name, w, h] = ITEM_PRESETS[$('itemPreset').value] || ITEM_PRESETS.custom;
+    const [name, w, h] = ITEM_PRESETS.custom;
     const room = findRoom(state.selectedRoom);
     let x = 1.5;
     let y = 1.5;

@@ -36,12 +36,26 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Duplicate, + Add Room, and Remove (with confirmation) all work.
 - [ ] Align All Staircases lines up the basement and second floor stairs with the main floor.
 
+## Sidebar layout
+
+- [ ] At 1500px wide or more, Spaces and Furniture & Fixtures sit side by side with Doorways and Windows below, and all four boxes are the same width and height.
+- [ ] Below 1500px the four boxes stack in one column, and nothing is clipped.
+
+## Suggested sizes
+
+- [ ] Spaces, Furniture & Fixtures, Doorways, and Windows each show: summary, dropdown, Add button, Suggested sizes menu, then the fields.
+- [ ] Each Suggested sizes menu is off until something is selected, and it applies the chosen size to the selected space, doorway, window, or item.
+- [ ] Half Bath and Full Bath set the space's name, type, and size. Windows, doorways, and items stay centered where they were when resized.
+- [ ] The menu shows the size the selected record already has, or "Suggested sizes" when it matches none. Arrow keys work on it.
+- [ ] Switching to metric relabels the menus.
+
 ## Doorways and windows
 - [ ] + Add Doorway works on an enclosed room and is disabled for open plan rooms.
 - [ ] Wall, Hinge, From Corner, Width, and Swing all update the doorway; dragging slides it along the wall.
 - [ ] A doorway on an outside wall shows the ENTRANCE label.
 - [ ] + Add Window, dragging, Wall, Width, From Corner, and Remove Window all work.
 - [ ] Dragging a window toward another wall moves it there, and it doesn't flicker between walls near a corner.
+- [ ] Center on Room centers the selected window on its room's wall, the button names the room, and it is disabled when no room touches that wall.
 
 ## Furniture and fixtures
 - [ ] + Add Item places the chosen preset in the selected room.

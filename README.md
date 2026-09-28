@@ -14,7 +14,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Rooms:** add, name, move, and resize spaces on a plan drawn to scale with a 1′ grid. Rooms are color-coded by type (living space, bedroom, bathroom, entry, hallway or stairs, utility or storage).
 - **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness and per-side wall toggles.
 - **Doorways:** add interior doorways with hinge side and swing direction. Doorways on an outside wall are marked as entrances automatically.
-- **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall.
+- **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer.
 - **Multiple floors:** basement, main floor, and an optional second floor, with a one-click option to align the staircases.
 - **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, and more.
@@ -38,6 +38,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 
 - **Select** a room, doorway, window, or item by clicking it on the plan or picking it from the dropdown in its side panel. Each dropdown is grouped by floor and has an info box with the total and the count on each floor.
 - **Move** things by dragging them. On a touch screen, turn on **Drag to Move** first.
+- **Suggested sizes:** every panel has the same layout (summary, dropdown, Add button, Suggested sizes menu, then the fields). The Suggested sizes menu applies to whatever is selected: half or full bath for spaces, common widths for doorways and windows, and standard furniture and fixture sizes for items.
 - **Edit** the selected space's name, type, floor, walls, position, and size in the **Spaces** panel, under the dropdown.
 - **Keep a copy** with **Export Layout**. Use **Import Layout** to load it back, on this or any other browser.
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.

@@ -135,9 +135,10 @@
         <section class="panel spaces-panel">
           <div class="panel-title"><h2>Spaces</h2></div>
           <p id="roomInfo" class="info-box" aria-live="polite"></p>
-          <div class="pick-row">
+          <div class="pick-controls">
             <select id="roomSelect" aria-label="Space"></select>
             <button id="addRoom" class="primary-button" type="button">+ Add Room</button>
+            <select id="roomPreset" aria-label="Suggested sizes"></select>
           </div>
           <label class="select-label">Name
             <input id="roomName" type="text" maxlength="48" autocomplete="off" placeholder="Room Name" list="roomNameIdeas">
@@ -207,13 +208,40 @@
           <button id="removeFloor" class="quiet-danger" type="button" hidden>Remove Second Floor</button>
         </section>
 
+        <section class="panel items-panel">
+          <div class="panel-title"><h2>Furniture &amp; Fixtures</h2></div>
+          <p id="itemInfo" class="info-box" aria-live="polite"></p>
+          <div class="pick-controls">
+            <select id="itemSelect" aria-label="Item"></select>
+            <button id="addItem" class="primary-button" type="button">+ Add Item</button>
+            <select id="itemPreset" aria-label="Suggested sizes"></select>
+          </div>
+          <div id="itemEditor" class="door-editor" hidden>
+            <label class="select-label">Name<input id="itemName" type="text" maxlength="40" autocomplete="off"></label>
+            <div class="four-fields">
+              <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
+              <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
+              <label>Width <span data-unit="length">ft</span><input id="itemW" type="number" min="0.5" max="80" step="0.25"></label>
+              <label>Depth <span data-unit="length">ft</span><input id="itemH" type="number" min="0.5" max="80" step="0.25"></label>
+            </div>
+            <div class="room-actions">
+              <button id="rotateItem" class="inline-button" type="button">Rotate 90°</button>
+              <button id="duplicateItem" class="inline-button" type="button">Duplicate</button>
+              <button id="removeItem" class="delete-button" type="button">Remove</button>
+            </div>
+          </div>
+          <h3 class="item-checks-title">Item Checks</h3>
+          <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
+          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other. A new item starts in the selected room.</p>
+        </section>
+
         <section class="panel doors-panel">
           <div class="panel-title"><h2>Interior Doorways</h2></div>
-          <p class="field-help lead">Adds a doorway to the selected room. The quarter circle shows the swing.</p>
           <p id="doorInfo" class="info-box" aria-live="polite"></p>
-          <div class="pick-row">
+          <div class="pick-controls">
             <select id="doorSelect" aria-label="Doorway"></select>
             <button id="addDoor" class="primary-button" type="button">+ Add Doorway</button>
+            <select id="doorPreset" aria-label="Suggested sizes"></select>
           </div>
           <div id="doorEditor" class="door-editor" hidden>
             <div class="two-fields">
@@ -244,15 +272,16 @@
             </label>
             <button id="removeDoor" class="delete-button" type="button">Remove Doorway</button>
           </div>
+          <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing.</p>
         </section>
 
         <section class="panel windows-panel">
           <div class="panel-title"><h2>Windows</h2></div>
-          <p class="field-help lead">Windows sit in the outside walls. A new window starts on the selected room’s outside wall.</p>
           <p id="windowInfo" class="info-box" aria-live="polite"></p>
-          <div class="pick-row">
+          <div class="pick-controls">
             <select id="windowSelect" aria-label="Window"></select>
             <button id="addWindow" class="primary-button" type="button">+ Add Window</button>
+            <select id="windowPreset" aria-label="Suggested sizes"></select>
           </div>
           <div id="windowEditor" class="door-editor" hidden>
             <div class="two-fields">
@@ -267,58 +296,12 @@
               <label>Width <span data-unit="length">ft</span><input id="windowWidth" type="number" min="1" max="20" step="0.25"></label>
             </div>
             <label class="select-label">From Corner <span><span data-unit="length">ft</span>, from the top or left end</span><input id="windowOffset" type="number" min="0" step="0.25"></label>
-            <button id="removeWindow" class="delete-button" type="button">Remove Window</button>
-          </div>
-        </section>
-
-        <section class="panel items-panel">
-          <div class="panel-title"><h2>Furniture &amp; Fixtures</h2></div>
-          <p class="field-help lead">Items sit on their own layer above the rooms. They are only checked against walls and each other. New items start in the selected room.</p>
-          <div class="item-add">
-            <select id="itemPreset" aria-label="Item Type">
-              <option value="custom">Custom Box · 3′ × 3′</option>
-              <option value="base">Base Cabinets · 6′ × 2′</option>
-              <option value="island">Kitchen Island · 6′ × 3′</option>
-              <option value="fridge">Refrigerator · 3′ × 2.5′</option>
-              <option value="range">Range · 2.5′ × 2.5′</option>
-              <option value="sofa">Sofa · 7′ × 3′</option>
-              <option value="loveseat">Loveseat · 5′ × 3′</option>
-              <option value="chair">Armchair · 3′ × 3′</option>
-              <option value="coffee">Coffee Table · 4′ × 2′</option>
-              <option value="dining">Dining Table · 6′ × 3.5′</option>
-              <option value="queen">Queen Bed · 5′ × 6.75′</option>
-              <option value="king">King Bed · 6.5′ × 6.75′</option>
-              <option value="twin">Twin Bed · 3.25′ × 6.25′</option>
-              <option value="dresser">Dresser · 5′ × 1.5′</option>
-              <option value="desk">Desk · 5′ × 2.5′</option>
-              <option value="toilet">Toilet · 1.75′ × 2.5′</option>
-              <option value="vanity">Vanity · 3′ × 1.75′</option>
-              <option value="tub">Tub / Shower · 5′ × 2.5′</option>
-              <option value="washer">Washer / Dryer · 2.5′ × 2.5′</option>
-              <option value="heater">Water Heater · 2′ × 2′</option>
-              <option value="handler">Air Handler · 2.5′ × 2.5′</option>
-              <option value="bench">Workbench · 6′ × 2.5′</option>
-            </select>
-            <button id="addItem" class="primary-button" type="button">+ Add Item</button>
-          </div>
-          <p id="itemInfo" class="info-box" aria-live="polite"></p>
-          <select id="itemSelect" class="pick-select" aria-label="Item"></select>
-          <div id="itemEditor" class="door-editor" hidden>
-            <label class="select-label">Name<input id="itemName" type="text" maxlength="40" autocomplete="off"></label>
-            <div class="four-fields">
-              <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
-              <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
-              <label>Width <span data-unit="length">ft</span><input id="itemW" type="number" min="0.5" max="80" step="0.25"></label>
-              <label>Depth <span data-unit="length">ft</span><input id="itemH" type="number" min="0.5" max="80" step="0.25"></label>
-            </div>
             <div class="room-actions">
-              <button id="rotateItem" class="inline-button" type="button">Rotate 90°</button>
-              <button id="duplicateItem" class="inline-button" type="button">Duplicate</button>
-              <button id="removeItem" class="delete-button" type="button">Remove</button>
+              <button id="centerWindow" class="inline-button" type="button">Center on Room</button>
+              <button id="removeWindow" class="delete-button" type="button">Remove Window</button>
             </div>
           </div>
-          <h3 class="item-checks-title">Item Checks</h3>
-          <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
+          <p class="field-help">Windows sit in the outside walls. A new window starts on the selected room’s outside wall.</p>
         </section>
       </div>
 
