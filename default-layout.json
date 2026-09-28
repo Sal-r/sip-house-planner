@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-28T21:48:33.346Z",
+  "exportedAt": "2026-09-28T22:05:06.716Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,15 +9,86 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "basement",
+    "floor": "main",
     "upperEnabled": false,
-    "selectedRoom": "secure",
+    "selectedRoom": "bed1",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
     "entranceMode": "front",
     "frontSide": "east",
-    "windows": [],
+    "windows": [
+      {
+        "id": "window-1790632956132-y5i5mz",
+        "floor": "main",
+        "side": "north",
+        "offset": 22.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790632961364-suyfwt",
+        "floor": "main",
+        "side": "north",
+        "offset": 33,
+        "width": 3
+      },
+      {
+        "id": "window-1790632963118-0p0hu2",
+        "floor": "main",
+        "side": "north",
+        "offset": 6.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633041826-0s9hm5",
+        "floor": "main",
+        "side": "east",
+        "offset": 5.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633045975-piwjry",
+        "floor": "main",
+        "side": "west",
+        "offset": 5.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633049168-5vtvms",
+        "floor": "main",
+        "side": "east",
+        "offset": 23.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633051943-w62t61",
+        "floor": "main",
+        "side": "south",
+        "offset": 32.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633054474-owdbm1",
+        "floor": "main",
+        "side": "south",
+        "offset": 17,
+        "width": 6
+      },
+      {
+        "id": "window-1790633057772-1zd39c",
+        "floor": "main",
+        "side": "south",
+        "offset": 5.5,
+        "width": 3
+      },
+      {
+        "id": "window-1790633065201-oc47n6",
+        "floor": "main",
+        "side": "west",
+        "offset": 23.5,
+        "width": 3
+      }
+    ],
     "selectedWindow": null,
     "showItems": true,
     "selectedItem": null,
@@ -389,7 +460,7 @@
         "name": "Shower",
         "floor": "basement",
         "x": 15.25,
-        "y": 1.25,
+        "y": 1,
         "w": 4.5,
         "h": 3
       },
@@ -398,7 +469,7 @@
         "name": "Toilet",
         "floor": "basement",
         "x": 17.25,
-        "y": 5,
+        "y": 4.75,
         "w": 2.5,
         "h": 1.75
       },
