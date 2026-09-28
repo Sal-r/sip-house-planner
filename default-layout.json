@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-28T03:33:17.041Z",
+  "exportedAt": "2026-09-28T21:48:33.346Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,9 +9,9 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "main",
+    "floor": "basement",
     "upperEnabled": false,
-    "selectedRoom": "bed1",
+    "selectedRoom": "secure",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -83,15 +83,6 @@
         "offset": 0.5,
         "width": 3,
         "hinge": "start",
-        "swing": "in"
-      },
-      {
-        "id": "door-flex",
-        "roomId": "flex",
-        "side": "north",
-        "offset": 13.5,
-        "width": 3,
-        "hinge": "end",
         "swing": "in"
       }
     ],
@@ -262,27 +253,27 @@
         "id": "item-entry-bench",
         "name": "Bench / Cubbies",
         "floor": "main",
-        "x": 36.5,
+        "x": 35,
         "y": 17.25,
-        "w": 4,
+        "w": 6,
         "h": 1.5
       },
       {
         "id": "item-back-entry-bench",
         "name": "Bench / Cubbies",
         "floor": "main",
-        "x": 2.5,
+        "x": 1,
         "y": 17.25,
-        "w": 4,
+        "w": 6,
         "h": 1.5
       },
       {
         "id": "item-living-tv",
         "name": "TV Console",
         "floor": "main",
-        "x": 35.5,
+        "x": 35,
         "y": 19.25,
-        "w": 5,
+        "w": 6,
         "h": 1.5
       },
       {
@@ -325,10 +316,10 @@
         "id": "item-dining-set",
         "name": "Dining Table & 6 Chairs",
         "floor": "main",
-        "x": 17,
-        "y": 21,
-        "w": 6,
-        "h": 8
+        "x": 16,
+        "y": 22,
+        "w": 8,
+        "h": 6
       },
       {
         "id": "item-kitchen-fridge",
@@ -439,22 +430,13 @@
         "h": 2
       },
       {
-        "id": "item-storage-shelves-1",
-        "name": "Storage Shelves",
-        "floor": "basement",
-        "x": 1,
-        "y": 7,
-        "w": 9.75,
-        "h": 1.5
-      },
-      {
         "id": "item-storage-shelves-2",
         "name": "Storage Shelves",
         "floor": "basement",
         "x": 1,
-        "y": 8.5,
+        "y": 7,
         "w": 1.5,
-        "h": 2.5
+        "h": 4
       },
       {
         "id": "item-pantry-shelves-1",
@@ -545,6 +527,24 @@
         "y": 21,
         "w": 1.5,
         "h": 6
+      },
+      {
+        "id": "item-1790631947231-9zxa5i",
+        "name": "Storage Shelves Copy",
+        "floor": "basement",
+        "x": 4.75,
+        "y": 7,
+        "w": 2.25,
+        "h": 4
+      },
+      {
+        "id": "item-1790631947536-3ntk52",
+        "name": "Storage Shelves Copy Copy",
+        "floor": "basement",
+        "x": 9.25,
+        "y": 7,
+        "w": 1.5,
+        "h": 4
       }
     ],
     "rooms": [
@@ -721,7 +721,13 @@
         "w": 30,
         "h": 14,
         "kind": "utility",
-        "wallMode": "enclosed"
+        "wallMode": "enclosed",
+        "walls": {
+          "north": false,
+          "east": true,
+          "south": true,
+          "west": true
+        }
       },
       {
         "id": "stairs-basement",
