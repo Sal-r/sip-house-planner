@@ -138,25 +138,20 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .inline-button:hover { background: #d5e8e9; }
 
-.delete-button {
-  margin-top: 12px;
-  padding: 9px 8px;
+/* Remove buttons: the same shape as .inline-button, tinted red */
+.delete-button,
+.quiet-danger {
+  padding: 9px 10px;
   border: 0;
-  background: transparent;
-  color: #a45347;
+  border-radius: 6px;
+  background: #f9e9e6;
+  color: #9c4337;
   font-size: .78rem;
   font-weight: 700;
 }
-.quiet-danger {
-  display: block;
-  margin: 10px 0 0;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  color: #9a554b;
-  font-size: .77rem;
-}
-.delete-button:hover, .quiet-danger:hover { text-decoration: underline; }
+.delete-button { margin-top: 12px; }
+.quiet-danger { display: block; margin: 12px 0 0; }
+.delete-button:hover, .quiet-danger:hover { background: #f2d5d0; }
 
 .zoom-button {
   width: 28px;
