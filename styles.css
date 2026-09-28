@@ -264,20 +264,22 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   text-transform: uppercase;
 }
 .hint-touch { display: none; }
-.disclaimer {
-  margin: 0 0 18px;
-  color: #35505a;
-  font-size: .95rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
 
 .floor-controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+/* width: 0 keeps the long text from setting the width of the whole column, and
+   min-width: 100% then stretches it to the width of the floor tabs. */
+.disclaimer {
+  width: 0;
+  min-width: 100%;
+  color: #35505a;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 .floor-tabs {
   display: flex;
@@ -719,7 +721,6 @@ svg.tap-only .interior-door { cursor: pointer; }
    wide dashboard layout) */
 @media (max-width: 1250px) {
   .section-heading { flex-direction: column; align-items: flex-start; }
-  .floor-controls { justify-content: flex-start; }
 }
 
 @media (max-width: 1100px) {
@@ -807,7 +808,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 224px auto;
+    grid-template-rows: 236px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -818,7 +819,6 @@ svg.tap-only .interior-door { cursor: pointer; }
   .intro {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
     gap: 12px;
     grid-column: 1 / 13;
     grid-row: 1;
@@ -834,7 +834,6 @@ svg.tap-only .interior-door { cursor: pointer; }
   }
   .intro .section-heading h1 { margin: 2px 0 5px; font-size: clamp(1.7rem, 1.85vw, 2.4rem); }
   .intro .section-heading p:not(.eyebrow) { font-size: .86rem; }
-  .intro .floor-controls { justify-content: flex-start; }
   .intro .floor-tabs button { padding: 7px 12px; }
   .intro .metric-row {
     grid-template-columns: 1fr 1fr;
@@ -851,9 +850,6 @@ svg.tap-only .interior-door { cursor: pointer; }
   }
   .intro .metric-row strong { font-size: 1.3rem; }
   .intro .metric-note { display: none; }
-  /* The disclaimer fills the space under the title and floor tabs. */
-  .intro .disclaimer { grid-column: 1; grid-row: 2; align-self: start; margin: 0; font-size: .88rem; }
-  .intro .metric-row { grid-column: 2; grid-row: 1 / 3; }
 
   .dimensions-panel { grid-column: 13 / 16; }
   .walls-panel { grid-column: 16 / 19; }
