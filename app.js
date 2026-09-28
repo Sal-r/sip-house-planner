@@ -342,6 +342,62 @@
     }
   };
 
+  // --- Undo ---------------------------------------------------------------
+  // Every change to the layout ends in render(), so undo works by comparing
+  // the layout after each render with the one before it. When they differ, the
+  // earlier copy goes on a stack. Selection, zoom, units, and the floor tab are
+  // not part of the layout, so they never count as a step. The stack lives in
+  // memory only, so it is empty again after the page reloads.
+  const UNDO_LIMIT = 50;
+  const undoStack = [];
+  let lastLayout = null;
+  // Set while a drag is in progress, so one drag is one undo step, not hundreds.
+  let dragStartLayout = null;
+
+  const layoutSnapshot = () => JSON.stringify({
+    width: state.width,
+    depth: state.depth,
+    exteriorWall: state.exteriorWall,
+    interiorWall: state.interiorWall,
+    frontSide: state.frontSide,
+    upperEnabled: state.upperEnabled,
+    rooms: state.rooms,
+    doors: state.doors,
+    windows: state.windows,
+    items: state.items,
+  });
+
+  function pushUndo(layout) {
+    // The floor is kept so Undo can show the floor where the change happened.
+    undoStack.push({ layout, floor: state.floor });
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  }
+
+  /** Called at the end of every render. */
+  function trackLayoutChange() {
+    const now = layoutSnapshot();
+    if (lastLayout !== null && now !== lastLayout && dragStartLayout === null) pushUndo(lastLayout);
+    lastLayout = now;
+    $('undo').disabled = !undoStack.length;
+  }
+
+  /** Called when a drag ends: the whole drag becomes one step, if it changed anything. */
+  function endDragTracking() {
+    if (dragStartLayout !== null && dragStartLayout !== lastLayout) pushUndo(dragStartLayout);
+    dragStartLayout = null;
+    $('undo').disabled = !undoStack.length;
+  }
+
+  function undoLastChange() {
+    const step = undoStack.pop();
+    if (!step) return;
+    Object.assign(state, JSON.parse(step.layout));
+    state.floor = floorOrder().includes(step.floor) ? step.floor : 'main';
+    // Marked as already seen, so render() doesn't record the undo as a new change.
+    lastLayout = step.layout;
+    render();
+  }
+
   /**
    * Reads default-layout.json. Returns null when the page is opened from disk
    * (browsers block fetch on file:// URLs) or when the file is missing or
@@ -1605,6 +1661,7 @@
     renderDoorList();
     renderWindowList();
     renderItemList(model);
+    trackLayoutChange();
     saveState();
 
     if (focusKey && document.activeElement?.dataset?.focusKey !== focusKey) {
@@ -2261,6 +2318,7 @@
       state.selectedItem = it.id;
       drag = { type: 'item', id: it.id, dx: p.x - it.x, dy: p.y - it.y };
     }
+    dragStartLayout = lastLayout;
     svg.setPointerCapture(e.pointerId);
     render();
     e.preventDefault();
@@ -2295,8 +2353,12 @@
     render();
   });
 
-  svg.addEventListener('pointerup', () => { drag = null; });
-  svg.addEventListener('pointercancel', () => { drag = null; });
+  const endDrag = () => {
+    drag = null;
+    endDragTracking();
+  };
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
 
   // Keyboard: Enter or Space selects a focused shape. Arrow keys move it 6″
   // or 10 cm (windows 3″ or 5 cm); Shift moves 1′ or 25 cm. Doorways and
@@ -2367,6 +2429,19 @@
   });
   $('actionMenu').addEventListener('click', e => {
     if (e.target.closest('button')) closeMenu();
+  });
+
+  $('undo').addEventListener('click', undoLastChange);
+
+  // Ctrl+Z (Cmd+Z on a Mac). Inside a text or number field it keeps its normal
+  // job of undoing typing, and it is ignored while a dialog is open.
+  document.addEventListener('keydown', e => {
+    const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z';
+    if (!isUndoKey || !$('confirmOverlay').hidden) return;
+    const field = document.activeElement;
+    if (field && field.matches('input:not([type="checkbox"]):not([type="radio"]), textarea')) return;
+    e.preventDefault();
+    undoLastChange();
   });
 
   $('reset').addEventListener('click', () => askConfirmation(
@@ -2506,6 +2581,9 @@
       if (next) {
         state = next;
         render();
+        // Loading the default layout on a first visit isn't something to undo.
+        undoStack.length = 0;
+        $('undo').disabled = true;
       }
     });
   }

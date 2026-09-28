@@ -41,6 +41,16 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] At 1500px wide or more, Spaces and Furniture & Fixtures sit side by side with Doorways and Windows below, and all four boxes are the same width and height.
 - [ ] Below 1500px the four boxes stack in one column, and nothing is clipped.
 
+## Undo
+
+- [ ] Undo is off on a fresh page, turns on after a change, and turns off again when the history is used up.
+- [ ] Selecting, zooming, switching floors, and changing units do not add undo steps.
+- [ ] One drag is one undo step, and undo puts the thing back exactly where it was.
+- [ ] Undo works for adding, removing, and editing spaces, doorways, windows, and items, and for footprint and wall changes, rotate, Reset to Defaults, and import.
+- [ ] Undo switches to the floor where the change was made. Undoing Add Second Floor while on it returns to the main floor.
+- [ ] Ctrl+Z (Cmd+Z) undoes when focus is not in a text or number field, and does not undo the layout while typing in one.
+- [ ] Reloading the page starts with nothing to undo.
+
 ## Suggested sizes
 
 - [ ] Spaces, Furniture & Fixtures, Doorways, and Windows each show: summary, dropdown, Add button, Suggested sizes menu, then the fields.

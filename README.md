@@ -38,6 +38,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 
 - **Select** a room, doorway, window, or item by clicking it on the plan or picking it from the dropdown in its side panel. Each dropdown is grouped by floor and has an info box with the total and the count on each floor.
 - **Move** things by dragging them. On a touch screen, turn on **Drag to Move** first.
+- **Undo:** the **Undo** button above the plan (or Ctrl+Z, Cmd+Z on a Mac) steps back through your last 50 changes, including a whole drag, a Reset to Defaults, or an import. Selecting things, zooming, switching floors, and changing units are not counted. The history is kept in memory only, so it starts empty each time the page loads.
 - **Suggested sizes:** every panel has the same layout (summary, dropdown, Add button, Suggested sizes menu, then the fields). The Suggested sizes menu applies to whatever is selected: half or full bath for spaces, common widths for doorways and windows, and standard furniture and fixture sizes for items.
 - **Edit** the selected space's name, type, floor, walls, position, and size in the **Spaces** panel, under the dropdown.
 - **Keep a copy** with **Export Layout**. Use **Import Layout** to load it back, on this or any other browser.

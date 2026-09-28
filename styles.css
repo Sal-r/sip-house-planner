@@ -167,6 +167,19 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .zoom-button:hover { background: #e6f2f2; }
 .rotate-gap { margin-right: 8px; }
 
+.undo-button {
+  height: 28px;
+  margin-right: 6px;
+  padding: 0 11px;
+  border: 1px solid #bad0d1;
+  border-radius: 6px;
+  background: #fff;
+  color: #245561;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.undo-button:hover { background: #e6f2f2; }
+
 /* 3. Top bar and menu */
 .topbar {
   display: flex;

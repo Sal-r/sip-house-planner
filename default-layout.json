@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-28T22:05:06.716Z",
+  "exportedAt": "2026-09-28T22:06:23.381Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,9 +9,9 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "main",
+    "floor": "basement",
     "upperEnabled": false,
-    "selectedRoom": "bed1",
+    "selectedRoom": "secure",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -91,7 +91,7 @@
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": null,
+    "selectedItem": "item-1790631947536-3ntk52",
     "doors": [
       {
         "id": "door-bed1",
@@ -601,7 +601,7 @@
       },
       {
         "id": "item-1790631947231-9zxa5i",
-        "name": "Storage Shelves Copy",
+        "name": "Storage Shelves",
         "floor": "basement",
         "x": 4.75,
         "y": 7,
@@ -610,7 +610,7 @@
       },
       {
         "id": "item-1790631947536-3ntk52",
-        "name": "Storage Shelves Copy Copy",
+        "name": "Storage Shelves",
         "floor": "basement",
         "x": 9.25,
         "y": 7,
