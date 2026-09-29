@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-29T03:08:40.855Z",
+  "exportedAt": "2026-09-29T05:22:36.581Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,9 +9,9 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "main",
+    "floor": "basement",
     "upperEnabled": false,
-    "selectedRoom": "bed1",
+    "selectedRoom": "space-1790659326447-aam7cz",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -91,7 +91,7 @@
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": "item-bed1-closet",
+    "selectedItem": "item-flex-sofa",
     "doors": [
       {
         "id": "door-bed1",
@@ -567,8 +567,8 @@
         "id": "item-flex-sofa",
         "name": "Sofa",
         "floor": "basement",
-        "x": 18,
-        "y": 20.5,
+        "x": 19,
+        "y": 20.75,
         "w": 3,
         "h": 7
       },
@@ -789,7 +789,7 @@
         "floor": "basement",
         "x": 11,
         "y": 17,
-        "w": 30,
+        "w": 17,
         "h": 14,
         "kind": "utility",
         "wallMode": "enclosed",
@@ -886,6 +886,23 @@
           "west": true
         },
         "wallMode": "open"
+      },
+      {
+        "id": "space-1790659326447-aam7cz",
+        "name": "Home Gym",
+        "floor": "basement",
+        "x": 28,
+        "y": 17,
+        "w": 13,
+        "h": 14,
+        "kind": "utility",
+        "wallMode": "enclosed",
+        "walls": {
+          "north": false,
+          "east": true,
+          "south": true,
+          "west": true
+        }
       }
     ],
     "fixtures": [
