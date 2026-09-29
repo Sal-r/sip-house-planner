@@ -271,11 +271,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   align-items: stretch;
   gap: 10px;
 }
-/* width: 0 keeps the long text from setting the width of the whole column, and
-   min-width: 100% then stretches it to the width of the floor tabs. */
 .disclaimer {
-  width: 0;
-  min-width: 100%;
   color: #35505a;
   font-size: 1.125rem;
   font-weight: 700;
