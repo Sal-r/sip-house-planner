@@ -1282,6 +1282,83 @@
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
   }
 
+  // Item labels: average bold character width as a fraction of font size, the
+  // line spacing, and the smallest font size that is still readable on the plan.
+  const ITEM_LABEL_CHAR_WIDTH = 0.62;
+  const ITEM_LABEL_LINE_HEIGHT = 1.2;
+  const ITEM_LABEL_MIN_SIZE = 0.25;
+
+  /** Splits a name at spaces into lines of at most maxChars. A long single word keeps its own line. */
+  function wrapWords(name, maxChars) {
+    const lines = [];
+    let current = '';
+    for (const word of name.split(' ')) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxChars && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  /**
+   * Wraps a name to fit text that runs along `length` and stacks lines across
+   * `cross`. Returns the lines, or null when it does not fit at this size.
+   */
+  function fitLabel(name, size, length, cross) {
+    const maxChars = Math.floor(length / (size * ITEM_LABEL_CHAR_WIDTH));
+    const lines = wrapWords(name, maxChars);
+    const longest = Math.max(...lines.map(line => line.length));
+    const stackHeight = lines.length * size * ITEM_LABEL_LINE_HEIGHT;
+    return longest <= maxChars && stackHeight <= cross ? lines : null;
+  }
+
+  /**
+   * Chooses how to draw an item's name. At each font size it tries wrapped
+   * horizontal text first, then vertical text if the box is taller than wide.
+   * Only when nothing fits at the smallest size is the name cut off with "…".
+   */
+  function itemLabelLayout(it) {
+    const startSize = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
+    const isTall = it.h > it.w;
+
+    for (let size = startSize; size >= ITEM_LABEL_MIN_SIZE; size -= 0.025) {
+      const horizontal = fitLabel(it.name, size, it.w, it.h);
+      if (horizontal) return { lines: horizontal, size, vertical: false };
+
+      const vertical = isTall ? fitLabel(it.name, size, it.h, it.w) : null;
+      if (vertical) return { lines: vertical, size, vertical: true };
+    }
+
+    // The full name is still in the hover tooltip and the item panel.
+    const length = isTall ? it.h : it.w;
+    const maxChars = Math.max(4, Math.floor(length / (ITEM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
+    const cutName = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
+    return { lines: [cutName], size: ITEM_LABEL_MIN_SIZE, vertical: isTall };
+  }
+
+  function drawItemLabel(it, group) {
+    const { lines, size, vertical } = itemLabelLayout(it);
+    const centerX = it.x + it.w / 2;
+    const centerY = it.y + it.h / 2;
+    // Vertical text is drawn horizontally, then the whole block is turned to
+    // read bottom to top. That keeps the line spacing math the same for both.
+    const parent = vertical
+      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
+      : group;
+    const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
+
+    lines.forEach((line, index) => {
+      const y = centerY + (index - (lines.length - 1) / 2) * lineHeight;
+      const text = label(centerX, y, line, 'item-label', parent);
+      text.setAttribute('font-size', `${size}px`);
+    });
+  }
+
   function drawItems(model) {
     const { bad } = itemChecks(model);
     for (const it of state.items.filter(item => item.floor === state.floor)) {
@@ -1294,11 +1371,7 @@
         'aria-label': `${it.name}, ${spokenSize(it.w, it.h, true)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
-      const size = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
-      const maxChars = Math.max(4, Math.floor(it.w / (size * 0.62)));
-      const name = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
-      const text = label(it.x + it.w / 2, it.y + it.h / 2, name, 'item-label', group);
-      text.setAttribute('font-size', `${size}px`);
+      drawItemLabel(it, group);
       element('title', {}, group).textContent = `${it.name}: ${fmtItemSize(it.w, it.h)}`;
     }
   }
