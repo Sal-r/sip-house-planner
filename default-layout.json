@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-28T22:06:23.381Z",
+  "exportedAt": "2026-09-29T03:08:40.855Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,9 +9,9 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "basement",
+    "floor": "main",
     "upperEnabled": false,
-    "selectedRoom": "secure",
+    "selectedRoom": "bed1",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -29,28 +29,28 @@
         "id": "window-1790632961364-suyfwt",
         "floor": "main",
         "side": "north",
-        "offset": 33,
+        "offset": 28.5,
         "width": 3
       },
       {
         "id": "window-1790632963118-0p0hu2",
         "floor": "main",
         "side": "north",
-        "offset": 6.5,
+        "offset": 11.5,
         "width": 3
       },
       {
         "id": "window-1790633041826-0s9hm5",
         "floor": "main",
         "side": "east",
-        "offset": 5.5,
+        "offset": 1.5,
         "width": 3
       },
       {
         "id": "window-1790633045975-piwjry",
         "floor": "main",
         "side": "west",
-        "offset": 5.5,
+        "offset": 1.25,
         "width": 3
       },
       {
@@ -91,7 +91,7 @@
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": "item-1790631947536-3ntk52",
+    "selectedItem": "item-bed1-closet",
     "doors": [
       {
         "id": "door-bed1",
@@ -189,8 +189,8 @@
         "id": "item-bed1-bed",
         "name": "Queen Bed",
         "floor": "main",
-        "x": 32.25,
-        "y": 1,
+        "x": 34,
+        "y": 6,
         "w": 5,
         "h": 6.75
       },
@@ -198,8 +198,8 @@
         "id": "item-bed1-nightstand-1",
         "name": "Nightstand",
         "floor": "main",
-        "x": 37.25,
-        "y": 1,
+        "x": 39,
+        "y": 11.25,
         "w": 2,
         "h": 1.5
       },
@@ -207,8 +207,8 @@
         "id": "item-bed1-nightstand-2",
         "name": "Nightstand",
         "floor": "main",
-        "x": 30.25,
-        "y": 1,
+        "x": 32,
+        "y": 11.25,
         "w": 2,
         "h": 1.5
       },
@@ -216,26 +216,26 @@
         "id": "item-bed1-dresser",
         "name": "Dresser",
         "floor": "main",
-        "x": 39.5,
-        "y": 5.5,
-        "w": 1.5,
-        "h": 5
+        "x": 31.75,
+        "y": 1,
+        "w": 5,
+        "h": 1.5
       },
       {
         "id": "item-bed1-closet",
         "name": "Reach-In Closet",
         "floor": "main",
-        "x": 33,
-        "y": 10.75,
-        "w": 6,
-        "h": 2
+        "x": 28.25,
+        "y": 3.5,
+        "w": 2,
+        "h": 6
       },
       {
         "id": "item-bed1-desk",
         "name": "Desk",
         "floor": "main",
-        "x": 28.25,
-        "y": 4,
+        "x": 39,
+        "y": 1,
         "w": 2,
         "h": 4
       },
@@ -243,8 +243,8 @@
         "id": "item-bed2-bed",
         "name": "Queen Bed",
         "floor": "main",
-        "x": 5.5,
-        "y": 1,
+        "x": 3,
+        "y": 6,
         "w": 5,
         "h": 6.75
       },
@@ -252,8 +252,8 @@
         "id": "item-bed2-nightstand-1",
         "name": "Nightstand",
         "floor": "main",
-        "x": 10.5,
-        "y": 1,
+        "x": 8,
+        "y": 11.25,
         "w": 2,
         "h": 1.5
       },
@@ -261,8 +261,8 @@
         "id": "item-bed2-nightstand-2",
         "name": "Nightstand",
         "floor": "main",
-        "x": 3.5,
-        "y": 1,
+        "x": 1,
+        "y": 11.25,
         "w": 2,
         "h": 1.5
       },
@@ -270,26 +270,26 @@
         "id": "item-bed2-dresser",
         "name": "Dresser",
         "floor": "main",
-        "x": 1,
-        "y": 5,
-        "w": 1.5,
-        "h": 5
+        "x": 6.25,
+        "y": 1,
+        "w": 5,
+        "h": 1.5
       },
       {
         "id": "item-bed2-closet",
         "name": "Reach-In Closet",
         "floor": "main",
-        "x": 4,
-        "y": 10.75,
-        "w": 6,
-        "h": 2
+        "x": 12.75,
+        "y": 3.5,
+        "w": 2,
+        "h": 6
       },
       {
         "id": "item-bed2-desk",
         "name": "Desk",
         "floor": "main",
-        "x": 12.75,
-        "y": 3,
+        "x": 1,
+        "y": 1,
         "w": 2,
         "h": 4
       },
