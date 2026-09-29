@@ -77,6 +77,28 @@
     bench: ['Workbench', 6, 2.5],
   };
 
+  // Suggested sizes for the menu in each panel. Choosing one applies it to the
+  // selected space, doorway, window, or item. Rooms vary too much for a long
+  // list, so only the two bathrooms are offered.
+  const ROOM_PRESETS = {
+    halfBath: ['Half Bath', 'wet', 5, 5],
+    fullBath: ['Full Bath', 'wet', 5, 8],
+  };
+  const DOOR_PRESETS = {
+    closet: ['Closet', 2],
+    bathroom: ['Bathroom', 2.5],
+    standard: ['Standard', 3],
+    double: ['Double', 5],
+    wideDouble: ['Wide Double', 6],
+  };
+  const WINDOW_PRESETS = {
+    small: ['Small', 2],
+    standard: ['Standard', 3],
+    wide: ['Wide', 4],
+    large: ['Large', 6],
+    picture: ['Picture', 8],
+  };
+
   // ==========================================================================
   // 2. State: defaults, validation, and loading
   // ==========================================================================
@@ -320,6 +342,62 @@
     }
   };
 
+  // --- Undo ---------------------------------------------------------------
+  // Every change to the layout ends in render(), so undo works by comparing
+  // the layout after each render with the one before it. When they differ, the
+  // earlier copy goes on a stack. Selection, zoom, units, and the floor tab are
+  // not part of the layout, so they never count as a step. The stack lives in
+  // memory only, so it is empty again after the page reloads.
+  const UNDO_LIMIT = 50;
+  const undoStack = [];
+  let lastLayout = null;
+  // Set while a drag is in progress, so one drag is one undo step, not hundreds.
+  let dragStartLayout = null;
+
+  const layoutSnapshot = () => JSON.stringify({
+    width: state.width,
+    depth: state.depth,
+    exteriorWall: state.exteriorWall,
+    interiorWall: state.interiorWall,
+    frontSide: state.frontSide,
+    upperEnabled: state.upperEnabled,
+    rooms: state.rooms,
+    doors: state.doors,
+    windows: state.windows,
+    items: state.items,
+  });
+
+  function pushUndo(layout) {
+    // The floor is kept so Undo can show the floor where the change happened.
+    undoStack.push({ layout, floor: state.floor });
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  }
+
+  /** Called at the end of every render. */
+  function trackLayoutChange() {
+    const now = layoutSnapshot();
+    if (lastLayout !== null && now !== lastLayout && dragStartLayout === null) pushUndo(lastLayout);
+    lastLayout = now;
+    $('undo').disabled = !undoStack.length;
+  }
+
+  /** Called when a drag ends: the whole drag becomes one step, if it changed anything. */
+  function endDragTracking() {
+    if (dragStartLayout !== null && dragStartLayout !== lastLayout) pushUndo(dragStartLayout);
+    dragStartLayout = null;
+    $('undo').disabled = !undoStack.length;
+  }
+
+  function undoLastChange() {
+    const step = undoStack.pop();
+    if (!step) return;
+    Object.assign(state, JSON.parse(step.layout));
+    state.floor = floorOrder().includes(step.floor) ? step.floor : 'main';
+    // Marked as already seen, so render() doesn't record the undo as a new change.
+    lastLayout = step.layout;
+    render();
+  }
+
   /**
    * Reads default-layout.json. Returns null when the page is opened from disk
    * (browsers block fetch on file:// URLs) or when the file is missing or
@@ -517,10 +595,6 @@
         else $(id).setAttribute(attr, String(limits[attr]));
       }
     }
-    for (const option of $('itemPreset').options) {
-      const [name, w, h] = ITEM_PRESETS[option.value];
-      option.textContent = `${name} · ${fmtItemSize(w, h)}`;
-    }
     $('unitName').textContent = isMetric() ? 'Meters' : 'Feet';
     $('gridLegend').textContent = `1 square = ${gridSquareText()}`;
     $('itemSnapLabel').textContent = isMetric() ? '5 cm' : '3″';
@@ -706,6 +780,38 @@
       : w.side === 'west' ? { x: 0, y: a, w: e, h: w.width }
       : { x: W - e, y: a, w: e, h: w.width };
     return { horizontal, length: horizontal ? W : H, start: a, end: a + w.width, rect, e };
+  }
+
+  /**
+   * The room a window belongs to: the room whose outside wall the window
+   * overlaps most. If it overlaps none, the nearest one. The selected room
+   * wins a tie. Returns null when no room touches that wall.
+   */
+  function roomBesideWindow(w) {
+    const horizontal = isHorizontalSide(w.side);
+    let best = null;
+    let bestScore = -Infinity;
+    for (const r of state.rooms) {
+      if (r.floor !== w.floor || !isExteriorSide(r, w.side)) continue;
+      const start = horizontal ? r.x : r.y;
+      const end = start + (horizontal ? r.w : r.h);
+      // Positive: how far the window overlaps the room. Negative: the gap.
+      const score = Math.min(end, w.offset + w.width) - Math.max(start, w.offset);
+      if (score > bestScore || (score === bestScore && r.id === state.selectedRoom)) {
+        best = r;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /** Slides a window along its wall so it is centered on the room's side of that wall. */
+  function centerWindowOnRoom(w, room) {
+    const horizontal = isHorizontalSide(w.side);
+    const start = horizontal ? room.x : room.y;
+    const span = horizontal ? room.w : room.h;
+    const wallLength = horizontal ? state.width : state.depth;
+    w.offset = Math.max(0, Math.min(wallLength - w.width, start + (span - w.width) / 2));
   }
 
   /** Turns the whole house 90° clockwise on every floor. */
@@ -1144,19 +1250,11 @@
     const side = state.frontSide;
     const W = state.width;
     const H = state.depth;
-    const o = 0.45;
     if (!side || side === 'none') return;
-    const line = {
-      north: { x1: 0, y1: -o, x2: W, y2: -o },
-      south: { x1: 0, y1: H + o, x2: W, y2: H + o },
-      west: { x1: -o, y1: 0, x2: -o, y2: H },
-      east: { x1: W + o, y1: 0, x2: W + o, y2: H },
-    }[side];
-    element('line', { ...line, class: 'front-side' });
     const [x, y, rotation] = {
       north: [W / 2, -2.2, 0],
       south: [W / 2, H + 2.85, 0],
-      west: [-2.6, H / 2, -90],
+      west: [-2.7, H / 2, -90],
       east: [W + 2.35, H / 2, 90],
     }[side];
     const text = label(x, y, 'FRONT OF HOUSE', 'front-label');
@@ -1173,13 +1271,13 @@
       : g.side === 'south' ? [mid, H + 0.85, 0]
       : g.side === 'west' ? [-0.8, mid, -90]
       : [W + 0.95, mid, 90];
-    if (g.horizontal) {
-      const lineY = g.side === 'north' ? -0.12 : H + 0.12;
-      element('line', { x1: g.start.x, y1: lineY, x2: g.end.x, y2: lineY, class: 'door-line' });
-    } else {
-      const lineX = g.side === 'west' ? -0.12 : W + 0.12;
-      element('line', { x1: lineX, y1: g.start.y, x2: lineX, y2: g.end.y, class: 'door-line' });
-    }
+    // The bar fills the wall from face to face, so a window in the same spot
+    // is visibly in conflict. With no exterior wall, use a thin bar on the edge.
+    const t = state.exteriorWall > 0 ? state.exteriorWall : 0.3;
+    const bar = g.horizontal
+      ? { x: g.start.x, y: g.side === 'north' ? 0 : H - t, width: d.width, height: t }
+      : { x: g.side === 'west' ? 0 : W - t, y: g.start.y, width: t, height: d.width };
+    element('rect', { ...bar, class: 'entrance-bar' });
     const text = label(x, y, 'ENTRANCE', 'door-label entrance-label');
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
   }
@@ -1246,10 +1344,18 @@
     if (state.showItems !== false) drawItems(model);
 
     // Overall dimensions
-    element('line', { x1: 0, y1: H + 1.25, x2: W, y2: H + 1.25, class: 'dimension' });
-    label(W / 2, H + 2.15, fmtLength(W), 'dimension-text');
-    const depthLabel = label(-1.85, H / 2, fmtLength(H), 'dimension-text');
-    depthLabel.setAttribute('transform', `rotate(-90 -1.85 ${H / 2})`);
+    // The lines sit past the ENTRANCE labels (which end about 1.1' from the
+    // wall) so the two never touch.
+    const lineGap = 1.45;
+    const textGap = 2.3;
+    element('line', { x1: 0, y1: H + lineGap, x2: W, y2: H + lineGap, class: 'dimension' });
+    label(W / 2, H + textGap, fmtLength(W), 'dimension-text');
+    element('line', { x1: -lineGap, y1: 0, x2: -lineGap, y2: H, class: 'dimension' });
+    // Rotated text grows leftward from its baseline, so its baseline sits
+    // nearer the plan than the bottom label's does.
+    const depthTextX = -(textGap - 0.55);
+    const depthLabel = label(depthTextX, H / 2, fmtLength(H), 'dimension-text');
+    depthLabel.setAttribute('transform', `rotate(-90 ${depthTextX} ${H / 2})`);
   }
 
   // ==========================================================================
@@ -1257,47 +1363,64 @@
   // ==========================================================================
 
   /**
-   * Updates a panel list in place. Each row is matched to its existing
-   * element by `key`, so rows survive a redraw. This matters when a field
-   * saves on blur: clicking a row blurs the field, the save redraws the
-   * lists, and the click still reaches the same row element.
-   *
-   * A row is { key, className } plus either `text`, or `name` and `size` for
-   * two-part rows. Clickable rows also have `onSelect`, which must depend only
-   * on values in the key because it is attached once, when the row is created.
-   * `tag` defaults to 'button'.
+   * Fills a dropdown. `groups` is [{ label, options: [{ value, text }] }].
+   * The options are rebuilt only when they changed, so a select that has
+   * keyboard focus keeps it while the plan redraws.
    */
-  function syncList(list, rows) {
-    const existing = new Map([...list.children].map(el => [el.dataset.focusKey, el]));
-    rows.forEach((row, index) => {
-      const el = existing.get(row.key) || createRow(row);
-      updateRow(el, row);
-      // Move only when out of place; moving an element can drop its focus.
-      if (list.children[index] !== el) list.insertBefore(el, list.children[index] || null);
-    });
-    while (list.children.length > rows.length) list.lastElementChild.remove();
+  function fillSelect(select, groups, selectedValue, placeholder) {
+    const signature = JSON.stringify([groups, placeholder]);
+    if (select.dataset.signature !== signature) {
+      select.dataset.signature = signature;
+      select.replaceChildren();
+      if (placeholder) select.append(new Option(placeholder, ''));
+      for (const group of groups) {
+        const parent = document.createElement('optgroup');
+        parent.label = group.label;
+        for (const option of group.options) parent.append(new Option(option.text, option.value));
+        select.append(parent);
+      }
+    }
+    select.value = selectedValue || '';
   }
 
-  function createRow(row) {
-    const el = document.createElement(row.tag || 'button');
-    el.dataset.focusKey = row.key;
-    if (el.tagName === 'BUTTON') {
-      el.type = 'button';
-      el.addEventListener('click', row.onSelect);
+  /**
+   * Fills a "Suggested sizes" menu. `presets` is [{ value, text }]. The menu
+   * shows the preset the selected record already matches, or the placeholder
+   * when it matches none, so it is never stale. It is off when nothing is selected.
+   */
+  function fillPresets(select, presets, enabled, matchingKey) {
+    const signature = JSON.stringify(presets);
+    if (select.dataset.signature !== signature) {
+      select.dataset.signature = signature;
+      select.replaceChildren(new Option('Suggested sizes', ''));
+      for (const preset of presets) select.append(new Option(preset.text, preset.value));
     }
-    if (row.size !== undefined) el.append(document.createElement('span'), document.createElement('small'));
-    return el;
+    select.value = matchingKey || '';
+    select.disabled = !enabled;
   }
 
-  function updateRow(el, row) {
-    el.className = row.className;
-    if (row.pressed !== undefined) el.setAttribute('aria-pressed', String(row.pressed));
-    if (row.size !== undefined) {
-      el.children[0].textContent = row.name;
-      el.children[1].textContent = row.size;
-    } else {
-      el.textContent = row.text;
+  const sameSize = (a, b) => Math.abs(a - b) < 0.001;
+  /** True when two boxes are the same size, either way around. */
+  const sameSizeBox = (w1, h1, w2, h2) => (sameSize(w1, w2) && sameSize(h1, h2)) || (sameSize(w1, h2) && sameSize(h1, w2));
+
+  /** Info box text: the total, then how many are on each floor. */
+  function fillInfo(box, total, singular, plural, countsByFloor) {
+    const heading = document.createElement('strong');
+    heading.textContent = total ? `${total} ${total === 1 ? singular : plural} total` : `No ${plural} yet`;
+    box.replaceChildren(heading);
+    if (!total) return;
+    const perFloor = floorOrder().map(floor => `${floorName(floor)}: ${countsByFloor[floor] || 0}`);
+    box.append(document.createElement('br'), perFloor.join(' · '));
+  }
+
+  /** Counts records by floor, e.g. { main: 4, basement: 2 }. */
+  function countByFloor(records, floorOf) {
+    const counts = {};
+    for (const record of records) {
+      const floor = floorOf(record);
+      counts[floor] = (counts[floor] || 0) + 1;
     }
+    return counts;
   }
 
   function fillChecks(listEl, checks) {
@@ -1310,40 +1433,34 @@
     }
   }
 
-  /** Spaces panel: every room, grouped by floor. */
+  /** Spaces panel: the info box and a dropdown of every room, grouped by floor. */
   function renderRoomList() {
-    const rows = [];
-    for (const floor of floorOrder()) {
-      const group = state.rooms.filter(r => r.floor === floor);
-      rows.push({ key: `heading:${floor}`, tag: 'div', className: 'room-list-heading', text: `${floorName(floor)} · ${group.length}` });
-      if (!group.length) rows.push({ key: `empty:${floor}`, tag: 'p', className: 'room-list-empty', text: 'No spaces yet.' });
-      for (const r of group) {
-        const active = state.selectedRoom === r.id && state.floor === floor;
-        const id = r.id;
-        rows.push({
-          key: `room-row:${floor}:${id}`,
-          className: `room-row ${active ? 'active' : ''}`,
-          pressed: active,
-          name: r.name,
-          size: fmtSize(r.w, r.h),
-          onSelect: () => {
-            state.floor = floor;
-            state.selectedRoom = id;
-            render();
-          },
-        });
-      }
-    }
-    syncList($('roomList'), rows);
-    $('roomCount').textContent = `${state.rooms.length} spaces`;
+    const groups = floorOrder().map(floor => ({
+      label: floorName(floor),
+      options: state.rooms
+        .filter(r => r.floor === floor)
+        .map(r => ({ value: r.id, text: `${r.name} · ${fmtSize(r.w, r.h)}` })),
+    }));
+    fillInfo($('roomInfo'), state.rooms.length, 'space', 'spaces', countByFloor(state.rooms, r => r.floor));
+    fillSelect($('roomSelect'), groups.filter(g => g.options.length), state.selectedRoom, state.selectedRoom ? '' : 'No space selected');
+    $('roomSelect').disabled = !state.rooms.length;
   }
 
-  /** Selected Space panel. */
+  /** The editing fields in the Spaces panel. */
   function renderSelectedRoom(model) {
     const room = findRoom(state.selectedRoom);
     for (const id of ['roomName', 'roomKind', 'roomFloor', 'roomWalls', 'roomWallT', 'roomX', 'roomY', 'roomW', 'roomH', 'duplicateRoom', 'deleteRoom']) {
       $(id).disabled = !room;
     }
+    fillPresets(
+      $('roomPreset'),
+      Object.entries(ROOM_PRESETS).map(([value, [name, , w, h]]) => ({ value, text: `${name} · ${fmtSize(w, h)}` })),
+      !!room,
+      room && Object.keys(ROOM_PRESETS).find(key => {
+        const [name, , w, h] = ROOM_PRESETS[key];
+        return room.name === name && sameSizeBox(room.w, room.h, w, h);
+      }),
+    );
     $('roomName').value = room?.name || '';
     $('roomKind').value = room?.kind || 'utility';
     $('roomFloor').value = room?.floor || state.floor;
@@ -1376,25 +1493,26 @@
 
   /** Interior Doorways panel. */
   function renderDoorList() {
-    const doors = state.doors.filter(d => findRoom(d.roomId)?.floor === state.floor);
-    if (!doors.some(d => d.id === state.selectedDoor)) state.selectedDoor = null;
-    $('doorCount').textContent = `${doors.length} on this floor`;
+    const doorFloor = d => findRoom(d.roomId)?.floor;
+    if (!state.doors.some(d => d.id === state.selectedDoor && doorFloor(d) === state.floor)) state.selectedDoor = null;
 
-    syncList($('doorList'), doors.map(d => {
-      const id = d.id;
-      return {
-        key: `door-row:${id}`,
-        className: `door-row ${id === state.selectedDoor ? 'active' : ''}`,
-        text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}`,
-        onSelect: () => {
-          state.selectedDoor = id;
-          state.selectedRoom = findDoor(id).roomId;
-          render();
-        },
-      };
+    const groups = floorOrder().map(floor => ({
+      label: floorName(floor),
+      options: state.doors
+        .filter(d => doorFloor(d) === floor)
+        .map(d => ({ value: d.id, text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}` })),
     }));
+    fillInfo($('doorInfo'), state.doors.length, 'doorway', 'doorways', countByFloor(state.doors, doorFloor));
+    fillSelect($('doorSelect'), groups.filter(g => g.options.length), state.selectedDoor, state.doors.length ? 'Select a doorway' : 'No doorways yet');
+    $('doorSelect').disabled = !state.doors.length;
 
     const selected = findDoor(state.selectedDoor);
+    fillPresets(
+      $('doorPreset'),
+      Object.entries(DOOR_PRESETS).map(([value, [name, width]]) => ({ value, text: `${name} · ${fmtLength(width)}` })),
+      !!selected,
+      selected && Object.keys(DOOR_PRESETS).find(key => sameSize(selected.width, DOOR_PRESETS[key][1])),
+    );
     const room = findRoom(state.selectedRoom);
     $('addDoor').disabled = !room || wallMode(room) !== 'enclosed';
     $('addDoor').title = room && wallMode(room) === 'open' ? 'Set the selected room to Enclosed Walls to add a doorway.' : '';
@@ -1410,26 +1528,31 @@
 
   /** Windows panel. */
   function renderWindowList() {
-    const windows = state.windows.filter(w => w.floor === state.floor);
-    if (!windows.some(w => w.id === state.selectedWindow)) state.selectedWindow = null;
-    $('windowCount').textContent = `${windows.length} on this floor`;
+    if (!state.windows.some(w => w.id === state.selectedWindow && w.floor === state.floor)) state.selectedWindow = null;
 
-    const sorted = [...windows].sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side) || a.offset - b.offset);
-    syncList($('windowList'), sorted.map(w => {
-      const id = w.id;
-      return {
-        key: `window-row:${id}`,
-        className: `door-row ${id === state.selectedWindow ? 'active' : ''}`,
-        text: `${capitalize(SIDE_NAME[w.side])} Wall · ${fmtLength(w.width)} at ${fmtLength(w.offset)}`,
-        onSelect: () => {
-          state.selectedWindow = id;
-          render();
-        },
-      };
+    const groups = floorOrder().map(floor => ({
+      label: floorName(floor),
+      options: state.windows
+        .filter(w => w.floor === floor)
+        .sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side) || a.offset - b.offset)
+        .map(w => ({ value: w.id, text: `${capitalize(SIDE_NAME[w.side])} Wall · ${fmtLength(w.width)} at ${fmtLength(w.offset)}` })),
     }));
+    fillInfo($('windowInfo'), state.windows.length, 'window', 'windows', countByFloor(state.windows, w => w.floor));
+    fillSelect($('windowSelect'), groups.filter(g => g.options.length), state.selectedWindow, state.windows.length ? 'Select a window' : 'No windows yet');
+    $('windowSelect').disabled = !state.windows.length;
 
     const selected = findWindow(state.selectedWindow);
+    fillPresets(
+      $('windowPreset'),
+      Object.entries(WINDOW_PRESETS).map(([value, [name, width]]) => ({ value, text: `${name} · ${fmtLength(width)}` })),
+      !!selected,
+      selected && Object.keys(WINDOW_PRESETS).find(key => sameSize(selected.width, WINDOW_PRESETS[key][1])),
+    );
     $('windowEditor').hidden = !selected;
+    const centerRoom = selected && roomBesideWindow(selected);
+    $('centerWindow').disabled = !centerRoom;
+    $('centerWindow').textContent = centerRoom ? `Center on ${centerRoom.name}` : 'Center on Room';
+    $('centerWindow').title = centerRoom ? '' : 'No room touches this wall.';
     if (selected) {
       $('windowSide').value = selected.side;
       $('windowOffset').value = lengthField(selected.offset);
@@ -1439,28 +1562,35 @@
 
   /** Furniture & Fixtures panel. */
   function renderItemList(model) {
-    const items = state.items.filter(it => it.floor === state.floor);
-    if (!items.some(it => it.id === state.selectedItem)) state.selectedItem = null;
+    if (!state.items.some(it => it.id === state.selectedItem && it.floor === state.floor)) state.selectedItem = null;
     const { out, bad } = itemChecks(model);
-    $('itemCount').textContent = `${items.length} on this floor`;
 
-    const rows = items.map(it => {
-      const id = it.id;
-      return {
-        key: `item-row:${id}`,
-        className: `room-row ${id === state.selectedItem ? 'active' : ''} ${bad.has(id) ? 'item-bad' : ''}`,
-        name: it.name,
-        size: fmtItemSize(it.w, it.h),
-        onSelect: () => {
-          state.selectedItem = id;
-          render();
-        },
-      };
-    });
-    if (!items.length) rows.push({ key: 'empty', tag: 'p', className: 'room-list-empty', text: 'No items on this floor yet.' });
-    syncList($('itemList'), rows);
+    // Items with the same name on a floor get #1, #2, ... so they can be told apart.
+    const nameTotals = {};
+    for (const it of state.items) nameTotals[`${it.floor}:${it.name}`] = (nameTotals[`${it.floor}:${it.name}`] || 0) + 1;
+    const nameSeen = {};
+    const optionFor = it => {
+      const key = `${it.floor}:${it.name}`;
+      nameSeen[key] = (nameSeen[key] || 0) + 1;
+      const number = nameTotals[key] > 1 ? ` #${nameSeen[key]}` : '';
+      return { value: it.id, text: `${it.name}${number} · ${fmtItemSize(it.w, it.h)}${bad.has(it.id) ? ' !' : ''}` };
+    };
+    const groups = floorOrder().map(floor => ({
+      label: floorName(floor),
+      options: state.items.filter(it => it.floor === floor).map(optionFor),
+    }));
+    fillInfo($('itemInfo'), state.items.length, 'item', 'items', countByFloor(state.items, it => it.floor));
+    fillSelect($('itemSelect'), groups.filter(g => g.options.length), state.selectedItem, state.items.length ? 'Select an item' : 'No items yet');
+    $('itemSelect').disabled = !state.items.length;
 
     const selected = findItem(state.selectedItem);
+    const itemPresets = Object.entries(ITEM_PRESETS).filter(([key]) => key !== 'custom');
+    fillPresets(
+      $('itemPreset'),
+      itemPresets.map(([value, [name, w, h]]) => ({ value, text: `${name} · ${fmtItemSize(w, h)}` })),
+      !!selected,
+      selected && itemPresets.find(([, [name, w, h]]) => selected.name === name && sameSizeBox(selected.w, selected.h, w, h))?.[0],
+    );
     $('itemEditor').hidden = !selected;
     if (selected) {
       $('itemName').value = selected.name;
@@ -1470,7 +1600,8 @@
       $('itemH').value = lengthField(selected.h, true);
     }
 
-    const emptyText = items.length ? 'No items overlap walls or each other.' : 'Add an item to check it against walls and other items.';
+    const itemsOnFloor = state.items.some(it => it.floor === state.floor);
+    const emptyText = itemsOnFloor ? 'No items overlap walls or each other.' : 'Add an item to check it against walls and other items.';
     fillChecks($('itemIssues'), out.length ? out : [{ level: 'good', text: emptyText }]);
     $('showItems').checked = state.showItems !== false;
   }
@@ -1484,8 +1615,7 @@
   }
 
   // Keyboard users keep their place: when a render rebuilds the element that
-  // had focus (a list row or a shape on the plan), focus moves to its
-  // replacement. Mouse and touch behavior is unchanged.
+  // had focus (a shape on the plan), focus moves to its replacement. Mouse and touch behavior is unchanged.
   let usingKeyboard = false;
   document.addEventListener('keydown', () => { usingKeyboard = true; }, true);
   document.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
@@ -1505,7 +1635,6 @@
     $('addFloor').hidden = state.upperEnabled;
     $('removeFloor').disabled = !state.upperEnabled;
     $('roomFloor').querySelector('[value="upper"]').hidden = !state.upperEnabled;
-    $('selectedFloor').textContent = floorName(state.floor);
 
     // Units, footprint, walls, and zoom
     applyUnits();
@@ -1532,6 +1661,7 @@
     renderDoorList();
     renderWindowList();
     renderItemList(model);
+    trackLayoutChange();
     saveState();
 
     if (focusKey && document.activeElement?.dataset?.focusKey !== focusKey) {
@@ -1713,6 +1843,106 @@
     $('roomName').select();
   }
 
+  // Suggested sizes: applied to the selected record. Windows, doorways, and
+  // items resize around their middle so they stay where they are.
+  $('roomPreset').addEventListener('change', e => {
+    const preset = ROOM_PRESETS[e.target.value];
+    const room = findRoom(state.selectedRoom);
+    if (room && preset) {
+      const [name, kind, w, h] = preset;
+      Object.assign(room, { name, kind, w, h });
+    }
+    render();
+  });
+
+  $('doorPreset').addEventListener('change', e => {
+    const preset = DOOR_PRESETS[e.target.value];
+    const door = findDoor(state.selectedDoor);
+    if (door && preset) {
+      const width = preset[1];
+      const wallLength = doorGeometry(door).length;
+      const centered = door.offset + door.width / 2 - width / 2;
+      door.width = width;
+      door.offset = doorSnap(Math.max(0, Math.min(wallLength - width, centered)));
+    }
+    render();
+  });
+
+  $('windowPreset').addEventListener('change', e => {
+    const preset = WINDOW_PRESETS[e.target.value];
+    const win = findWindow(state.selectedWindow);
+    if (win && preset) {
+      const width = preset[1];
+      const wallLength = windowGeometry(win).length;
+      const centered = win.offset + win.width / 2 - width / 2;
+      win.width = width;
+      win.offset = itemSnap(Math.max(0, Math.min(wallLength - width, centered)));
+    }
+    render();
+  });
+
+  $('itemPreset').addEventListener('change', e => {
+    const preset = ITEM_PRESETS[e.target.value];
+    const item = findItem(state.selectedItem);
+    if (item && preset && e.target.value !== 'custom') {
+      const [name, w, h] = preset;
+      const centerX = item.x + item.w / 2;
+      const centerY = item.y + item.h / 2;
+      Object.assign(item, { name, w, h, x: itemSnap(centerX - w / 2), y: itemSnap(centerY - h / 2) });
+    }
+    render();
+  });
+
+  // Picking from a dropdown also switches to that record's floor.
+  $('roomSelect').addEventListener('change', e => {
+    const room = findRoom(e.target.value);
+    if (!room) return;
+    state.floor = room.floor;
+    state.selectedRoom = room.id;
+    render();
+  });
+
+  $('doorSelect').addEventListener('change', e => {
+    if (!e.target.value) {
+      state.selectedDoor = null;
+      render();
+      return;
+    }
+    const door = findDoor(e.target.value);
+    const room = door && findRoom(door.roomId);
+    if (!room) return;
+    state.floor = room.floor;
+    state.selectedRoom = room.id;
+    state.selectedDoor = door.id;
+    render();
+  });
+
+  $('windowSelect').addEventListener('change', e => {
+    if (!e.target.value) {
+      state.selectedWindow = null;
+      render();
+      return;
+    }
+    const win = findWindow(e.target.value);
+    if (!win) return;
+    state.floor = win.floor;
+    state.selectedWindow = win.id;
+    render();
+  });
+
+  $('itemSelect').addEventListener('change', e => {
+    if (!e.target.value) {
+      state.selectedItem = null;
+      render();
+      return;
+    }
+    const item = findItem(e.target.value);
+    if (!item) return;
+    state.floor = item.floor;
+    state.selectedItem = item.id;
+    render();
+  });
+
   $('addRoom').addEventListener('click', () => createRoom());
   $('duplicateRoom').addEventListener('click', () => {
     const room = findRoom(state.selectedRoom);
@@ -1875,6 +2105,13 @@
     }
     render();
   });
+  $('centerWindow').addEventListener('click', () => {
+    const win = findWindow(state.selectedWindow);
+    const room = win && roomBesideWindow(win);
+    if (!room) return;
+    centerWindowOnRoom(win, room);
+    render();
+  });
   for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
     $(id).addEventListener('change', e => {
       const win = findWindow(state.selectedWindow);
@@ -1898,7 +2135,7 @@
   });
 
   $('addItem').addEventListener('click', () => {
-    const [name, w, h] = ITEM_PRESETS[$('itemPreset').value] || ITEM_PRESETS.custom;
+    const [name, w, h] = ITEM_PRESETS.custom;
     const room = findRoom(state.selectedRoom);
     let x = 1.5;
     let y = 1.5;
@@ -1997,6 +2234,17 @@
   const SHAPE_SELECTOR = '[data-door], [data-window], [data-room], [data-item]';
   let drag = null;
 
+  /**
+   * The exterior wall closest to a point. The window's current wall wins
+   * unless another wall is clearly closer, so it doesn't flicker between two
+   * walls when the pointer is near a corner.
+   */
+  function nearestWallSide(p, currentSide) {
+    const distance = { north: p.y, south: state.depth - p.y, west: p.x, east: state.width - p.x };
+    const closest = SIDES.reduce((best, side) => (distance[side] < distance[best] ? side : best));
+    return distance[currentSide] <= distance[closest] + 0.75 ? currentSide : closest;
+  }
+
   /** Pointer position in plan units (feet). */
   function planPoint(event) {
     const p = svg.createSVGPoint();
@@ -2070,6 +2318,7 @@
       state.selectedItem = it.id;
       drag = { type: 'item', id: it.id, dx: p.x - it.x, dy: p.y - it.y };
     }
+    dragStartLayout = lastLayout;
     svg.setPointerCapture(e.pointerId);
     render();
     e.preventDefault();
@@ -2088,6 +2337,12 @@
       it.y = itemSnap(p.y - drag.dy);
     } else if (drag.type === 'window') {
       const w = findWindow(drag.id);
+      const side = nearestWallSide(p, w.side);
+      if (side !== w.side) {
+        // Moved to another wall: hold the window by its middle from here on.
+        w.side = side;
+        drag.delta = w.width / 2;
+      }
       const g = windowGeometry(w);
       w.offset = itemSnap(Math.max(0, Math.min(g.length - w.width, (g.horizontal ? p.x : p.y) - drag.delta)));
     } else {
@@ -2098,8 +2353,12 @@
     render();
   });
 
-  svg.addEventListener('pointerup', () => { drag = null; });
-  svg.addEventListener('pointercancel', () => { drag = null; });
+  const endDrag = () => {
+    drag = null;
+    endDragTracking();
+  };
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
 
   // Keyboard: Enter or Space selects a focused shape. Arrow keys move it 6″
   // or 10 cm (windows 3″ or 5 cm); Shift moves 1′ or 25 cm. Doorways and
@@ -2170,6 +2429,19 @@
   });
   $('actionMenu').addEventListener('click', e => {
     if (e.target.closest('button')) closeMenu();
+  });
+
+  $('undo').addEventListener('click', undoLastChange);
+
+  // Ctrl+Z (Cmd+Z on a Mac). Inside a text or number field it keeps its normal
+  // job of undoing typing, and it is ignored while a dialog is open.
+  document.addEventListener('keydown', e => {
+    const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z';
+    if (!isUndoKey || !$('confirmOverlay').hidden) return;
+    const field = document.activeElement;
+    if (field && field.matches('input:not([type="checkbox"]):not([type="radio"]), textarea')) return;
+    e.preventDefault();
+    undoLastChange();
   });
 
   $('reset').addEventListener('click', () => askConfirmation(
@@ -2309,6 +2581,9 @@
       if (next) {
         state = next;
         render();
+        // Loading the default layout on a first visit isn't something to undo.
+        undoStack.length = 0;
+        $('undo').disabled = true;
       }
     });
   }

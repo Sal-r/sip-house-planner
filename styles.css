@@ -138,25 +138,20 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .inline-button:hover { background: #d5e8e9; }
 
-.delete-button {
-  margin-top: 12px;
-  padding: 9px 8px;
+/* Remove buttons: the same shape as .inline-button, tinted red */
+.delete-button,
+.quiet-danger {
+  padding: 9px 10px;
   border: 0;
-  background: transparent;
-  color: #a45347;
+  border-radius: 6px;
+  background: #f9e9e6;
+  color: #9c4337;
   font-size: .78rem;
   font-weight: 700;
 }
-.quiet-danger {
-  display: block;
-  margin: 10px 0 0;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  color: #9a554b;
-  font-size: .77rem;
-}
-.delete-button:hover, .quiet-danger:hover { text-decoration: underline; }
+.delete-button { margin-top: 12px; }
+.quiet-danger { display: block; margin: 12px 0 0; }
+.delete-button:hover, .quiet-danger:hover { background: #f2d5d0; }
 
 .zoom-button {
   width: 28px;
@@ -171,6 +166,19 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .zoom-button:hover { background: #e6f2f2; }
 .rotate-gap { margin-right: 8px; }
+
+.undo-button {
+  height: 28px;
+  margin-right: 6px;
+  padding: 0 11px;
+  border: 1px solid #bad0d1;
+  border-radius: 6px;
+  background: #fff;
+  color: #245561;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.undo-button:hover { background: #e6f2f2; }
 
 /* 3. Top bar and menu */
 .topbar {
@@ -246,7 +254,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   letter-spacing: -.035em;
   line-height: 1.1;
 }
-.section-heading p:not(.eyebrow) { max-width: 38ch; margin: 0; color: #5d747c; font-size: 1.065rem; }
+.section-heading p:not(.eyebrow) { margin: 0; color: #5d747c; font-size: .94rem; }
 .eyebrow {
   margin: 0 0 4px;
   color: var(--gold-text);
@@ -259,10 +267,19 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 
 .floor-controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+/* width: 0 keeps the long text from setting the width of the whole column, and
+   min-width: 100% then stretches it to the width of the floor tabs. */
+.disclaimer {
+  width: 0;
+  min-width: 100%;
+  color: #35505a;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 .floor-tabs {
   display: flex;
@@ -463,49 +480,23 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .panel-title span { color: var(--muted-text); font-size: .75rem; white-space: nowrap; }
 .front-select { margin: 10px 0 0; }
 
-/* 6. Lists and editors */
-.room-list {
-  max-height: 430px;
-  padding: 7px;
-  overflow: auto;
-  border: 1px solid #e0e9e7;
-  border-radius: 9px;
-  background: #fbfdfc;
+/* 6. Dropdown pickers and editors */
+/* Info box and dropdown row at the top of each list panel */
+.info-box {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid #d5e5e2;
+  border-radius: 8px;
+  background: #f2f8f7;
+  color: #3c5f68;
+  font-size: .78rem;
+  line-height: 1.5;
 }
-.room-list-heading {
-  padding: 10px 8px 5px;
-  color: #769096;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .11em;
-  text-transform: uppercase;
-}
-.room-list-empty { margin: 4px 8px 10px; color: #91a2a5; font-size: .78rem; }
-.room-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 9px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: #32525d;
-  text-align: left;
-  font-size: .82rem;
-  line-height: 1.25;
-}
-.room-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.room-row small { color: #82999e; font-size: .7rem; white-space: nowrap; }
-.room-row:hover { background: #eef5f4; }
-.room-row.active {
-  border-color: #80b4ad;
-  background: #e1f2ef;
-  color: #174f5c;
-  font-weight: 750;
-}
-.room-row.item-bad span::after { content: " !"; color: var(--conflict); font-weight: 800; }
+.info-box strong { color: #174f5c; }
+/* The same stack in all four panels: pick, add, then suggested sizes */
+.pick-controls { display: grid; gap: 8px; margin-bottom: 12px; }
+.pick-controls select { margin-top: 0; font-weight: 700; }
+.pick-controls .primary-button { margin-top: 0; }
 
 .room-coordinates { margin-top: 10px; }
 .room-actions {
@@ -517,30 +508,8 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .room-actions .inline-button,
 .room-actions .delete-button { margin-top: 8px; }
+.room-actions .inline-button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.door-list {
-  display: grid;
-  gap: 5px;
-  max-height: 180px;
-  margin: 12px 0 0;
-  overflow: auto;
-}
-.door-row {
-  padding: 8px 10px;
-  border: 1px solid #dce8e6;
-  border-radius: 7px;
-  background: #f8fbfa;
-  color: #3c5f68;
-  text-align: left;
-  font-size: .8rem;
-}
-.door-row:hover { background: #eef6f4; }
-.door-row.active {
-  border-color: #dba66e;
-  background: #fff3e7;
-  color: #895022;
-  font-weight: 750;
-}
 .door-editor { margin-top: 12px; padding-top: 14px; border-top: 1px solid #e4ebea; }
 .door-editor .two-fields { margin-bottom: 10px; }
 
@@ -585,20 +554,6 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .wall-check.exterior input { cursor: not-allowed; }
 
 /* 8. Furniture and items */
-.item-add {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  gap: 8px;
-}
-.item-add select { margin-top: 0; font-size: .8rem; font-weight: 700; }
-.item-add .primary-button {
-  width: auto;
-  min-height: 40px;
-  margin-top: 0;
-  white-space: nowrap;
-}
-.item-list { max-height: 220px; margin-top: 12px; }
 .item-checks-title { margin: 16px 0 8px; color: var(--label); font-size: .82rem; }
 
 /* 9. Layout checks (shared by the Layout Checks and Item Checks lists) */
@@ -719,10 +674,9 @@ svg .door-hinge { fill: #fff; stroke: #ad5c2d; stroke-width: .12; pointer-events
 svg .interior-door.selected .door-swing,
 svg .interior-door.selected .door-leaf { stroke: #ed9e28; stroke-width: .23; }
 
-svg .door-line { stroke: #c58235; stroke-width: .32; stroke-linecap: round; }
+svg .entrance-bar { fill: #c58235; pointer-events: none; }
 svg .door-label { fill: #ad6d2c; font-size: .53px; font-weight: 700; }
 svg .entrance-label { text-anchor: middle; dominant-baseline: central; letter-spacing: .06em; }
-svg .front-side { stroke: var(--gold); stroke-width: .28; stroke-linecap: round; }
 svg .front-label {
   fill: var(--gold-text);
   font-size: .5px;
@@ -783,7 +737,6 @@ svg.tap-only .interior-door { cursor: pointer; }
    wide dashboard layout) */
 @media (max-width: 1250px) {
   .section-heading { flex-direction: column; align-items: flex-start; }
-  .floor-controls { justify-content: flex-start; }
 }
 
 @media (max-width: 1100px) {
@@ -801,12 +754,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (max-width: 800px) {
   .workspace { display: block; padding-top: 20px; }
   .sidebar { margin-top: 16px; }
-  .side-stack { display: contents; }
-  .selected-panel { order: 1; }
-  .room-list-panel { order: 2; }
-  .doors-panel { order: 3; }
-  .windows-panel { order: 4; }
-  .items-panel { order: 5; }
+  .side-stack { order: 1; }
   .findings { order: 6; }
   .dimensions-panel { order: 7; }
   .walls-panel { order: 8; }
@@ -814,7 +762,6 @@ svg.tap-only .interior-door { cursor: pointer; }
   .metric-row { gap: 8px; }
   .metric-note { display: none; }
   .plan-note { font-size: .72rem; }
-  .room-list-panel .room-list { max-height: 320px; }
   .wall-checks { grid-template-columns: repeat(2, auto); }
   /* 16px stops phones from zooming in when a field is focused */
   input, select { font-size: 16px; }
@@ -872,14 +819,12 @@ svg.tap-only .interior-door { cursor: pointer; }
 
 /* Wide screens (1500px+): a 24-column dashboard.
    Row 1: intro, Footprint, Wall Thickness, Layout Checks.
-   Row 2: the plan (spanning rows 2-4), Spaces, and Selected Space. Sharing a
-          row keeps Spaces and Selected Space the same height.
-   Rows 3-4: Doorways and Windows split the left column evenly; Furniture &
-          Fixtures fills the wider right column for its longer names. */
+   Row 2: the plan on the left. Next to it, a 2 x 2 grid of equal boxes:
+          Spaces and Furniture & Fixtures on top, Doorways and Windows below. */
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 200px auto 1fr 1fr;
+    grid-template-rows: 236px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -889,7 +834,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 
   .intro {
     display: grid;
-    grid-template-columns: minmax(0, .8fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
     grid-column: 1 / 13;
     grid-row: 1;
@@ -904,8 +849,7 @@ svg.tap-only .interior-door { cursor: pointer; }
     margin: 0;
   }
   .intro .section-heading h1 { margin: 2px 0 5px; font-size: clamp(1.7rem, 1.85vw, 2.4rem); }
-  .intro .section-heading p:not(.eyebrow) { font-size: .985rem; }
-  .intro .floor-controls { justify-content: flex-start; }
+  .intro .section-heading p:not(.eyebrow) { font-size: .86rem; }
   .intro .floor-tabs button { padding: 7px 12px; }
   .intro .metric-row {
     grid-template-columns: 1fr 1fr;
@@ -946,22 +890,31 @@ svg.tap-only .interior-door { cursor: pointer; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 
-  .plan-card { grid-column: 1 / 16; grid-row: 2 / 5; min-width: 0; }
+  .plan-card { grid-column: 1 / 16; grid-row: 2; min-width: 0; }
   .plan-scroll { height: min(calc(100vh - 110px), 1100px); }
-  .side-stack { display: contents; }
-  .room-list-panel { grid-column: 16 / 20; grid-row: 2; }
-  .selected-panel { grid-column: 20 / 25; grid-row: 2; }
-  .doors-panel { grid-column: 16 / 20; grid-row: 3; }
-  .windows-panel { grid-column: 16 / 20; grid-row: 4; }
-  .items-panel { grid-column: 20 / 25; grid-row: 3 / 5; }
-  .room-list-panel,
-  .selected-panel,
-  .doors-panel,
-  .windows-panel,
-  .items-panel { align-self: stretch; min-width: 0; }
+  .side-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    grid-column: 16 / 25;
+    grid-row: 2;
+    gap: 14px;
+    min-width: 0;
+  }
+  .side-stack > .panel { min-width: 0; container-type: inline-size; }
 
-  .item-add { grid-template-columns: 1fr; }
-  .item-add .primary-button { width: 100%; }
+  /* Item sizes use quarter steps (like 32.25), which need more room per field. */
+  .items-panel .four-fields { grid-template-columns: repeat(2, 1fr); }
+
+  /* Each box is narrow, so on smaller wide screens its fields stack. */
+  @container (max-width: 359px) {
+    .doors-panel .door-editor .two-fields:first-child { grid-template-columns: 1fr; }
+  }
+  @container (max-width: 279px) {
+    .two-fields { grid-template-columns: 1fr; }
+    .four-fields { grid-template-columns: repeat(2, 1fr); }
+    .wall-checks { grid-template-columns: repeat(2, auto); }
+  }
 
   footer { max-width: none; padding-left: 22px; padding-right: 22px; }
 }
