@@ -113,14 +113,14 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The Templates menu lists Tiny Cottage, Alvin, Simon, and Theodore, and picking one asks for confirmation first.
 - [ ] Each template loads with 8.5 in exterior and 4.5 in interior walls, no basement, and a credit line with a working link under the plan.
 - [ ] Undo right after loading a template brings the previous layout back and hides the credit.
-- [ ] Reset to Defaults clears the credit and restores the basement.
+- [ ] Reset to Defaults on a template restores that template, including its credit. On a layout that did not come from a template, it restores the default layout and clears the credit.
 - [ ] Print / PDF on a template mentions the credit in the note.
 - [ ] Opened straight from disk (file://), picking a template explains that it needs to be served over http.
 
 ## Export, import, reset, print
 - [ ] Export Layout downloads a .json file.
 - [ ] Import Layout loads that file after confirming; importing a non-layout file shows "Couldn’t Import That File" and changes nothing.
-- [ ] Reset to Defaults asks for confirmation, then restores the default layout.
+- [ ] Reset to Defaults asks for confirmation and names what it will restore (the loaded template or the default layout). If the template file can't be read, it shows an error and changes nothing.
 - [ ] Print / PDF shows one landscape page per floor with a room list and no selection highlights.
 
 ## Phone

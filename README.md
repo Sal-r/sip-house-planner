@@ -46,7 +46,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.
 - **Basement and second floor:** each has a small **−** or **+** button on the left of its tab. **−** removes the floor and **+** brings it back (the tab stays, dimmed, while a floor is off). Removing a floor deletes its spaces, doorways, windows, and items, and Undo restores them.
 - **Templates:** pick one from the **Templates** menu. It replaces your current layout after a confirmation, and Undo brings your layout back.
-- **Start over** with **Reset to Defaults**.
+- **Start over** with **Reset to Defaults**. It goes back to the template you loaded, or to the default layout if you didn't start from a template.
 
 ### Keyboard
 

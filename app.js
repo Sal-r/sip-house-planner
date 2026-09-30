@@ -2899,14 +2899,7 @@
       async () => {
         const { layout: next, problem } = await readLayoutFile(template.file);
         if (!next) {
-          askConfirmation(
-            'Couldn’t Load That Template',
-            `${problem} Nothing was changed.`,
-            'OK',
-            null,
-            $('templateSelect'),
-            true,
-          );
+          showTemplateProblem(problem, $('templateSelect'));
           return;
         }
         state = next;
@@ -2916,16 +2909,38 @@
     );
   });
 
-  $('reset').addEventListener('click', () => askConfirmation(
-    'Reset to Defaults?',
-    'Your current layout in this browser will be replaced with the default layout. Export it first if you want to keep a copy.',
-    'Reset to Defaults',
-    async () => {
-      state = (await loadDefaultLayout()) || createDefaultState();
-      render();
-    },
-    $('reset'),
-  ));
+  function showTemplateProblem(problem, returnFocusTo) {
+    askConfirmation('Couldn’t Load That Template', `${problem} Nothing was changed.`, 'OK', null, returnFocusTo, true);
+  }
+
+  /** The template the current layout came from, if it was loaded from one. */
+  const loadedTemplate = () => TEMPLATES.find(t => t.name === state.templateCredit?.name);
+
+  // Reset goes back to the template that is loaded, or to the default layout
+  // when the layout did not come from a template.
+  $('reset').addEventListener('click', () => {
+    const template = loadedTemplate();
+    const target = template ? `the ${template.name} template` : 'the default layout';
+    askConfirmation(
+      'Reset to Defaults?',
+      `Your current layout in this browser will be replaced with ${target}. Export it first if you want to keep a copy.`,
+      'Reset to Defaults',
+      async () => {
+        if (template) {
+          const { layout: next, problem } = await readLayoutFile(template.file);
+          if (!next) {
+            showTemplateProblem(problem, $('reset'));
+            return;
+          }
+          state = next;
+        } else {
+          state = (await loadDefaultLayout()) || createDefaultState();
+        }
+        render();
+      },
+      $('reset'),
+    );
+  });
 
   // ==========================================================================
   // 10. Export, import, and print
