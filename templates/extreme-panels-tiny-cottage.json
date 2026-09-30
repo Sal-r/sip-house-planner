@@ -1,9 +1,10 @@
 {
   "app": "sip-house-planner",
   "format": 1,
+  "exportedAt": "2026-09-30T22:22:37.215Z",
   "layout": {
     "schemaVersion": 3,
-    "width": 24.0,
+    "width": 24,
     "depth": 15.75,
     "exteriorWall": 0.75,
     "interiorWall": 0.375,
@@ -11,7 +12,12 @@
     "floor": "main",
     "upperEnabled": false,
     "basementEnabled": false,
-    "selectedRoom": "living",
+    "templateCredit": {
+      "name": "EXTREME PANELS TINY COTTAGE",
+      "by": "Lew Oliver for Extreme Panel Technologies",
+      "url": "https://extremepanel.com/project/extreme-tiny-cottage-plan/"
+    },
+    "selectedRoom": "closet",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -36,61 +42,198 @@
         "id": "win-n1",
         "floor": "main",
         "side": "north",
-        "offset": 8.0,
-        "width": 3.0
+        "offset": 1.75,
+        "width": 3
       },
       {
         "id": "win-n2",
         "floor": "main",
         "side": "north",
-        "offset": 11.5,
-        "width": 4.0
+        "offset": 9.5,
+        "width": 4
       },
       {
         "id": "win-s1",
         "floor": "main",
         "side": "south",
-        "offset": 4.0,
-        "width": 3.0
+        "offset": 4,
+        "width": 3
       },
       {
         "id": "win-e1",
         "floor": "main",
         "side": "east",
-        "offset": 8.5,
-        "width": 1.5
+        "offset": 8,
+        "width": 1.75
       }
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": null,
+    "selectedItem": "item-1790806898977-pawlkt",
     "doors": [
       {
         "id": "door-entry",
         "roomId": "living",
         "side": "west",
         "offset": 8.25,
-        "width": 3.0,
+        "width": 3,
         "hinge": "start",
         "swing": "in"
       },
       {
         "id": "door-closet",
         "roomId": "closet",
-        "side": "west",
-        "offset": 2.0,
-        "width": 2.5,
+        "side": "south",
+        "offset": 0.25,
+        "width": 3,
         "hinge": "start",
-        "swing": "out"
+        "swing": "none"
       },
       {
         "id": "door-bath",
         "roomId": "bath",
         "side": "west",
-        "offset": 1.0,
+        "offset": 1,
         "width": 2.5,
         "hinge": "start",
         "swing": "out"
+      }
+    ],
+    "items": [
+      {
+        "id": "desk-top",
+        "name": "L-Desk (Top Leg)",
+        "floor": "main",
+        "x": 0.75,
+        "y": 0.75,
+        "w": 5,
+        "h": 1.75
+      },
+      {
+        "id": "desk-side",
+        "name": "L-Desk (Side Leg)",
+        "floor": "main",
+        "x": 0.75,
+        "y": 2.5,
+        "w": 1.75,
+        "h": 3
+      },
+      {
+        "id": "chair",
+        "name": "Chair",
+        "floor": "main",
+        "x": 3,
+        "y": 3,
+        "w": 2,
+        "h": 2
+      },
+      {
+        "id": "bed",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 9,
+        "y": 0.75,
+        "w": 5,
+        "h": 6.75
+      },
+      {
+        "id": "pantry",
+        "name": "Pantry Cabinet",
+        "floor": "main",
+        "x": 0.75,
+        "y": 12.5,
+        "w": 2,
+        "h": 2.5
+      },
+      {
+        "id": "sink-base",
+        "name": "Base Cabinets (Sink)",
+        "floor": "main",
+        "x": 2.75,
+        "y": 13,
+        "w": 5.25,
+        "h": 2
+      },
+      {
+        "id": "range",
+        "name": "Range",
+        "floor": "main",
+        "x": 8,
+        "y": 12.5,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "base-2",
+        "name": "Base Cabinets",
+        "floor": "main",
+        "x": 10.5,
+        "y": 13,
+        "w": 2.25,
+        "h": 2
+      },
+      {
+        "id": "fridge",
+        "name": "Refrigerator",
+        "floor": "main",
+        "x": 12.75,
+        "y": 12.5,
+        "w": 3,
+        "h": 2.5
+      },
+      {
+        "id": "washer",
+        "name": "Washer / Dryer",
+        "floor": "main",
+        "x": 20.75,
+        "y": 5,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "toilet",
+        "name": "Toilet",
+        "floor": "main",
+        "x": 20.75,
+        "y": 8,
+        "w": 2.5,
+        "h": 1.75
+      },
+      {
+        "id": "shower",
+        "name": "Shower",
+        "floor": "main",
+        "x": 20.25,
+        "y": 11.25,
+        "w": 3,
+        "h": 3.75
+      },
+      {
+        "id": "vanity",
+        "name": "Vanity",
+        "floor": "main",
+        "x": 16.25,
+        "y": 13.25,
+        "w": 3,
+        "h": 1.75
+      },
+      {
+        "id": "item-1790806898977-pawlkt",
+        "name": "Night Stand",
+        "floor": "main",
+        "x": 14,
+        "y": 0.75,
+        "w": 1.75,
+        "h": 1.5
+      },
+      {
+        "id": "item-1790806914950-qnh7sq",
+        "name": "Night Stand",
+        "floor": "main",
+        "x": 7.25,
+        "y": 0.75,
+        "w": 1.75,
+        "h": 1.5
       }
     ],
     "rooms": [
@@ -115,18 +258,27 @@
         "id": "closet",
         "name": "Closet",
         "floor": "main",
-        "x": 16.0,
+        "x": 16,
         "y": 0.75,
         "w": 7.25,
-        "h": 7.0,
+        "h": 7,
         "kind": "utility",
-        "wallMode": "enclosed"
+        "wallMode": "enclosed",
+        "halfWalls": {
+          "south": false
+        },
+        "walls": {
+          "north": true,
+          "east": true,
+          "south": true,
+          "west": true
+        }
       },
       {
         "id": "bath",
         "name": "Bath",
         "floor": "main",
-        "x": 16.0,
+        "x": 16,
         "y": 7.75,
         "w": 7.25,
         "h": 7.25,
@@ -134,139 +286,39 @@
         "wallMode": "enclosed"
       }
     ],
-    "items": [
-      {
-        "id": "desk-top",
-        "name": "L-Desk (Top Leg)",
-        "floor": "main",
-        "x": 0.75,
-        "y": 0.75,
-        "w": 5.0,
-        "h": 1.75
-      },
-      {
-        "id": "desk-side",
-        "name": "L-Desk (Side Leg)",
-        "floor": "main",
-        "x": 0.75,
-        "y": 2.5,
-        "w": 1.75,
-        "h": 3.0
-      },
-      {
-        "id": "round-table",
-        "name": "Round Table",
-        "floor": "main",
-        "x": 3.0,
-        "y": 3.0,
-        "w": 2.25,
-        "h": 2.25
-      },
-      {
-        "id": "chair",
-        "name": "Chair",
-        "floor": "main",
-        "x": 5.5,
-        "y": 4.25,
-        "w": 2.0,
-        "h": 2.0
-      },
-      {
-        "id": "bed",
-        "name": "Queen Bed",
-        "floor": "main",
-        "x": 9.0,
-        "y": 0.75,
-        "w": 5.0,
-        "h": 6.75
-      },
-      {
-        "id": "pantry",
-        "name": "Pantry Cabinet",
-        "floor": "main",
-        "x": 0.75,
-        "y": 12.25,
-        "w": 2.0,
-        "h": 2.5
-      },
-      {
-        "id": "sink-base",
-        "name": "Base Cabinets (Sink)",
-        "floor": "main",
-        "x": 2.75,
-        "y": 12.75,
-        "w": 5.25,
-        "h": 2.0
-      },
-      {
-        "id": "range",
-        "name": "Range",
-        "floor": "main",
-        "x": 8.0,
-        "y": 12.25,
-        "w": 2.5,
-        "h": 2.5
-      },
-      {
-        "id": "base-2",
-        "name": "Base Cabinets",
-        "floor": "main",
-        "x": 10.5,
-        "y": 12.75,
-        "w": 2.25,
-        "h": 2.0
-      },
-      {
-        "id": "fridge",
-        "name": "Refrigerator",
-        "floor": "main",
-        "x": 12.75,
-        "y": 12.25,
-        "w": 3.0,
-        "h": 2.5
-      },
+    "fixtures": [
       {
         "id": "washer",
         "name": "Washer / Dryer",
-        "floor": "main",
-        "x": 20.75,
-        "y": 5.0,
-        "w": 2.5,
-        "h": 2.5
+        "short": "W/D",
+        "floor": "basement",
+        "x": 25.5,
+        "y": 18.5
       },
       {
-        "id": "toilet",
-        "name": "Toilet",
-        "floor": "main",
-        "x": 20.5,
-        "y": 8.25,
-        "w": 2.5,
-        "h": 1.75
+        "id": "heater",
+        "name": "Water Heater",
+        "short": "WH",
+        "floor": "basement",
+        "x": 25.5,
+        "y": 13.5
       },
       {
-        "id": "shower",
-        "name": "Shower",
-        "floor": "main",
-        "x": 20.25,
-        "y": 11.0,
-        "w": 3.0,
-        "h": 3.75
+        "id": "handler",
+        "name": "Air Handler",
+        "short": "AH",
+        "floor": "basement",
+        "x": 29.4,
+        "y": 14.5
       },
       {
-        "id": "vanity",
-        "name": "Vanity",
+        "id": "return",
+        "name": "Return grille",
+        "short": "R",
         "floor": "main",
-        "x": 17.0,
-        "y": 13.0,
-        "w": 3.0,
-        "h": 1.75
+        "x": 15,
+        "y": 18
       }
-    ],
-    "fixtures": [],
-    "templateCredit": {
-      "name": "EXTREME PANELS TINY COTTAGE",
-      "by": "Lew Oliver for Extreme Panel Technologies",
-      "url": "https://extremepanel.com/project/extreme-tiny-cottage-plan/"
-    }
+    ]
   }
 }
