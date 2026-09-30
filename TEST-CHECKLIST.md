@@ -91,6 +91,10 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Show Items hides and shows the item layer.
 
 ## Checks and figures
+- [ ] An item placed in a doorway shows "blocks" in the Furniture & Fixtures checks and turns red on the plan.
+- [ ] An item inside a door's swing shows "is in the swing of" and turns red. An item outside the quarter circle does not.
+- [ ] Two doors whose swings cross show "The swings of ... overlap" in Layout Checks. Cased openings have no swing and are never flagged.
+- [ ] The default layout and the Tiny Cottage show no door swing warnings.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.
 - [ ] The four area figures update as you change the plan.

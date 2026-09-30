@@ -990,6 +990,79 @@
     return out;
   }
 
+  /** The wall opening of a doorway as a box, as thick as the wall it cuts. */
+  function doorwayBox(d, g) {
+    const thickness = isExteriorSide(g.room, g.side) ? state.exteriorWall : roomWallThickness(g.room);
+    return g.horizontal
+      ? { x: g.start.x, y: g.axis - thickness / 2, w: d.width, h: thickness }
+      : { x: g.axis - thickness / 2, y: g.start.y, w: thickness, h: d.width };
+  }
+
+  /**
+   * The quarter circle a door sweeps open, described by its hinge, the
+   * direction along the wall, and the direction it opens. Cased openings
+   * have no swing.
+   */
+  function doorSwing(d) {
+    const g = doorGeometry(d);
+    if (!g || d.swing === 'none') return null;
+    const direction = g.hinge === g.start ? 1 : -1;
+    const along = g.horizontal ? { x: direction, y: 0 } : { x: 0, y: direction };
+    const across = { x: (g.open.x - g.hinge.x) / d.width, y: (g.open.y - g.hinge.y) / d.width };
+    const corner = { x: g.hinge.x + (along.x + across.x) * d.width, y: g.hinge.y + (along.y + across.y) * d.width };
+    return {
+      hinge: g.hinge,
+      radius: d.width,
+      along,
+      across,
+      box: {
+        x: Math.min(g.hinge.x, corner.x),
+        y: Math.min(g.hinge.y, corner.y),
+        w: Math.abs(corner.x - g.hinge.x),
+        h: Math.abs(corner.y - g.hinge.y),
+      },
+    };
+  }
+
+  /** True when a box reaches into the quarter circle of a door swing. */
+  function boxHitsSwing(box, swing) {
+    const left = Math.max(box.x, swing.box.x);
+    const top = Math.max(box.y, swing.box.y);
+    const right = Math.min(box.x + box.w, swing.box.x + swing.box.w);
+    const bottom = Math.min(box.y + box.h, swing.box.y + swing.box.h);
+    if (right - left < 0.01 || bottom - top < 0.01) return false;
+    // The point of the shared area nearest the hinge decides whether it is inside the arc.
+    const nearestX = Math.min(Math.max(swing.hinge.x, left), right);
+    const nearestY = Math.min(Math.max(swing.hinge.y, top), bottom);
+    return Math.hypot(nearestX - swing.hinge.x, nearestY - swing.hinge.y) < swing.radius - 0.01;
+  }
+
+  function pointInSwing(point, swing) {
+    const dx = point.x - swing.hinge.x;
+    const dy = point.y - swing.hinge.y;
+    const along = dx * swing.along.x + dy * swing.along.y;
+    const across = dx * swing.across.x + dy * swing.across.y;
+    return along >= 0 && across >= 0 && Math.hypot(dx, dy) <= swing.radius;
+  }
+
+  /** Area where two door swings cover the same floor, found by checking points in a fine grid. */
+  function swingOverlapArea(a, b) {
+    const cell = 0.125;
+    const left = Math.max(a.box.x, b.box.x);
+    const top = Math.max(a.box.y, b.box.y);
+    const right = Math.min(a.box.x + a.box.w, b.box.x + b.box.w);
+    const bottom = Math.min(a.box.y + a.box.h, b.box.y + b.box.h);
+    let hits = 0;
+    for (let x = left + cell / 2; x < right; x += cell) {
+      for (let y = top + cell / 2; y < bottom; y += cell) {
+        if (pointInSwing({ x, y }, a) && pointInSwing({ x, y }, b)) hits++;
+      }
+    }
+    return hits * cell * cell;
+  }
+
+  const doorLabel = g => `the ${SIDE_NAME[g.side]} door on ${g.room.name}`;
+
   /** Items are checked against walls, the footprint, and each other. */
   function itemChecks(model) {
     const out = [];
@@ -1030,6 +1103,21 @@
           out.push({ level: 'warning', text: `${a.name} overlaps ${b.name}.` });
           bad.add(a.id);
           bad.add(b.id);
+        }
+      }
+    }
+
+    for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) {
+      const g = doorGeometry(d);
+      const swing = doorSwing(d);
+      const opening = doorwayBox(d, g);
+      for (const it of items) {
+        if (intersection(it, opening) > 0.01) {
+          out.push({ level: 'error', text: `${it.name} blocks ${doorLabel(g)}.` });
+          bad.add(it.id);
+        } else if (swing && boxHitsSwing(it, swing)) {
+          out.push({ level: 'warning', text: `${it.name} is in the swing of ${doorLabel(g)}.` });
+          bad.add(it.id);
         }
       }
     }
@@ -1178,11 +1266,18 @@
       for (let j = i + 1; j < doors.length; j++) {
         const a = doorGeometry(doors[i]);
         const b = doorGeometry(doors[j]);
-        if (!a || !b || a.horizontal !== b.horizontal || Math.abs(a.axis - b.axis) > 0.01) continue;
+        if (!a || !b) continue;
+        const sameWall = a.horizontal === b.horizontal && Math.abs(a.axis - b.axis) < 0.01;
         const startA = a.horizontal ? a.start.x : a.start.y;
         const startB = b.horizontal ? b.start.x : b.start.y;
-        if (Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
+        if (sameWall && Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
           out.push({ level: 'warning', text: 'Two doorway openings overlap on the same wall.' });
+          continue;
+        }
+        const swingA = doorSwing(doors[i]);
+        const swingB = doorSwing(doors[j]);
+        if (swingA && swingB && swingOverlapArea(swingA, swingB) > 0.5) {
+          out.push({ level: 'warning', text: `The swings of ${doorLabel(a)} and ${doorLabel(b)} overlap.` });
         }
       }
     }

@@ -18,7 +18,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
 - **Multiple floors:** a main floor plus an optional basement and an optional second floor, with a one-click option to align the staircases.
 - **Templates:** load one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
-- **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, and more.
+- **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, items blocking a doorway or sitting in a door's swing, door swings that cross each other, and more.
 - **Area figures:** gross footprint, area inside the exterior walls, and approximate floor area after walls.
 - **Plan tools:** zoom, rotate the whole house 90°, mark the front of the house, and resize the plan area.
 - **Save and share:** autosaves in your browser. Export and import layouts as JSON files.
