@@ -23,6 +23,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Footprint and walls
 - [ ] Changing Width and Depth resizes the footprint and updates the area figures.
 - [ ] Width and Depth accept tiny house sizes down to 8′ (2.4 m), such as 8.5′ × 24′. Smaller values are rejected and the old value stays.
+- [ ] The Width and Depth arrows step by 0.25′ (0.05 m), and typed values snap to 3″ (5 cm), so 15.8 becomes 15.75.
 - [ ] Front of House moves the FRONT OF HOUSE label; Not Set hides it.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 

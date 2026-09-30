@@ -582,10 +582,9 @@
   const meters = ft => roundText(ft * M_PER_FT, 2);
   const metricSnap = (ft, stepCm) => Math.round(ft * CM_PER_FT / stepCm) * stepCm / CM_PER_FT;
 
-  // Snapping: the footprint uses 6″ or 10 cm. Rooms, doorways, windows, and
-  // items all use 3″ or 5 cm, so every size and position can land on the same
-  // grid (for example 15.75′ and 15.25′).
-  const footprintSnap = ft => (isMetric() ? metricSnap(ft, 10) : Math.round(ft * 2) / 2);
+  // Snapping: the footprint, rooms, doorways, windows, and items all use 3″ or
+  // 5 cm, so every size and position can land on the same grid (for example
+  // 15.75′ and 15.25′).
   const snap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
 
   /** Keyboard nudge distance in feet. Windows use the finer step. */
@@ -618,8 +617,8 @@
   // centimeters. `valid` is the accepted range when it differs from the
   // field's min and max attributes.
   const FIELDS = {
-    houseWidth: { kind: 'length', imperial: { min: 8, max: 80, step: 1 }, metric: { min: 2.4, max: 24.3, step: 0.1 } },
-    houseDepth: { kind: 'length', imperial: { min: 8, max: 80, step: 1 }, metric: { min: 2.4, max: 24.3, step: 0.1 } },
+    houseWidth: { kind: 'length', imperial: { min: 8, max: 80, step: 0.25 }, metric: { min: 2.4, max: 24.3, step: 0.05 } },
+    houseDepth: { kind: 'length', imperial: { min: 8, max: 80, step: 0.25 }, metric: { min: 2.4, max: 24.3, step: 0.05 } },
     exteriorWall: { kind: 'thickness', imperial: { min: 0, max: 24, step: 0.25 }, metric: { min: 0, max: 60, step: 0.5 } },
     interiorWall: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
     roomWallT: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
@@ -2203,7 +2202,7 @@
   for (const [id, key] of [['houseWidth', 'width'], ['houseDepth', 'depth']]) {
     onNumberChange(id, (_, raw) => {
       const ft = readField(id, raw);
-      if (ft !== null) state[key] = footprintSnap(ft);
+      if (ft !== null) state[key] = snap(ft);
     });
   }
   // Wall thicknesses are entered in inches or centimeters and stored in feet.
