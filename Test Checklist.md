@@ -10,8 +10,15 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Floors
 - [ ] Basement and Main Floor tabs switch the plan and the Spaces panel.
-- [ ] + Second Floor adds a Second Floor tab with stairs matching the main floor stairs.
-- [ ] Remove Second Floor asks for confirmation, then removes the floor.
+- [ ] The Basement and Second Floor tabs each have a small button on their left edge, about a quarter of the tab's width. It shows − when the floor is on and + when it is off.
+- [ ] Clicking + on Second Floor turns the tab on, opens it, and adds stairs matching the main floor stairs.
+- [ ] Clicking − on Second Floor asks for confirmation, then removes the floor. The tab stays, dimmed and not clickable.
+- [ ] Clicking − on Basement asks for confirmation, dims the tab, and hides Basement in the Floor dropdown.
+- [ ] Undo after removing the basement brings the floor, its spaces, and its items back.
+- [ ] Clicking + on Basement turns the tab on with stairs matching the main floor stairs. On a plan with no main stairs, it adds stairs inside the footprint and the checks say the main floor needs stairs.
+- [ ] With no basement, reloading the page keeps it removed, and the stairs checks no longer mention the basement.
+- [ ] Importing a file saved before this option existed still shows the basement.
+- [ ] On a phone, the floor tabs wrap onto a second row and the page does not scroll sideways.
 
 ## Footprint and walls
 - [ ] Changing Width and Depth resizes the footprint and updates the area figures.
@@ -47,7 +54,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Selecting, zooming, switching floors, and changing units do not add undo steps.
 - [ ] One drag is one undo step, and undo puts the thing back exactly where it was.
 - [ ] Undo works for adding, removing, and editing spaces, doorways, windows, and items, and for footprint and wall changes, rotate, Reset to Defaults, and import.
-- [ ] Undo switches to the floor where the change was made. Undoing Add Second Floor while on it returns to the main floor.
+- [ ] Undo switches to the floor where the change was made. Undoing the + on Second Floor while on it returns to the main floor.
 - [ ] Ctrl+Z (Cmd+Z) undoes when focus is not in a text or number field, and does not undo the layout while typing in one.
 - [ ] Reloading the page starts with nothing to undo.
 
@@ -77,6 +84,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Furniture and fixtures
 - [ ] + Add Item places the chosen preset in the selected room.
 - [ ] Name, X, Y, Width, Depth, Rotate 90°, Duplicate, and Remove all work.
+- [ ] Long item names wrap onto more lines (Round Table shows as Round, then Table), tall narrow items read bottom to top, and a name is cut off with … only when nothing else fits.
+- [ ] Pressing R turns the selected item 90°. Typing the letter r in a field does nothing, and Ctrl+R still reloads the page.
 - [ ] Moving an item into a wall or another item shows it in red and adds an Item Checks warning.
 - [ ] Show Items hides and shows the item layer.
 
@@ -94,6 +103,14 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Tab reaches the rooms on the plan and shows a dashed blue edge on the focused one.
 - [ ] Arrow keys move the focused room repeatedly (focus stays on it); Shift + arrows moves 1′.
 - [ ] In a confirmation dialog, Tab stays inside it and Escape closes it.
+
+## Templates
+- [ ] The Templates menu lists Tiny Cottage, Alvin, Simon, and Theodore, and picking one asks for confirmation first.
+- [ ] Each template loads with 8.5 in exterior and 4.5 in interior walls, no basement, and a credit line with a working link under the plan.
+- [ ] Undo right after loading a template brings the previous layout back and hides the credit.
+- [ ] Reset to Defaults clears the credit and restores the basement.
+- [ ] Print / PDF on a template mentions the credit in the note.
+- [ ] Opened straight from disk (file://), picking a template explains that it needs to be served over http.
 
 ## Export, import, reset, print
 - [ ] Export Layout downloads a .json file.

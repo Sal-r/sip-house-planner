@@ -37,6 +37,21 @@
   const SIDE_LABEL = { north: 'Top', east: 'Right', south: 'Bottom', west: 'Left' };
   const FLOOR_NAME = { main: 'Main Floor', upper: 'Second Floor', basement: 'Basement' };
 
+  // Templates offered in the Templates menu. Each file is a normal exported
+  // layout. The credit shown under the plan comes from the file itself.
+  const TEMPLATES = [
+    { id: 'tiny-cottage', name: 'EXTREME PANELS TINY COTTAGE', file: 'templates/extreme-panels-tiny-cottage.json' },
+    { id: 'alvin', name: 'EXTREME PANELS ALVIN', file: 'templates/extreme-panels-alvin.json' },
+    { id: 'simon', name: 'EXTREME PANELS SIMON', file: 'templates/extreme-panels-simon.json' },
+    { id: 'theodore', name: 'EXTREME PANELS THEODORE', file: 'templates/extreme-panels-theodore.json' },
+  ];
+
+  // The optional floors, each with the ids of its tab and its + or − button.
+  const FLOOR_TOGGLES = [
+    { floor: 'basement', tab: 'basementTab', toggle: 'basementToggle' },
+    { floor: 'upper', tab: 'upperTab', toggle: 'upperToggle' },
+  ];
+
   const ZOOM_MIN = 50;
   const ZOOM_MAX = 250;
   const ZOOM_STEP = 25;
@@ -119,6 +134,8 @@
     zoom: 100,
     floor: 'main',
     upperEnabled: false,
+    basementEnabled: true,
+    templateCredit: null,
     selectedRoom: 'living',
     selectedDoor: null,
     selectedFixture: 'washer',
@@ -222,6 +239,20 @@
   });
 
   const isValidFloor = floor => FLOORS.includes(floor);
+
+  /**
+   * Keeps a template credit only when it is plain text with an https link.
+   * Imported files are untrusted, so anything else is dropped.
+   */
+  function cleanCredit(credit) {
+    const valid = credit
+      && typeof credit.name === 'string'
+      && typeof credit.by === 'string'
+      && typeof credit.url === 'string'
+      && credit.url.startsWith('https://');
+    if (!valid) return null;
+    return { name: credit.name.slice(0, 80), by: credit.by.slice(0, 80), url: credit.url.slice(0, 300) };
+  }
   const hasFiniteBox = obj => ['x', 'y', 'w', 'h'].every(key => Number.isFinite(obj[key]));
 
   /**
@@ -288,6 +319,17 @@
       });
     }
 
+    // Older drafts and files have no basement flag, and they all had a basement.
+    state.basementEnabled = saved.basementEnabled !== false;
+    state.templateCredit = cleanCredit(saved.templateCredit);
+    if (!state.basementEnabled) {
+      const basementRoomIds = new Set(state.rooms.filter(r => r.floor === 'basement').map(r => r.id));
+      state.rooms = state.rooms.filter(r => r.floor !== 'basement');
+      state.doors = state.doors.filter(d => !basementRoomIds.has(d.roomId));
+      state.items = state.items.filter(it => it.floor !== 'basement');
+      state.windows = state.windows.filter(w => w.floor !== 'basement');
+    }
+
     state.rooms = state.rooms.map(r => {
       const room = { ...r };
       if (!(Number.isFinite(room.wallT) && room.wallT >= 0 && room.wallT <= 1)) delete room.wallT;
@@ -308,7 +350,7 @@
     if (!Number.isFinite(state.interiorWall) || state.interiorWall < 0 || state.interiorWall > 1) state.interiorWall = 0.5;
     if (![...SIDES, 'none'].includes(state.frontSide)) state.frontSide = 'north';
     if (!Number.isFinite(state.zoom) || state.zoom < ZOOM_MIN || state.zoom > ZOOM_MAX) state.zoom = 100;
-    if (!['main', 'basement', ...(state.upperEnabled ? ['upper'] : [])].includes(state.floor)) state.floor = 'main';
+    if (!['main', ...(state.basementEnabled ? ['basement'] : []), ...(state.upperEnabled ? ['upper'] : [])].includes(state.floor)) state.floor = 'main';
     return state;
   }
 
@@ -366,6 +408,8 @@
     interiorWall: state.interiorWall,
     frontSide: state.frontSide,
     upperEnabled: state.upperEnabled,
+    basementEnabled: state.basementEnabled,
+    templateCredit: state.templateCredit,
     rooms: state.rooms,
     doors: state.doors,
     windows: state.windows,
@@ -410,21 +454,43 @@
    * To change the default, export a layout and save it as default-layout.json.
    */
   async function loadDefaultLayout() {
-    if (location.protocol === 'file:') return null;
-    try {
-      const response = await fetch('./default-layout.json', { cache: 'no-store' });
-      if (!response.ok) return null;
-      const data = await response.json();
-      const next = sanitizeLayout(data && data.layout ? data.layout : data);
-      if (next) {
-        next.floor = 'main';
-        next.selectedDoor = null;
-        next.selectedItem = null;
-      }
-      return next;
-    } catch (_) {
-      return null;
+    return fetchLayout('./default-layout.json');
+  }
+
+  /**
+   * Reads and validates a layout file. Used for the default layout and the templates.
+   * Returns { layout, problem }. When layout is null, problem says why, in words
+   * that can be shown to the person.
+   */
+  async function readLayoutFile(path) {
+    if (location.protocol === 'file:') {
+      return { layout: null, problem: 'This page was opened straight from disk, and browsers block reading files that way. Start it with Start-Planner.bat or use the live site.' };
     }
+    let response;
+    try {
+      response = await fetch(path, { cache: 'no-store' });
+    } catch (_) {
+      return { layout: null, problem: `The request for ${path} failed. Check your connection and try again.` };
+    }
+    if (!response.ok) {
+      return { layout: null, problem: `${path} was not found (error ${response.status}). The templates folder needs to sit next to index.html.` };
+    }
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      return { layout: null, problem: `${path} is not valid JSON.` };
+    }
+    const layout = sanitizeLayout(data && data.layout ? data.layout : data);
+    if (!layout) return { layout: null, problem: `${path} is not a layout file from SIP House Planner.` };
+    layout.floor = 'main';
+    layout.selectedDoor = null;
+    layout.selectedItem = null;
+    return { layout, problem: '' };
+  }
+
+  async function fetchLayout(path) {
+    return (await readLayoutFile(path)).layout;
   }
 
   // ==========================================================================
@@ -442,7 +508,11 @@
 
   const newId = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const floorName = floor => FLOOR_NAME[floor];
-  const floorOrder = () => (state.upperEnabled ? ['main', 'upper', 'basement'] : ['main', 'basement']);
+  const floorOrder = () => [
+    'main',
+    ...(state.upperEnabled ? ['upper'] : []),
+    ...(state.basementEnabled ? ['basement'] : []),
+  ];
   const isHorizontalSide = side => side === 'north' || side === 'south';
   const capitalize = text => text[0].toUpperCase() + text.slice(1);
 
@@ -1030,7 +1100,8 @@
           if (!reached(r)) out.push({ level: 'warning', text: `${r.name} isn’t connected to the hallway.` });
         }
       }
-      if (pathOnMain && stairs?.floor === 'main' && !reached(stairs)) {
+      const hasOtherFloor = state.basementEnabled || state.upperEnabled;
+      if (pathOnMain && hasOtherFloor && stairs?.floor === 'main' && !reached(stairs)) {
         out.push({ level: 'warning', text: 'The circulation path no longer reaches the stairs.' });
       }
     }
@@ -1038,10 +1109,12 @@
     // Stairs line up between floors
     const mainStairs = findRoom('stairs-main');
     const basementStairs = findRoom('stairs-basement');
-    if (!mainStairs || mainStairs.floor !== 'main' || !basementStairs || basementStairs.floor !== 'basement') {
-      out.push({ level: 'warning', text: 'Main-to-basement stairs are missing from one of the floors.' });
-    } else if (!sameBox(mainStairs, basementStairs)) {
-      out.push({ level: 'error', text: 'Main and basement stairs do not line up. Align them before treating either floor as feasible.' });
+    if (state.basementEnabled) {
+      if (!mainStairs || mainStairs.floor !== 'main' || !basementStairs || basementStairs.floor !== 'basement') {
+        out.push({ level: 'warning', text: 'Main-to-basement stairs are missing from one of the floors.' });
+      } else if (!sameBox(mainStairs, basementStairs)) {
+        out.push({ level: 'error', text: 'Main and basement stairs do not line up. Align them before treating either floor as feasible.' });
+      }
     }
     if (state.upperEnabled) {
       const upperStairs = findRoom('stairs-upper');
@@ -1322,6 +1395,83 @@
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
   }
 
+  // Item labels: average bold character width, line spacing, and the smallest
+  // text size, all as a share of the font size.
+  const ITEM_LABEL_CHAR_WIDTH = 0.62;
+  const ITEM_LABEL_LINE_HEIGHT = 1.2;
+  const ITEM_LABEL_MIN_SIZE = 0.28;
+
+  /** Splits a name at spaces into lines of at most maxChars. A long single word keeps its own line. */
+  function wrapWords(name, maxChars) {
+    const lines = [];
+    let current = '';
+    for (const word of name.split(' ')) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxChars && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  /**
+   * Wraps a name to fit text that runs along `length` and stacks lines across
+   * `cross`. Returns the lines, or null when it does not fit at this size.
+   */
+  function fitLabel(name, size, length, cross) {
+    const maxChars = Math.floor(length / (size * ITEM_LABEL_CHAR_WIDTH));
+    const lines = wrapWords(name, maxChars);
+    const longest = Math.max(...lines.map(line => line.length));
+    const stackHeight = lines.length * size * ITEM_LABEL_LINE_HEIGHT;
+    return longest <= maxChars && stackHeight <= cross ? lines : null;
+  }
+
+  /**
+   * Chooses how to draw an item's name. At each font size it tries wrapped
+   * horizontal text first, then vertical text if the box is taller than wide.
+   * Only when nothing fits at the smallest size is the name cut off with "…".
+   */
+  function itemLabelLayout(it) {
+    const startSize = Math.max(0.33, Math.min(0.55, Math.min(it.w, it.h) / 3.8));
+    const isTall = it.h > it.w;
+
+    for (let size = startSize; size >= ITEM_LABEL_MIN_SIZE; size -= 0.025) {
+      const horizontal = fitLabel(it.name, size, it.w, it.h);
+      if (horizontal) return { lines: horizontal, size, vertical: false };
+
+      const vertical = isTall ? fitLabel(it.name, size, it.h, it.w) : null;
+      if (vertical) return { lines: vertical, size, vertical: true };
+    }
+
+    // The full name is still in the hover tooltip and the item panel.
+    const length = isTall ? it.h : it.w;
+    const maxChars = Math.max(4, Math.floor(length / (ITEM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
+    const cutName = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
+    return { lines: [cutName], size: ITEM_LABEL_MIN_SIZE, vertical: isTall };
+  }
+
+  function drawItemLabel(it, group) {
+    const { lines, size, vertical } = itemLabelLayout(it);
+    const centerX = it.x + it.w / 2;
+    const centerY = it.y + it.h / 2;
+    // Vertical text is drawn horizontally, then the whole block is turned to
+    // read bottom to top. That keeps the line spacing math the same for both.
+    const parent = vertical
+      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
+      : group;
+    const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
+
+    lines.forEach((line, index) => {
+      const y = centerY + (index - (lines.length - 1) / 2) * lineHeight;
+      const text = label(centerX, y, line, 'item-label', parent);
+      text.setAttribute('font-size', `${size}px`);
+    });
+  }
+
   function drawItems(model) {
     const { bad } = itemChecks(model);
     for (const it of state.items.filter(item => item.floor === state.floor)) {
@@ -1334,11 +1484,7 @@
         'aria-label': `${it.name}, ${spokenSize(it.w, it.h, true)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
-      const size = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
-      const maxChars = Math.max(4, Math.floor(it.w / (size * 0.62)));
-      const name = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
-      const text = label(it.x + it.w / 2, it.y + it.h / 2, name, 'item-label', group);
-      text.setAttribute('font-size', `${size}px`);
+      drawItemLabel(it, group);
       element('title', {}, group).textContent = `${it.name}: ${fmtItemSize(it.w, it.h)}`;
     }
   }
@@ -1673,10 +1819,48 @@
   document.addEventListener('keydown', () => { usingKeyboard = true; }, true);
   document.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
 
+  /**
+   * The small + or − button on the left of the Basement and Second Floor tabs.
+   * A floor that is off keeps its tab, dimmed, so the + button has something to sit on.
+   */
+  function renderFloorToggles() {
+    for (const { floor, tab, toggle } of FLOOR_TOGGLES) {
+      const on = floorOrder().includes(floor);
+      const action = `${on ? 'Remove' : 'Add'} ${floorName(floor)}`;
+      $(tab).disabled = !on;
+      $(toggle).textContent = on ? '−' : '+';
+      $(toggle).classList.toggle('is-remove', on);
+      $(toggle).setAttribute('aria-label', action);
+      $(toggle).title = action;
+    }
+  }
+
+  /** Shows who a loaded template is based on, with a link to the original plan. */
+  function renderTemplateCredit() {
+    const box = $('templateCredit');
+    const credit = state.templateCredit;
+    box.hidden = !credit;
+    if (!credit) {
+      box.replaceChildren();
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = credit.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = credit.name;
+    box.replaceChildren(
+      'Template based on ',
+      link,
+      ` by ${credit.by}. Redrawn by eye for concept use, so sizes are approximate. This is not their official plan.`,
+    );
+  }
+
   /** Redraws everything from state and saves the draft. */
   function render() {
     const focusKey = usingKeyboard ? document.activeElement?.dataset?.focusKey : null;
 
+    if (!floorOrder().includes(state.floor)) state.floor = 'main';
     const rooms = state.rooms.filter(r => r.floor === state.floor);
     if (!rooms.some(r => r.id === state.selectedRoom)) state.selectedRoom = rooms[0]?.id || null;
 
@@ -1684,10 +1868,10 @@
     for (const [id, floor] of [['mainTab', 'main'], ['upperTab', 'upper'], ['basementTab', 'basement']]) {
       $(id).setAttribute('aria-selected', String(state.floor === floor));
     }
-    $('upperTab').hidden = !state.upperEnabled;
-    $('addFloor').hidden = state.upperEnabled;
-    $('removeFloor').disabled = !state.upperEnabled;
+    renderFloorToggles();
     $('roomFloor').querySelector('[value="upper"]').hidden = !state.upperEnabled;
+    $('roomFloor').querySelector('[value="basement"]').hidden = !state.basementEnabled;
+    renderTemplateCredit();
 
     // Units, footprint, walls, and zoom
     applyUnits();
@@ -1801,40 +1985,67 @@
   $('upperTab').addEventListener('click', () => openFloor('upper'));
   $('basementTab').addEventListener('click', () => openFloor('basement'));
 
-  $('addFloor').addEventListener('click', () => {
-    if (state.upperEnabled) return;
+  /** The main floor stairs box, or a box in the middle of the footprint if there are none. */
+  function stairsBoxFromMain() {
     const main = findRoom('stairs-main');
-    state.upperEnabled = true;
-    state.rooms.push({
-      id: 'stairs-upper',
-      name: 'Stairs',
-      floor: 'upper',
-      x: main?.x ?? 18,
-      y: main?.y ?? 12,
-      w: main?.w ?? 6,
-      h: main?.h ?? 12,
-      kind: 'circulation',
-    });
-    state.floor = 'upper';
-    state.selectedRoom = 'stairs-upper';
-    render();
-  });
+    if (main) return { x: main.x, y: main.y, w: main.w, h: main.h };
+    const w = 6;
+    const h = Math.min(12, state.depth - 4);
+    return { x: snap(state.width / 2 - w / 2), y: snap(state.depth / 2 - h / 2), w, h };
+  }
 
-  $('removeFloor').addEventListener('click', () => {
-    if (!state.upperEnabled) return;
+  /** Adds a floor with a staircase that lines up with the main floor stairs. */
+  function addStairsFloor(floor, stairsId) {
+    state.rooms.push({ id: stairsId, name: 'Stairs', floor, kind: 'circulation', ...stairsBoxFromMain() });
+    state.floor = floor;
+    state.selectedRoom = stairsId;
+  }
+
+  /** Deletes every space, doorway, window, and item on one floor. */
+  function clearFloor(floor) {
+    const roomIds = new Set(state.rooms.filter(r => r.floor === floor).map(r => r.id));
+    state.doors = state.doors.filter(d => !roomIds.has(d.roomId));
+    state.rooms = state.rooms.filter(r => r.floor !== floor);
+    state.items = state.items.filter(it => it.floor !== floor);
+    state.windows = state.windows.filter(w => w.floor !== floor);
+    state.floor = 'main';
+    state.selectedRoom = findRoom('living')?.id || null;
+  }
+
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+  function addSecondFloor() {
+    state.upperEnabled = true;
+    addStairsFloor('upper', 'stairs-upper');
+    render();
+  }
+
+  function removeSecondFloor() {
     const count = state.rooms.filter(r => r.floor === 'upper').length;
-    askConfirmation('Remove Second Floor?', `This will remove ${count} space${count === 1 ? '' : 's'} and their doorways on that floor.`, 'Remove Second Floor', () => {
-      const upperIds = new Set(state.rooms.filter(r => r.floor === 'upper').map(r => r.id));
-      state.doors = state.doors.filter(d => !upperIds.has(d.roomId));
-      state.rooms = state.rooms.filter(r => r.floor !== 'upper');
-      state.items = state.items.filter(it => it.floor !== 'upper');
-      state.windows = state.windows.filter(w => w.floor !== 'upper');
+    askConfirmation('Remove Second Floor?', `This will remove ${plural(count, 'space')} and their doorways on that floor.`, 'Remove Second Floor', () => {
+      clearFloor('upper');
       state.upperEnabled = false;
-      state.floor = 'main';
-      state.selectedRoom = findRoom('living')?.id || null;
       render();
-    }, $('removeFloor'));
-  });
+    }, $('upperToggle'));
+  }
+
+  function addBasement() {
+    state.basementEnabled = true;
+    addStairsFloor('basement', 'stairs-basement');
+    render();
+  }
+
+  function removeBasement() {
+    const count = state.rooms.filter(r => r.floor === 'basement').length;
+    askConfirmation('Remove Basement?', `This will remove ${plural(count, 'space')} and their doorways, windows, and items on the basement.`, 'Remove Basement', () => {
+      clearFloor('basement');
+      state.basementEnabled = false;
+      render();
+    }, $('basementToggle'));
+  }
+
+  $('upperToggle').addEventListener('click', () => (state.upperEnabled ? removeSecondFloor() : addSecondFloor()));
+  $('basementToggle').addEventListener('click', () => (state.basementEnabled ? removeBasement() : addBasement()));
 
   // --- Footprint and wall thickness -----------------------------------------
 
@@ -2230,15 +2441,29 @@
       render();
     });
   }
-  $('rotateItem').addEventListener('click', () => {
+  /** Turns the selected item 90° around its middle by swapping its width and depth. */
+  function rotateSelectedItem() {
     const item = findItem(state.selectedItem);
-    if (!item) return;
+    if (!item || item.floor !== state.floor) return;
     const cx = item.x + item.w / 2;
     const cy = item.y + item.h / 2;
     [item.w, item.h] = [item.h, item.w];
     item.x = itemSnap(cx - item.w / 2);
     item.y = itemSnap(cy - item.h / 2);
     render();
+  }
+  $('rotateItem').addEventListener('click', rotateSelectedItem);
+
+  // R rotates the selected item. It is ignored while typing, while a dialog is
+  // open, and when a modifier is held, so Ctrl+R still reloads the page.
+  document.addEventListener('keydown', e => {
+    if (e.key.toLowerCase() !== 'r' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!$('confirmOverlay').hidden) return;
+    const field = document.activeElement;
+    if (field && field.matches('input:not([type="checkbox"]):not([type="radio"]), textarea, select')) return;
+    if (!state.selectedItem) return;
+    e.preventDefault();
+    rotateSelectedItem();
   });
   $('duplicateItem').addEventListener('click', () => {
     const item = findItem(state.selectedItem);
@@ -2507,6 +2732,38 @@
     undoLastChange();
   });
 
+  // --- Templates --------------------------------------------------------------
+
+  $('templateSelect').append(...TEMPLATES.map(t => new Option(t.name, t.id)));
+  $('templateSelect').addEventListener('change', e => {
+    const template = TEMPLATES.find(t => t.id === e.target.value);
+    // Back to the placeholder so the same template can be picked again.
+    e.target.value = '';
+    if (!template) return;
+    askConfirmation(
+      `Load ${template.name}?`,
+      'Your current layout in this browser will be replaced. Export it first if you want to keep a copy. You can also use Undo right after.',
+      'Load Template',
+      async () => {
+        const { layout: next, problem } = await readLayoutFile(template.file);
+        if (!next) {
+          askConfirmation(
+            'Couldn’t Load That Template',
+            `${problem} Nothing was changed.`,
+            'OK',
+            null,
+            $('templateSelect'),
+            true,
+          );
+          return;
+        }
+        state = next;
+        render();
+      },
+      $('templateSelect'),
+    );
+  });
+
   $('reset').addEventListener('click', () => askConfirmation(
     'Reset to Defaults?',
     'Your current layout in this browser will be replaced with the default layout. Export it first if you want to keep a copy.',
@@ -2614,7 +2871,8 @@
 
       const note = document.createElement('p');
       note.className = 'print-note';
-      note.textContent = `Concept sketch only. 1 grid square = ${gridSquareText()}. Not a construction document.`;
+      const credit = state.templateCredit ? ` Based on ${state.templateCredit.name} by ${state.templateCredit.by}.` : '';
+      note.textContent = `Concept sketch only. 1 grid square = ${gridSquareText()}. Not a construction document.${credit}`;
 
       page.append(head, plan, list, note);
       host.append(page);
