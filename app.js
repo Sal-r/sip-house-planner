@@ -448,8 +448,8 @@
 
   const roundTo = (n, step) => Math.round(n / step) * step;
 
-  // Number formatting for labels.
-  const nice = n => (Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10));
+  // Number formatting for labels. Two decimals so quarter feet show as 15.75, not 15.8.
+  const nice = n => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
   const ft2 = n => String(Math.round(n * 100) / 100);
   const inches = ft => String(Math.round(ft * 12 * 100) / 100);
 
@@ -511,9 +511,11 @@
   const meters = ft => roundText(ft * M_PER_FT, 2);
   const metricSnap = (ft, stepCm) => Math.round(ft * CM_PER_FT / stepCm) * stepCm / CM_PER_FT;
 
-  // Snapping: rooms and footprint 6″ or 10 cm; doorways 6″ or 5 cm;
-  // items and windows 3″ or 5 cm.
+  // Snapping: footprint 6″ or 10 cm; doorways 6″ or 5 cm;
+  // rooms, items and windows 3″ or 5 cm. Rooms use the finer step so plans
+  // can hit sizes like 15.75′ and 15.25′.
   const snap = ft => (isMetric() ? metricSnap(ft, 10) : Math.round(ft * 2) / 2);
+  const roomSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
   const doorSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 2) / 2);
   const itemSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
 
@@ -552,10 +554,10 @@
     exteriorWall: { kind: 'thickness', imperial: { min: 0, max: 24, step: 0.25 }, metric: { min: 0, max: 60, step: 0.5 } },
     interiorWall: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
     roomWallT: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
-    roomX: { kind: 'length', imperial: { step: 0.5, valid: [-80, 80] }, metric: { step: 0.1, valid: [-24.4, 24.4] } },
-    roomY: { kind: 'length', imperial: { step: 0.5, valid: [-80, 80] }, metric: { step: 0.1, valid: [-24.4, 24.4] } },
-    roomW: { kind: 'length', imperial: { min: 2, max: 80, step: 0.5 }, metric: { min: 0.6, max: 24.4, step: 0.1 } },
-    roomH: { kind: 'length', imperial: { min: 2, max: 80, step: 0.5 }, metric: { min: 0.6, max: 24.4, step: 0.1 } },
+    roomX: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
+    roomY: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
+    roomW: { kind: 'length', imperial: { min: 2, max: 80, step: 0.25 }, metric: { min: 0.6, max: 24.4, step: 0.05 } },
+    roomH: { kind: 'length', imperial: { min: 2, max: 80, step: 0.25 }, metric: { min: 0.6, max: 24.4, step: 0.05 } },
     itemX: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
     itemY: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
     itemW: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
@@ -2038,7 +2040,7 @@
   for (const [id, key] of [['roomX', 'x'], ['roomY', 'y'], ['roomW', 'w'], ['roomH', 'h']]) {
     onRoomChange(id, (room, value) => {
       const ft = readField(id, value);
-      if (ft !== null) room[key] = snap(ft);
+      if (ft !== null) room[key] = roomSnap(ft);
     });
   }
   // An empty room thickness uses the interior default.
@@ -2392,8 +2394,8 @@
     const p = planPoint(e);
     if (drag.type === 'room') {
       const r = findRoom(drag.id);
-      r.x = snap(p.x - drag.dx);
-      r.y = snap(p.y - drag.dy);
+      r.x = roomSnap(p.x - drag.dx);
+      r.y = roomSnap(p.y - drag.dy);
     } else if (drag.type === 'item') {
       const it = findItem(drag.id);
       it.x = itemSnap(p.x - drag.dx);
