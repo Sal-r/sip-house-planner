@@ -54,7 +54,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 | --- | --- |
 | Tab | Move between rooms, doorways, windows, and items on the plan |
 | Enter or Space | Select the focused shape |
-| Arrow keys | Move the focused shape 6″ or 10 cm (windows 3″ or 5 cm). Doorways and windows slide along their wall |
+| Arrow keys | Move the focused shape 3″ or 5 cm, the same as the snap grid. Doorways and windows slide along their wall |
 | Shift + arrow keys | Move 1′ or 25 cm |
 | R | Rotate the selected item 90° (not while typing in a field) |
 | Up / Down on the resize bar | Make the plan area shorter or taller |

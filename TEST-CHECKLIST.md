@@ -30,7 +30,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Units
 - [ ] ft / m switches every label, field, list, check message, and the grid (25 cm squares in metric).
 - [ ] Switching back and forth doesn't move or resize anything.
-- [ ] In metric, dragging snaps to 10 cm and typed values like 3.5 stay 3.5.
+- [ ] In metric, dragging snaps to 5 cm and typed values like 3.5 stay 3.5.
 - [ ] The choice is remembered after refresh, and Print / PDF uses the chosen units.
 
 ## Rooms
@@ -109,7 +109,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Keyboard
 - [ ] Tab reaches the rooms on the plan and shows a dashed blue edge on the focused one.
-- [ ] Arrow keys move the focused room repeatedly (focus stays on it); Shift + arrows moves 1′.
+- [ ] Arrow keys move the focused room, doorway, window, or item 3″ (5 cm in metric) repeatedly and focus stays on it. Shift + arrows moves 1′ (25 cm).
 - [ ] In a confirmation dialog, Tab stays inside it and Escape closes it.
 
 ## Templates

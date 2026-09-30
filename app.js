@@ -243,6 +243,9 @@
     ],
   });
 
+  /** Rounds n to the nearest multiple of step. The one rounding rule for snapping and wall thickness. */
+  const roundTo = (n, step) => Math.round(n / step) * step;
+
   const isValidFloor = floor => FLOORS.includes(floor);
 
   /**
@@ -316,8 +319,8 @@
           id: `item-${f.id}`,
           name,
           floor: f.floor,
-          x: Math.round((f.x - w / 2) * 4) / 4,
-          y: Math.round((f.y - h / 2) * 4) / 4,
+          x: roundTo(f.x - w / 2, 0.25),
+          y: roundTo(f.y - h / 2, 0.25),
           w,
           h,
         };
@@ -517,17 +520,25 @@
   const isHorizontalSide = side => side === 'north' || side === 'south';
   const capitalize = text => text[0].toUpperCase() + text.slice(1);
 
-  const roundTo = (n, step) => Math.round(n / step) * step;
-
   // Number formatting for labels. Two decimals so quarter feet show as 15.75, not 15.8.
-  const nice = n => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
-  const ft2 = n => String(Math.round(n * 100) / 100);
-  const inches = ft => String(Math.round(ft * 12 * 100) / 100);
+
+  /** The box where two boxes overlap. Its width and height are 0 when they do not touch. */
+  const overlapBox = (a, b) => {
+    const x = Math.max(a.x, b.x);
+    const y = Math.max(a.y, b.y);
+    return {
+      x,
+      y,
+      w: Math.max(0, Math.min(a.x + a.w, b.x + b.w) - x),
+      h: Math.max(0, Math.min(a.y + a.h, b.y + b.h) - y),
+    };
+  };
 
   /** Overlapping area of two boxes. */
-  const intersection = (a, b) =>
-    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x))
-    * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  const intersection = (a, b) => {
+    const overlap = overlapBox(a, b);
+    return overlap.w * overlap.h;
+  };
 
   // A room is open plan (no partition walls) or enclosed. Living spaces and
   // the main hallway default to open.
@@ -578,24 +589,20 @@
   let units = initialUnits();
   const isMetric = () => units === 'metric';
 
-  const roundText = (n, decimals) => String(Math.round(n * 10 ** decimals) / 10 ** decimals);
+  const roundText = (n, decimals = 2) => String(Math.round(n * 10 ** decimals) / 10 ** decimals);
   const meters = ft => roundText(ft * M_PER_FT, 2);
-  const metricSnap = (ft, stepCm) => Math.round(ft * CM_PER_FT / stepCm) * stepCm / CM_PER_FT;
 
   // Snapping: the footprint, rooms, doorways, windows, and items all use 3″ or
   // 5 cm, so every size and position can land on the same grid (for example
   // 15.75′ and 15.25′).
-  const snap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
+  const snap = ft => roundTo(ft, isMetric() ? 5 / CM_PER_FT : 0.25);
 
-  /** Keyboard nudge distance in feet. Windows use the finer step. */
-  const nudgeStep = (shift, fine) => (isMetric()
-    ? (shift ? 0.25 : fine ? 0.05 : 0.1) / M_PER_FT
-    : (shift ? 1 : fine ? 0.25 : 0.5));
+  /** Keyboard nudge distance in feet: the snap step, or 1 ft (25 cm) with Shift. */
+  const nudgeStep = shift => (isMetric() ? (shift ? 0.25 : 0.05) / M_PER_FT : (shift ? 1 : 0.25));
 
   // Display text
-  const fmtLength = ft => (isMetric() ? `${meters(ft)} m` : `${nice(ft)}′`);
-  const fmtSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${nice(w)}′ × ${nice(h)}′`);
-  const fmtItemSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${ft2(w)}′ × ${ft2(h)}′`);
+  const fmtLength = ft => (isMetric() ? `${meters(ft)} m` : `${roundText(ft)}′`);
+  const fmtSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${roundText(w)}′ × ${roundText(h)}′`);
   const fmtArea = (sqft, grouped = true) => {
     const value = Math.round(isMetric() ? sqft * SQM_PER_SQFT : sqft);
     return `${grouped ? value.toLocaleString() : value} ${isMetric() ? 'm²' : 'sq ft'}`;
@@ -603,12 +610,10 @@
   const gridSquareText = () => (isMetric() ? '25 cm' : '1′');
 
   // Screen reader text
-  const spokenSize = (w, h, precise = false) => {
-    if (isMetric()) return `${meters(w)} by ${meters(h)} meters`;
-    const f = precise ? ft2 : nice;
-    return `${f(w)} by ${f(h)} feet`;
-  };
-  const spokenLength = ft => (isMetric() ? `${meters(ft)} meter` : `${nice(ft)} foot`);
+  const spokenSize = (w, h) => (isMetric()
+    ? `${meters(w)} by ${meters(h)} meters`
+    : `${roundText(w)} by ${roundText(h)} feet`);
+  const spokenLength = ft => (isMetric() ? `${meters(ft)} meter` : `${roundText(ft)} foot`);
   const spokenArea = sqft => (isMetric()
     ? `${Math.round(sqft * SQM_PER_SQFT)} square meters`
     : `${Math.round(sqft)} square feet`);
@@ -637,9 +642,9 @@
   };
 
   /** A length in feet, shown in a form field. */
-  const lengthField = (ft, precise = false) => (isMetric() ? meters(ft) : precise ? ft2(ft) : nice(ft));
+  const lengthField = ft => (isMetric() ? meters(ft) : roundText(ft));
   /** A wall thickness in feet, shown in a form field (inches or centimeters). */
-  const thicknessField = ft => (isMetric() ? roundText(ft * CM_PER_FT, 1) : inches(ft));
+  const thicknessField = ft => (isMetric() ? roundText(ft * CM_PER_FT, 1) : roundText(ft * 12));
 
   /**
    * Reads a form field in the current units and returns feet, or null when
@@ -1024,14 +1029,11 @@
 
   /** True when a box reaches into the quarter circle of a door swing. */
   function boxHitsSwing(box, swing) {
-    const left = Math.max(box.x, swing.box.x);
-    const top = Math.max(box.y, swing.box.y);
-    const right = Math.min(box.x + box.w, swing.box.x + swing.box.w);
-    const bottom = Math.min(box.y + box.h, swing.box.y + swing.box.h);
-    if (right - left < 0.01 || bottom - top < 0.01) return false;
+    const shared = overlapBox(box, swing.box);
+    if (shared.w < 0.01 || shared.h < 0.01) return false;
     // The point of the shared area nearest the hinge decides whether it is inside the arc.
-    const nearestX = Math.min(Math.max(swing.hinge.x, left), right);
-    const nearestY = Math.min(Math.max(swing.hinge.y, top), bottom);
+    const nearestX = Math.min(Math.max(swing.hinge.x, shared.x), shared.x + shared.w);
+    const nearestY = Math.min(Math.max(swing.hinge.y, shared.y), shared.y + shared.h);
     return Math.hypot(nearestX - swing.hinge.x, nearestY - swing.hinge.y) < swing.radius - 0.01;
   }
 
@@ -1046,13 +1048,10 @@
   /** Area where two door swings cover the same floor, found by checking points in a fine grid. */
   function swingOverlapArea(a, b) {
     const cell = 0.125;
-    const left = Math.max(a.box.x, b.box.x);
-    const top = Math.max(a.box.y, b.box.y);
-    const right = Math.min(a.box.x + a.box.w, b.box.x + b.box.w);
-    const bottom = Math.min(a.box.y + a.box.h, b.box.y + b.box.h);
+    const shared = overlapBox(a.box, b.box);
     let hits = 0;
-    for (let x = left + cell / 2; x < right; x += cell) {
-      for (let y = top + cell / 2; y < bottom; y += cell) {
+    for (let x = shared.x + cell / 2; x < shared.x + shared.w; x += cell) {
+      for (let y = shared.y + cell / 2; y < shared.y + shared.h; y += cell) {
         if (pointInSwing({ x, y }, a) && pointInSwing({ x, y }, b)) hits++;
       }
     }
@@ -1631,11 +1630,11 @@
         class: `item ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
         role: 'button',
         tabindex: '0',
-        'aria-label': `${it.name}, ${spokenSize(it.w, it.h, true)}. Select or drag to move.`,
+        'aria-label': `${it.name}, ${spokenSize(it.w, it.h)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
       drawItemLabel(it, group);
-      element('title', {}, group).textContent = `${it.name}: ${fmtItemSize(it.w, it.h)}`;
+      element('title', {}, group).textContent = `${it.name}: ${fmtSize(it.w, it.h)}`;
     }
   }
 
@@ -1922,7 +1921,7 @@
       const key = `${it.floor}:${it.name}`;
       nameSeen[key] = (nameSeen[key] || 0) + 1;
       const number = nameTotals[key] > 1 ? ` #${nameSeen[key]}` : '';
-      return { value: it.id, text: `${it.name}${number} · ${fmtItemSize(it.w, it.h)}${bad.has(it.id) ? ' !' : ''}` };
+      return { value: it.id, text: `${it.name}${number} · ${fmtSize(it.w, it.h)}${bad.has(it.id) ? ' !' : ''}` };
     };
     const groups = floorOrder().map(floor => ({
       label: floorName(floor),
@@ -1936,17 +1935,17 @@
     const itemPresets = Object.entries(ITEM_PRESETS).filter(([key]) => key !== 'custom');
     fillPresets(
       $('itemPreset'),
-      itemPresets.map(([value, [name, w, h]]) => ({ value, text: `${name} · ${fmtItemSize(w, h)}` })),
+      itemPresets.map(([value, [name, w, h]]) => ({ value, text: `${name} · ${fmtSize(w, h)}` })),
       !!selected,
       selected && itemPresets.find(([, [name, w, h]]) => selected.name === name && sameSizeBox(selected.w, selected.h, w, h))?.[0],
     );
     $('itemEditor').hidden = !selected;
     if (selected) {
       $('itemName').value = selected.name;
-      $('itemX').value = lengthField(selected.x, true);
-      $('itemY').value = lengthField(selected.y, true);
-      $('itemW').value = lengthField(selected.w, true);
-      $('itemH').value = lengthField(selected.h, true);
+      $('itemX').value = lengthField(selected.x);
+      $('itemY').value = lengthField(selected.y);
+      $('itemW').value = lengthField(selected.w);
+      $('itemH').value = lengthField(selected.h);
     }
 
     const itemsOnFloor = state.items.some(it => it.floor === state.floor);
@@ -2798,9 +2797,9 @@
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);
 
-  // Keyboard: Enter or Space selects a focused shape. Arrow keys move it 6″
-  // or 10 cm (windows 3″ or 5 cm); Shift moves 1′ or 25 cm. Doorways and
-  // windows slide along their wall.
+  // Keyboard: Enter or Space selects a focused shape. Arrow keys move it one
+  // snap step (3″ or 5 cm); Shift moves 1′ or 25 cm. Doorways and windows
+  // slide along their wall.
   svg.addEventListener('keydown', e => {
     if (!['Enter', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
     const group = e.target.closest(SHAPE_SELECTOR);
@@ -2813,7 +2812,7 @@
       if (isArrow) {
         const w = findWindow(state.selectedWindow);
         const g = windowGeometry(w);
-        const amount = nudgeStep(e.shiftKey, true);
+        const amount = nudgeStep(e.shiftKey);
         const forward = g.horizontal ? e.key === 'ArrowRight' : e.key === 'ArrowDown';
         const back = g.horizontal ? e.key === 'ArrowLeft' : e.key === 'ArrowUp';
         if (forward || back) w.offset = Math.max(0, Math.min(g.length - w.width, w.offset + (forward ? amount : -amount)));
@@ -2832,7 +2831,7 @@
     }
 
     if (isArrow) {
-      const amount = nudgeStep(e.shiftKey, false);
+      const amount = nudgeStep(e.shiftKey);
       if (group.dataset.door) {
         const d = findDoor(group.dataset.door);
         const g = doorGeometry(d);
