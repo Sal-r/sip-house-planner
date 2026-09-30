@@ -1548,59 +1548,78 @@
 
   /**
    * Chooses how to draw a room's name and size. At each font size it tries
-   * wrapped horizontal text first, then vertical text if the room is taller
-   * than wide. Only when nothing fits at the smallest size is the name cut
-   * off with "…". The full name stays in the hover tooltip and the side panel.
+   * wrapped horizontal text first, then a turned name if the room is taller
+   * than wide. A turned name reads bottom to top with the size line staying
+   * horizontal below it. Only when nothing fits at the smallest size is the
+   * name cut off with "…". The full name stays in the hover tooltip and the
+   * side panel.
    */
   function roomLabelLayout(r) {
     const sizeText = fmtSize(r.w, r.h);
     const startSize = r.w < 7 ? 0.56 : 0.7;
     const isTall = r.h > r.w;
-
-    const fits = (size, length, cross) => {
-      const dimSize = size * ROOM_SIZE_RATIO;
-      const lines = fitLabel(r.name, size, length, cross - dimSize * ITEM_LABEL_LINE_HEIGHT);
-      const sizeFits = sizeText.length * dimSize * ITEM_LABEL_CHAR_WIDTH <= length;
-      return lines && sizeFits ? { lines, size, dimSize } : null;
-    };
-
     const width = r.w - ROOM_LABEL_MARGIN;
     const height = r.h - ROOM_LABEL_MARGIN;
-    for (let size = startSize; size >= ROOM_LABEL_MIN_SIZE; size -= 0.02) {
-      const horizontal = fits(size, width, height);
-      if (horizontal) return { ...horizontal, vertical: false };
+    const textWidth = (text, size) => text.length * size * ITEM_LABEL_CHAR_WIDTH;
 
-      const vertical = isTall ? fits(size, height, width) : null;
-      if (vertical) return { ...vertical, vertical: true };
+    for (let size = startSize; size >= ROOM_LABEL_MIN_SIZE; size -= 0.02) {
+      const dimSize = size * ROOM_SIZE_RATIO;
+      const dimHeight = dimSize * ITEM_LABEL_LINE_HEIGHT;
+
+      const horizontal = fitLabel(r.name, size, width, height - dimHeight);
+      if (horizontal && textWidth(sizeText, dimSize) <= width) {
+        return { lines: horizontal, size, dimSize, vertical: false };
+      }
+
+      if (isTall) {
+        // The size line may shrink on its own so it fits across a narrow room.
+        const turnedDimSize = Math.min(dimSize, width / (sizeText.length * ITEM_LABEL_CHAR_WIDTH));
+        const turned = fitLabel(r.name, size, height - turnedDimSize * ITEM_LABEL_LINE_HEIGHT, width);
+        if (turned && turnedDimSize >= ROOM_LABEL_MIN_SIZE) {
+          return { lines: turned, size, dimSize: turnedDimSize, vertical: true };
+        }
+      }
     }
 
     const length = isTall ? height : width;
     const maxChars = Math.max(4, Math.floor(length / (ROOM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
     const cutName = r.name.length > maxChars ? `${r.name.slice(0, maxChars - 1)}…` : r.name;
-    return { lines: [cutName], size: ROOM_LABEL_MIN_SIZE, dimSize: ROOM_LABEL_MIN_SIZE * ROOM_SIZE_RATIO, vertical: isTall };
+    return {
+      lines: [cutName],
+      size: ROOM_LABEL_MIN_SIZE,
+      dimSize: ROOM_LABEL_MIN_SIZE * ROOM_SIZE_RATIO,
+      vertical: isTall,
+    };
   }
 
   function drawRoomLabel(r, group) {
     const { lines, size, dimSize, vertical } = roomLabelLayout(r);
     const centerX = r.x + r.w / 2;
     const centerY = r.y + r.h / 2;
-    // Vertical labels are drawn horizontally, then turned to read bottom to top.
-    const parent = vertical
-      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
-      : group;
-
     const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
     const sizeLineHeight = dimSize * ITEM_LABEL_LINE_HEIGHT;
-    const blockTop = centerY - (lines.length * lineHeight + sizeLineHeight) / 2;
+    const longest = Math.max(...lines.map(line => line.length));
+
+    // A turned name takes up its text length from top to bottom. The size
+    // line goes under it, and the two are centered in the room as one block.
+    const nameLength = longest * size * ITEM_LABEL_CHAR_WIDTH;
+    const blockHeight = vertical ? nameLength + sizeLineHeight : lines.length * lineHeight + sizeLineHeight;
+    const blockTop = centerY - blockHeight / 2;
+    const nameCenterY = vertical ? blockTop + nameLength / 2 : blockTop + lines.length * lineHeight / 2;
 
     // Text baselines sit about 80% of the way down each line.
+    const nameParent = vertical
+      ? element('g', { transform: `rotate(-90 ${centerX} ${nameCenterY})` }, group)
+      : group;
+    const nameTop = nameCenterY - lines.length * lineHeight / 2;
     lines.forEach((line, index) => {
-      const text = label(centerX, blockTop + index * lineHeight + size * 0.8, line, 'room-label', parent);
+      const text = label(centerX, nameTop + index * lineHeight + size * 0.8, line, 'room-label', nameParent);
       text.setAttribute('text-anchor', 'middle');
       text.setAttribute('font-size', `${size}px`);
     });
-    const sizeY = blockTop + lines.length * lineHeight + dimSize * 0.8;
-    const dims = label(centerX, sizeY, fmtSize(r.w, r.h), 'room-dim', parent);
+
+    const sizeTop = vertical ? blockTop + nameLength : blockTop + lines.length * lineHeight;
+    const dims = label(centerX, sizeTop + dimSize * 0.8, fmtSize(r.w, r.h), 'room-dim', group);
     dims.setAttribute('text-anchor', 'middle');
     dims.setAttribute('font-size', `${dimSize}px`);
   }
