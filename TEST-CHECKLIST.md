@@ -13,6 +13,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The Basement and Second Floor tabs each have a small button on their left edge, about a quarter of the tab's width. It shows − when the floor is on and + when it is off.
 - [ ] Clicking + on Second Floor turns the tab on, opens it, and adds stairs matching the main floor stairs.
 - [ ] Clicking − on Second Floor asks for confirmation, then removes the floor. The tab stays, dimmed and not clickable.
+- [ ] The Second Floor and Basement confirmations list the same things they delete: spaces and their doorways, windows, and items.
 - [ ] Clicking − on Basement asks for confirmation, dims the tab, and hides Basement in the Floor dropdown.
 - [ ] Undo after removing the basement brings the floor, its spaces, and its items back.
 - [ ] Clicking + on Basement turns the tab on with stairs matching the main floor stairs. On a plan with no main stairs, it adds stairs inside the footprint and the checks say the main floor needs stairs.
@@ -98,6 +99,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] An item inside a door's swing shows "is in the swing of" and turns red. An item outside the quarter circle does not.
 - [ ] Two doors whose swings cross show "The swings of ... overlap" in Layout Checks. Cased openings have no swing and are never flagged.
 - [ ] The default layout and the Tiny Cottage show no door swing warnings.
+- [ ] A cased opening (Door Type: Cased Opening) can sit 0.25′ from a corner, or flush with the end of the wall, with no warning. One that runs past the wall warns. A swinging door within 0.5′ of a corner still warns.
 - [ ] Two windows, a window and an entrance door, or two doorways that overlap by 0.25′ on the same wall show a warning. Ones that only touch do not.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.

@@ -1262,8 +1262,17 @@
       if (wallMode(g.room) !== 'enclosed') {
         out.push({ level: 'warning', text: `${g.room.name} is open plan; its doorway has no partition wall to cut.` });
       }
-      if (d.offset < 0.5 || d.offset + d.width > g.length - 0.5) {
-        out.push({ level: 'warning', text: `Door on ${g.room.name} is too close to a corner or extends past the wall.` });
+      // A swinging door needs room beside it for the leaf and trim to clear the
+      // corner. A cased opening has nothing to clear, so it only has to fit on the wall.
+      const isCased = d.swing === 'none';
+      const cornerMargin = isCased ? 0 : 0.5;
+      if (d.offset < cornerMargin - 0.001 || d.offset + d.width > g.length - cornerMargin + 0.001) {
+        out.push({
+          level: 'warning',
+          text: isCased
+            ? `Cased opening on ${g.room.name} extends past the wall.`
+            : `Door on ${g.room.name} is too close to a corner or extends past the wall.`,
+        });
       }
       if (d.width < 2.5) {
         out.push({ level: 'warning', text: `Door on ${g.room.name} is under ${fmtLength(2.5)} wide. Check the intended access.` });
@@ -2173,6 +2182,11 @@
 
   const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
+  /** What removing a floor deletes. Both floors use clearFloor, so both show the same list. */
+  const removeFloorWarning = (count, floorName) => (
+    `This will remove ${plural(count, 'space')} and their doorways, windows, and items on the ${floorName}.`
+  );
+
   function addSecondFloor() {
     state.upperEnabled = true;
     addStairsFloor('upper', 'stairs-upper');
@@ -2181,7 +2195,7 @@
 
   function removeSecondFloor() {
     const count = state.rooms.filter(r => r.floor === 'upper').length;
-    askConfirmation('Remove Second Floor?', `This will remove ${plural(count, 'space')} and their doorways on that floor.`, 'Remove Second Floor', () => {
+    askConfirmation('Remove Second Floor?', removeFloorWarning(count, 'second floor'), 'Remove Second Floor', () => {
       clearFloor('upper');
       state.upperEnabled = false;
       render();
@@ -2196,7 +2210,7 @@
 
   function removeBasement() {
     const count = state.rooms.filter(r => r.floor === 'basement').length;
-    askConfirmation('Remove Basement?', `This will remove ${plural(count, 'space')} and their doorways, windows, and items on the basement.`, 'Remove Basement', () => {
+    askConfirmation('Remove Basement?', removeFloorWarning(count, 'basement'), 'Remove Basement', () => {
       clearFloor('basement');
       state.basementEnabled = false;
       render();
