@@ -13,6 +13,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The Basement and Second Floor tabs each have a small button on their left edge, about a quarter of the tab's width. It shows − when the floor is on and + when it is off.
 - [ ] Clicking + on Second Floor turns the tab on, opens it, and adds stairs matching the main floor stairs.
 - [ ] Clicking − on Second Floor asks for confirmation, then removes the floor. The tab stays, dimmed and not clickable.
+- [ ] The Second Floor and Basement confirmations list the same things they delete: spaces and their doorways, windows, and items.
 - [ ] Clicking − on Basement asks for confirmation, dims the tab, and hides Basement in the Floor dropdown.
 - [ ] Undo after removing the basement brings the floor, its spaces, and its items back.
 - [ ] Clicking + on Basement turns the tab on with stairs matching the main floor stairs. On a plan with no main stairs, it adds stairs inside the footprint and the checks say the main floor needs stairs.
@@ -23,13 +24,14 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Footprint and walls
 - [ ] Changing Width and Depth resizes the footprint and updates the area figures.
 - [ ] Width and Depth accept tiny house sizes down to 8′ (2.4 m), such as 8.5′ × 24′. Smaller values are rejected and the old value stays.
+- [ ] The Width and Depth arrows step by 0.25′ (0.05 m), and typed values snap to 3″ (5 cm), so 15.8 becomes 15.75.
 - [ ] Front of House moves the FRONT OF HOUSE label; Not Set hides it.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 
 ## Units
 - [ ] ft / m switches every label, field, list, check message, and the grid (25 cm squares in metric).
 - [ ] Switching back and forth doesn't move or resize anything.
-- [ ] In metric, dragging snaps to 10 cm and typed values like 3.5 stay 3.5.
+- [ ] In metric, dragging snaps to 5 cm and typed values like 3.5 stay 3.5.
 - [ ] The choice is remembered after refresh, and Print / PDF uses the chosen units.
 
 ## Rooms
@@ -97,6 +99,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] An item inside a door's swing shows "is in the swing of" and turns red. An item outside the quarter circle does not.
 - [ ] Two doors whose swings cross show "The swings of ... overlap" in Layout Checks. Cased openings have no swing and are never flagged.
 - [ ] The default layout and the Tiny Cottage show no door swing warnings.
+- [ ] A cased opening (Door Type: Cased Opening) can sit 0.25′ from a corner, or flush with the end of the wall, with no warning. One that runs past the wall warns. A swinging door within 0.5′ of a corner still warns.
+- [ ] Two windows, a window and an entrance door, or two doorways that overlap by 0.25′ on the same wall show a warning. Ones that only touch do not.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.
 - [ ] The four area figures update as you change the plan.
@@ -108,7 +112,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Keyboard
 - [ ] Tab reaches the rooms on the plan and shows a dashed blue edge on the focused one.
-- [ ] Arrow keys move the focused room repeatedly (focus stays on it); Shift + arrows moves 1′.
+- [ ] Arrow keys move the focused room, doorway, window, or item 3″ (5 cm in metric) repeatedly and focus stays on it. Shift + arrows moves 1′ (25 cm).
 - [ ] In a confirmation dialog, Tab stays inside it and Escape closes it.
 
 ## Templates

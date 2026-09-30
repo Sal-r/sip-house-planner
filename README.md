@@ -18,7 +18,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
 - **Multiple floors:** a main floor plus an optional basement and an optional second floor, with a one-click option to align the staircases.
 - **Templates:** load the default layout or one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
-- **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, items blocking a doorway or sitting in a door's swing, door swings that cross each other, and more.
+- **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, swinging doors too close to corners (cased openings can sit right at a corner), items hitting walls, items blocking a doorway or sitting in a door's swing, door swings that cross each other, and more.
 - **Area figures:** gross footprint, area inside the exterior walls, and approximate floor area after walls.
 - **Plan tools:** zoom, rotate the whole house 90°, mark the front of the house, and resize the plan area.
 - **Save and share:** autosaves in your browser. Export and import layouts as JSON files.
@@ -54,7 +54,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 | --- | --- |
 | Tab | Move between rooms, doorways, windows, and items on the plan |
 | Enter or Space | Select the focused shape |
-| Arrow keys | Move the focused shape 6″ or 10 cm (windows 3″ or 5 cm). Doorways and windows slide along their wall |
+| Arrow keys | Move the focused shape 3″ or 5 cm, the same as the snap grid. Doorways and windows slide along their wall |
 | Shift + arrow keys | Move 1′ or 25 cm |
 | R | Rotate the selected item 90° (not while typing in a field) |
 | Up / Down on the resize bar | Make the plan area shorter or taller |
