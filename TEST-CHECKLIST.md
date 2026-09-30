@@ -37,7 +37,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The info box above each dropdown shows the total and the count on each floor, and says "No ... yet" when empty.
 - [ ] After typing in a field (for example, a door width), a single pick from any dropdown selects that record.
 - [ ] The dropdowns keep keyboard focus while arrowing through them.
-- [ ] Dragging a room moves it in 6″ steps.
+- [ ] Dragging a room moves it in 3″ steps.
+- [ ] Typing 15.75 and 15.25 into a room's Width or Depth is kept exactly and shows as 15.75′ and 15.25′ on the plan.
 - [ ] Name, Type, Floor, Partitions, Thickness, X, Y, Width, and Depth all update the plan.
 - [ ] Walls On checkboxes add and remove partition walls (exterior sides are grayed out).
 - [ ] Duplicate, + Add Room, and Remove (with confirmation) all work.
