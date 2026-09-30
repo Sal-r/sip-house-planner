@@ -39,7 +39,12 @@
 
   // Templates offered in the Templates menu. Each file is a normal exported
   // layout. The credit shown under the plan comes from the file itself.
+  // The default layout is the first entry. It is what a first visit loads and
+  // what Reset goes back to when no other template is loaded. To change it,
+  // export a layout and save it as templates/default-layout.json.
+  const DEFAULT_TEMPLATE = { id: 'default', name: 'Default Layout', file: 'templates/default-layout.json' };
   const TEMPLATES = [
+    DEFAULT_TEMPLATE,
     { id: 'tiny-cottage', name: 'EXTREME PANELS TINY COTTAGE', file: 'templates/extreme-panels-tiny-cottage.json' },
     { id: 'alvin', name: 'EXTREME PANELS ALVIN', file: 'templates/extreme-panels-alvin.json' },
     { id: 'simon', name: 'EXTREME PANELS SIMON', file: 'templates/extreme-panels-simon.json' },
@@ -118,8 +123,8 @@
   // 2. State: defaults, validation, and loading
   // ==========================================================================
 
-  // Built-in fallback layout. The live default comes from default-layout.json
-  // (see loadDefaultLayout); this copy is used when that file can't be read,
+  // Built-in fallback layout. The live default comes from templates/default-layout.json
+  // (see readTemplate); this copy is used when that file can't be read,
   // for example when index.html is opened straight from disk.
   //
   // `fixtures`, `selectedFixture`, `scenario`, and `entranceMode` are kept for
@@ -257,7 +262,7 @@
 
   /**
    * Validates a saved layout (browser draft, imported file, or
-   * default-layout.json) and upgrades older formats to schema version 3.
+   * templates/default-layout.json) and upgrades older formats to schema version 3.
    * Returns a clean state object, or null if the data isn't a layout.
    */
   function sanitizeLayout(saved) {
@@ -448,17 +453,7 @@
   }
 
   /**
-   * Reads default-layout.json. Returns null when the page is opened from disk
-   * (browsers block fetch on file:// URLs) or when the file is missing or
-   * invalid, so callers fall back to the built-in layout.
-   * To change the default, export a layout and save it as default-layout.json.
-   */
-  async function loadDefaultLayout() {
-    return fetchLayout('./default-layout.json');
-  }
-
-  /**
-   * Reads and validates a layout file. Used for the default layout and the templates.
+   * Reads and validates a layout file. Used for the templates, including the default layout.
    * Returns { layout, problem }. When layout is null, problem says why, in words
    * that can be shown to the person.
    */
@@ -489,8 +484,14 @@
     return { layout, problem: '' };
   }
 
-  async function fetchLayout(path) {
-    return (await readLayoutFile(path)).layout;
+  /**
+   * Reads a template. The default layout falls back to the built-in copy when
+   * its file can't be read, for example when the page is opened from disk.
+   */
+  async function readTemplate(template) {
+    const result = await readLayoutFile(template.file);
+    if (result.layout || template !== DEFAULT_TEMPLATE) return result;
+    return { layout: createDefaultState(), problem: '' };
   }
 
   // ==========================================================================
@@ -2897,16 +2898,9 @@
       'Your current layout in this browser will be replaced. Export it first if you want to keep a copy. You can also use Undo right after.',
       'Load Template',
       async () => {
-        const { layout: next, problem } = await readLayoutFile(template.file);
+        const { layout: next, problem } = await readTemplate(template);
         if (!next) {
-          askConfirmation(
-            'Couldn’t Load That Template',
-            `${problem} Nothing was changed.`,
-            'OK',
-            null,
-            $('templateSelect'),
-            true,
-          );
+          showTemplateProblem(problem, $('templateSelect'));
           return;
         }
         state = next;
@@ -2916,16 +2910,34 @@
     );
   });
 
-  $('reset').addEventListener('click', () => askConfirmation(
-    'Reset to Defaults?',
-    'Your current layout in this browser will be replaced with the default layout. Export it first if you want to keep a copy.',
-    'Reset to Defaults',
-    async () => {
-      state = (await loadDefaultLayout()) || createDefaultState();
-      render();
-    },
-    $('reset'),
-  ));
+  function showTemplateProblem(problem, returnFocusTo) {
+    askConfirmation('Couldn’t Load That Template', `${problem} Nothing was changed.`, 'OK', null, returnFocusTo, true);
+  }
+
+  /** The template the current layout came from, if it was loaded from one. */
+  const loadedTemplate = () => TEMPLATES.find(t => t.name === state.templateCredit?.name);
+
+  // Reset goes back to the template that is loaded, or to the default layout
+  // when the layout did not come from a template.
+  $('reset').addEventListener('click', () => {
+    const template = loadedTemplate() || DEFAULT_TEMPLATE;
+    const target = template === DEFAULT_TEMPLATE ? 'the default layout' : `the ${template.name} template`;
+    askConfirmation(
+      'Reset to Defaults?',
+      `Your current layout in this browser will be replaced with ${target}. Export it first if you want to keep a copy.`,
+      'Reset to Defaults',
+      async () => {
+        const { layout: next, problem } = await readTemplate(template);
+        if (!next) {
+          showTemplateProblem(problem, $('reset'));
+          return;
+        }
+        state = next;
+        render();
+      },
+      $('reset'),
+    );
+  });
 
   // ==========================================================================
   // 10. Export, import, and print
@@ -3048,16 +3060,14 @@
   // ==========================================================================
 
   render();
-  // First visit (no browser draft): load default-layout.json when served.
+  // First visit (no browser draft): load the default layout.
   if (!hasSavedDraft) {
-    loadDefaultLayout().then(next => {
-      if (next) {
-        state = next;
-        render();
-        // Loading the default layout on a first visit isn't something to undo.
-        undoStack.length = 0;
-        $('undo').disabled = true;
-      }
+    readTemplate(DEFAULT_TEMPLATE).then(({ layout: next }) => {
+      state = next;
+      render();
+      // Loading the default layout on a first visit isn't something to undo.
+      undoStack.length = 0;
+      $('undo').disabled = true;
     });
   }
 })();

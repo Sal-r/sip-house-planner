@@ -17,7 +17,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
 - **Multiple floors:** a main floor plus an optional basement and an optional second floor, with a one-click option to align the staircases.
-- **Templates:** load one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
+- **Templates:** load the default layout or one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
 - **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, items blocking a doorway or sitting in a door's swing, door swings that cross each other, and more.
 - **Area figures:** gross footprint, area inside the exterior walls, and approximate floor area after walls.
 - **Plan tools:** zoom, rotate the whole house 90°, mark the front of the house, and resize the plan area.
@@ -46,7 +46,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.
 - **Basement and second floor:** each has a small **−** or **+** button on the left of its tab. **−** removes the floor and **+** brings it back (the tab stays, dimmed, while a floor is off). Removing a floor deletes its spaces, doorways, windows, and items, and Undo restores them.
 - **Templates:** pick one from the **Templates** menu. It replaces your current layout after a confirmation, and Undo brings your layout back.
-- **Start over** with **Reset to Defaults**.
+- **Start over** with **Reset to Defaults**. It goes back to the template you loaded, or to the default layout if you didn't start from a template.
 
 ### Keyboard
 
@@ -61,7 +61,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 
 ## Running it locally
 
-Because the app reads `default-layout.json` with `fetch`, it needs to be served over http rather than opened as a file.
+Because the app reads the default layout and the templates with `fetch`, it needs to be served over http rather than opened as a file.
 
 **Windows:** double-click `Start-Planner.bat`. It starts a local server with Python (conda installs and the `py` launcher are detected automatically) and opens the planner at `http://127.0.0.1:8000`. The server only listens on your own computer. If it can't find Python, open the .bat in a text editor and follow the note at the top.
 
@@ -73,18 +73,18 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Then open `http://127.0.0.1:8000`.
 
-Opening `index.html` directly (a `file://` address) also works, but it falls back to the built-in layout because browsers block reading `default-layout.json` from disk.
+Opening `index.html` directly (a `file://` address) also works, but it falls back to the built-in layout because browsers block reading `templates/default-layout.json` from disk.
 
 > Browser drafts are stored per website, so a layout saved on the live site won't appear on your local copy, and the reverse. Use Export Layout and Import Layout to move work between them.
 
 ## Changing the default layout
 
-The default layout is whatever is in `default-layout.json`. To replace it with your own design:
+The default layout is whatever is in `templates/default-layout.json`. It is also the first entry in the Templates menu. To replace it with your own design:
 
 1. Open the planner and arrange the layout you want as the new default.
 2. Click **Export Layout**. This downloads a file named like `sip-house-layout-2026-09-27.json`.
 3. Rename that file to `default-layout.json`.
-4. Replace the existing `default-layout.json` in this folder (and commit it, if you're publishing to GitHub Pages).
+4. Replace the existing `templates/default-layout.json` (and commit it, if you're publishing to GitHub Pages).
 
 New visitors and anyone who clicks **Reset to Defaults** will get the new layout. People with a saved draft keep their draft until they reset.
 
@@ -95,8 +95,7 @@ sip-house-planner/
 ├── index.html              Page structure
 ├── styles.css              All styles
 ├── app.js                  All app logic
-├── default-layout.json     Layout loaded on first visit and on reset
-├── templates/              Starter plans for the Templates menu (one JSON file each)
+├── templates/              Default layout and starter plans for the Templates menu (one JSON file each)
 ├── assets/
 │   ├── favicon.svg, favicon-32.png, apple-touch-icon.png
 │   ├── og-image.png        Link preview image (1200 × 630)
