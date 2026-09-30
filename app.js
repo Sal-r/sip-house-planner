@@ -957,6 +957,16 @@
   //    Each check returns { level: 'good' | 'warning' | 'error', text }.
   // ==========================================================================
 
+  // Two stretches along a wall count as overlapping when they share more than
+  // this much. Everything snaps to 0.25′ or 5 cm, so a real overlap is always
+  // larger, and this only keeps rounding noise from old files from warning.
+  const WALL_OVERLAP_TOLERANCE = 0.1;
+
+  /** True when stretches a and b, given as start and end along one wall, overlap. */
+  const overlapsOnWall = (startA, endA, startB, endB) => (
+    Math.min(endA, endB) - Math.max(startA, startB) > WALL_OVERLAP_TOLERANCE
+  );
+
   function windowChecks() {
     const out = [];
     const e = state.exteriorWall;
@@ -973,7 +983,7 @@
       for (let j = i + 1; j < windows.length; j++) {
         const a = windows[i];
         const b = windows[j];
-        if (a.side === b.side && Math.min(a.offset + a.width, b.offset + b.width) - Math.max(a.offset, b.offset) > 0.05) {
+        if (a.side === b.side && overlapsOnWall(a.offset, a.offset + a.width, b.offset, b.offset + b.width)) {
           out.push({ level: 'warning', text: `Two windows overlap on the ${SIDE_NAME[a.side]} wall.` });
         }
       }
@@ -985,7 +995,7 @@
       const a = g.horizontal ? Math.min(g.start.x, g.end.x) : Math.min(g.start.y, g.end.y);
       const b = a + d.width;
       for (const w of windows) {
-        if (w.side === g.side && Math.min(b, w.offset + w.width) - Math.max(a, w.offset) > 0.05) {
+        if (w.side === g.side && overlapsOnWall(a, b, w.offset, w.offset + w.width)) {
           out.push({ level: 'warning', text: `A window overlaps the entrance door on the ${SIDE_NAME[w.side]} wall.` });
         }
       }
@@ -1267,7 +1277,7 @@
         const sameWall = a.horizontal === b.horizontal && Math.abs(a.axis - b.axis) < 0.01;
         const startA = a.horizontal ? a.start.x : a.start.y;
         const startB = b.horizontal ? b.start.x : b.start.y;
-        if (sameWall && Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
+        if (sameWall && overlapsOnWall(startA, startA + doors[i].width, startB, startB + doors[j].width)) {
           out.push({ level: 'warning', text: 'Two doorway openings overlap on the same wall.' });
           continue;
         }
@@ -2269,29 +2279,24 @@
     render();
   });
 
+  /** Gives a doorway or window a new width, keeping its middle and staying on the wall. */
+  function resizeAlongWall(opening, width, wallLength) {
+    const centered = opening.offset + opening.width / 2 - width / 2;
+    opening.width = width;
+    opening.offset = snap(Math.max(0, Math.min(wallLength - width, centered)));
+  }
+
   $('doorPreset').addEventListener('change', e => {
     const preset = DOOR_PRESETS[e.target.value];
     const door = findDoor(state.selectedDoor);
-    if (door && preset) {
-      const width = preset[1];
-      const wallLength = doorGeometry(door).length;
-      const centered = door.offset + door.width / 2 - width / 2;
-      door.width = width;
-      door.offset = snap(Math.max(0, Math.min(wallLength - width, centered)));
-    }
+    if (door && preset) resizeAlongWall(door, preset[1], doorGeometry(door).length);
     render();
   });
 
   $('windowPreset').addEventListener('change', e => {
     const preset = WINDOW_PRESETS[e.target.value];
     const win = findWindow(state.selectedWindow);
-    if (win && preset) {
-      const width = preset[1];
-      const wallLength = windowGeometry(win).length;
-      const centered = win.offset + win.width / 2 - width / 2;
-      win.width = width;
-      win.offset = snap(Math.max(0, Math.min(wallLength - width, centered)));
-    }
+    if (win && preset) resizeAlongWall(win, preset[1], windowGeometry(win).length);
     render();
   });
 
@@ -2375,11 +2380,24 @@
   });
 
   /** Registers a change handler that edits the selected room. */
-  function onRoomChange(id, handler) {
+  /** Makes a function that runs a handler on the selected record when a field changes, then redraws. */
+  const changeRegistrar = findSelected => (id, handler) => {
     $(id).addEventListener('change', e => {
-      const room = findRoom(state.selectedRoom);
-      if (room) handler(room, e.target.value);
+      const record = findSelected();
+      if (record) handler(record, e.target.value);
       render();
+    });
+  };
+  const onRoomChange = changeRegistrar(() => findRoom(state.selectedRoom));
+  const onDoorChange = changeRegistrar(() => findDoor(state.selectedDoor));
+  const onWindowChange = changeRegistrar(() => findWindow(state.selectedWindow));
+  const onItemChange = changeRegistrar(() => findItem(state.selectedItem));
+
+  /** A length field: read it in the current units, snap it, and store it on the record. */
+  function onLengthChange(onChange, id, key) {
+    onChange(id, (record, value) => {
+      const ft = readField(id, value);
+      if (ft !== null) record[key] = snap(ft);
     });
   }
 
@@ -2396,10 +2414,7 @@
     }
   });
   for (const [id, key] of [['roomX', 'x'], ['roomY', 'y'], ['roomW', 'w'], ['roomH', 'h']]) {
-    onRoomChange(id, (room, value) => {
-      const ft = readField(id, value);
-      if (ft !== null) room[key] = snap(ft);
-    });
+    onLengthChange(onRoomChange, id, key);
   }
   // An empty room thickness uses the interior default.
   $('roomWallT').addEventListener('change', e => {
@@ -2462,14 +2477,6 @@
   });
 
   /** Registers a change handler that edits the selected doorway. */
-  function onDoorChange(id, handler) {
-    $(id).addEventListener('change', e => {
-      const door = findDoor(state.selectedDoor);
-      if (door) handler(door, e.target.value);
-      render();
-    });
-  }
-
   onDoorChange('doorSide', (door, value) => {
     door.side = value;
     const room = findRoom(door.roomId);
@@ -2479,10 +2486,7 @@
   onDoorChange('doorHinge', (door, value) => { door.hinge = value; });
   onDoorChange('doorSwing', (door, value) => { door.swing = value; });
   for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
-    onDoorChange(id, (door, value) => {
-      const ft = readField(id, value);
-      if (ft !== null) door[key] = snap(ft);
-    });
+    onLengthChange(onDoorChange, id, key);
   }
   $('removeDoor').addEventListener('click', () => {
     if (!state.selectedDoor) return;
@@ -2536,12 +2540,7 @@
     render();
   });
   for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
-    $(id).addEventListener('change', e => {
-      const win = findWindow(state.selectedWindow);
-      const ft = readField(id, e.target.value);
-      if (win && ft !== null) win[key] = snap(ft);
-      render();
-    });
+    onLengthChange(onWindowChange, id, key);
   }
   $('removeWindow').addEventListener('click', () => {
     if (!state.selectedWindow) return;
@@ -2583,12 +2582,7 @@
     render();
   });
   for (const [id, key] of [['itemX', 'x'], ['itemY', 'y'], ['itemW', 'w'], ['itemH', 'h']]) {
-    $(id).addEventListener('change', e => {
-      const ft = readField(id, e.target.value);
-      const item = findItem(state.selectedItem);
-      if (item && ft !== null) item[key] = snap(ft);
-      render();
-    });
+    onLengthChange(onItemChange, id, key);
   }
   /** Turns the selected item 90° around its middle by swapping its width and depth. */
   function rotateSelectedItem() {
