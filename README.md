@@ -127,7 +127,7 @@ The Templates menu has four layouts based on plans published by [Extreme Panel T
 3. [Extreme Panels Simon](https://extremepanel.com/project/extreme-attainable-homes-simon/)
 4. [Extreme Panels Theodore](https://extremepanel.com/project/extreme-attainable-homes-theodore/)
 
-Each was redrawn by eye from the published floor plan image, so room sizes are close to the labels but not exact. The exterior walls are set to 8.5″ and the interior walls to 4.5″. Porches and decks sit outside the footprint and are left out. The Tiny Cottage's curved corner desk is drawn as an L-shaped desk made of two boxes. SIP House Planner is not affiliated with or endorsed by Extreme Panel Technologies, and these are not their official plans. A loaded template shows its credit and a link under the plan and on printed pages.
+Each was redrawn by eye from the published floor plan image, so room sizes are close to the labels but not exact. Every room and item is rounded to the nearest 3″ (0.25′) so it lines up with the planner's grid. To make that work, the exterior walls are set to 9″ (the published panels are 8.5″) and the interior walls to 4.5″. Porches and decks sit outside the footprint and are left out. The Tiny Cottage's curved corner desk is drawn as an L-shaped desk made of two boxes. SIP House Planner is not affiliated with or endorsed by Extreme Panel Technologies, and these are not their official plans. A loaded template shows its credit and a link under the plan and on printed pages.
 
 To add your own template, export a layout, save it in the `templates` folder, and add one line for it to the `TEMPLATES` list near the top of `app.js`.
 
