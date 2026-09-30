@@ -111,7 +111,7 @@
           <svg id="plan" role="group" aria-label="Editable scaled floor plan" tabindex="0"></svg>
         </div>
         <div id="planResize" class="plan-resize" role="separator" aria-orientation="horizontal" aria-label="Resize plan area" tabindex="0" title="Drag to resize. Double-click to fit the whole plan."></div>
-        <p class="plan-note">Room dimensions are nominal plan boxes and all areas are approximate. Items snap to <span id="itemSnapLabel">3″</span> steps. Walls consume space inside them; the area figures subtract the drawn walls approximately. Concept sketch only. Drag the bar under the plan to resize it; double-click the bar to fit the plan to the full width. At 100% zoom the plan scales to fit the box.</p>
+        <p class="plan-note">Room dimensions are nominal plan boxes and all areas are approximate. Rooms, doorways, windows, and items snap to <span id="snapLabel">3″</span> steps. Walls consume space inside them; the area figures subtract the drawn walls approximately. Concept sketch only. Drag the bar under the plan to resize it; double-click the bar to fit the plan to the full width. At 100% zoom the plan scales to fit the box.</p>
       </div>
     </section>
 
@@ -144,7 +144,7 @@
 
       <div class="side-stack">
         <section class="panel spaces-panel">
-          <div class="panel-title"><h2>Spaces</h2></div>
+          <div class="panel-title"><h2>Rooms &amp; Spaces</h2></div>
           <p id="roomInfo" class="info-box" aria-live="polite"></p>
           <div class="pick-controls">
             <select id="roomSelect" aria-label="Space"></select>
@@ -278,8 +278,8 @@
               </label>
             </div>
             <div class="two-fields">
-              <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.5"></label>
-              <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.5"></label>
+              <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.25"></label>
+              <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.25"></label>
             </div>
             <label class="select-label">Door Type
               <select id="doorSwing">

@@ -97,7 +97,7 @@
         "id": "door-bed2",
         "roomId": "bed2",
         "side": "south",
-        "offset": 7.1,
+        "offset": 7.0,
         "width": 3.0,
         "hinge": "end",
         "swing": "out"
@@ -106,7 +106,7 @@
         "id": "door-bed1",
         "roomId": "bed1",
         "side": "north",
-        "offset": 7.1,
+        "offset": 7.0,
         "width": 3.0,
         "hinge": "start",
         "swing": "out"

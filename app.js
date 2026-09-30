@@ -582,13 +582,11 @@
   const meters = ft => roundText(ft * M_PER_FT, 2);
   const metricSnap = (ft, stepCm) => Math.round(ft * CM_PER_FT / stepCm) * stepCm / CM_PER_FT;
 
-  // Snapping: footprint 6″ or 10 cm; doorways 6″ or 5 cm;
-  // rooms, items and windows 3″ or 5 cm. Rooms use the finer step so plans
-  // can hit sizes like 15.75′ and 15.25′.
-  const snap = ft => (isMetric() ? metricSnap(ft, 10) : Math.round(ft * 2) / 2);
-  const roomSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
-  const doorSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 2) / 2);
-  const itemSnap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
+  // Snapping: the footprint uses 6″ or 10 cm. Rooms, doorways, windows, and
+  // items all use 3″ or 5 cm, so every size and position can land on the same
+  // grid (for example 15.75′ and 15.25′).
+  const footprintSnap = ft => (isMetric() ? metricSnap(ft, 10) : Math.round(ft * 2) / 2);
+  const snap = ft => (isMetric() ? metricSnap(ft, 5) : Math.round(ft * 4) / 4);
 
   /** Keyboard nudge distance in feet. Windows use the finer step. */
   const nudgeStep = (shift, fine) => (isMetric()
@@ -633,8 +631,8 @@
     itemY: { kind: 'length', imperial: { step: 0.25, valid: [-80, 80] }, metric: { step: 0.05, valid: [-24.4, 24.4] } },
     itemW: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
     itemH: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
-    doorOffset: { kind: 'length', imperial: { min: 0, step: 0.5, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
-    doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.5 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
+    doorOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
+    doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.25 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
     windowOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
     windowWidth: { kind: 'length', imperial: { min: 1, max: 20, step: 0.25, valid: [1, 80] }, metric: { min: 0.3, max: 6, step: 0.05, valid: [0.3, 24.4] } },
   };
@@ -675,7 +673,7 @@
     }
     $('unitName').textContent = isMetric() ? 'Meters' : 'Feet';
     $('gridLegend').textContent = `1 square = ${gridSquareText()}`;
-    $('itemSnapLabel').textContent = isMetric() ? '5 cm' : '3″';
+    $('snapLabel').textContent = isMetric() ? '5 cm' : '3″';
   }
 
   // ==========================================================================
@@ -1775,7 +1773,7 @@
     }
   }
 
-  /** Spaces panel: the info box and a dropdown of every room, grouped by floor. */
+  /** Rooms & Spaces panel: the info box and a dropdown of every room, grouped by floor. */
   function renderRoomList() {
     const groups = floorOrder().map(floor => ({
       label: floorName(floor),
@@ -1788,7 +1786,7 @@
     $('roomSelect').disabled = !state.rooms.length;
   }
 
-  /** The editing fields in the Spaces panel. */
+  /** The editing fields in the Rooms & Spaces panel. */
   function renderSelectedRoom(model) {
     const room = findRoom(state.selectedRoom);
     for (const id of ['roomName', 'roomKind', 'roomFloor', 'roomWalls', 'roomWallT', 'roomX', 'roomY', 'roomW', 'roomH', 'duplicateRoom', 'deleteRoom']) {
@@ -2205,7 +2203,7 @@
   for (const [id, key] of [['houseWidth', 'width'], ['houseDepth', 'depth']]) {
     onNumberChange(id, (_, raw) => {
       const ft = readField(id, raw);
-      if (ft !== null) state[key] = snap(ft);
+      if (ft !== null) state[key] = footprintSnap(ft);
     });
   }
   // Wall thicknesses are entered in inches or centimeters and stored in feet.
@@ -2281,7 +2279,7 @@
       const wallLength = doorGeometry(door).length;
       const centered = door.offset + door.width / 2 - width / 2;
       door.width = width;
-      door.offset = doorSnap(Math.max(0, Math.min(wallLength - width, centered)));
+      door.offset = snap(Math.max(0, Math.min(wallLength - width, centered)));
     }
     render();
   });
@@ -2294,7 +2292,7 @@
       const wallLength = windowGeometry(win).length;
       const centered = win.offset + win.width / 2 - width / 2;
       win.width = width;
-      win.offset = itemSnap(Math.max(0, Math.min(wallLength - width, centered)));
+      win.offset = snap(Math.max(0, Math.min(wallLength - width, centered)));
     }
     render();
   });
@@ -2306,7 +2304,7 @@
       const [name, w, h] = preset;
       const centerX = item.x + item.w / 2;
       const centerY = item.y + item.h / 2;
-      Object.assign(item, { name, w, h, x: itemSnap(centerX - w / 2), y: itemSnap(centerY - h / 2) });
+      Object.assign(item, { name, w, h, x: snap(centerX - w / 2), y: snap(centerY - h / 2) });
     }
     render();
   });
@@ -2402,7 +2400,7 @@
   for (const [id, key] of [['roomX', 'x'], ['roomY', 'y'], ['roomW', 'w'], ['roomH', 'h']]) {
     onRoomChange(id, (room, value) => {
       const ft = readField(id, value);
-      if (ft !== null) room[key] = roomSnap(ft);
+      if (ft !== null) room[key] = snap(ft);
     });
   }
   // An empty room thickness uses the interior default.
@@ -2454,7 +2452,7 @@
       id: newId('door'),
       roomId: room.id,
       side,
-      offset: doorSnap(Math.max(0.5, (room.h - width) / 2)),
+      offset: snap(Math.max(0.5, (room.h - width) / 2)),
       width,
       hinge: 'start',
       swing: 'in',
@@ -2478,14 +2476,14 @@
     door.side = value;
     const room = findRoom(door.roomId);
     const length = isHorizontalSide(door.side) ? room.w : room.h;
-    door.offset = doorSnap(Math.max(0.5, (length - door.width) / 2));
+    door.offset = snap(Math.max(0.5, (length - door.width) / 2));
   });
   onDoorChange('doorHinge', (door, value) => { door.hinge = value; });
   onDoorChange('doorSwing', (door, value) => { door.swing = value; });
   for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
     onDoorChange(id, (door, value) => {
       const ft = readField(id, value);
-      if (ft !== null) door[key] = doorSnap(ft);
+      if (ft !== null) door[key] = snap(ft);
     });
   }
   $('removeDoor').addEventListener('click', () => {
@@ -2517,7 +2515,7 @@
         offset = a + (b - a - width) / 2;
       }
     }
-    const win = { id: newId('window'), floor: state.floor, side, offset: itemSnap(offset), width };
+    const win = { id: newId('window'), floor: state.floor, side, offset: snap(offset), width };
     state.windows.push(win);
     state.selectedWindow = win.id;
     render();
@@ -2528,7 +2526,7 @@
     if (win) {
       win.side = e.target.value;
       const g = windowGeometry(win);
-      win.offset = itemSnap(Math.min(Math.max(0, win.offset), g.length - win.width));
+      win.offset = snap(Math.min(Math.max(0, win.offset), g.length - win.width));
     }
     render();
   });
@@ -2543,7 +2541,7 @@
     $(id).addEventListener('change', e => {
       const win = findWindow(state.selectedWindow);
       const ft = readField(id, e.target.value);
-      if (win && ft !== null) win[key] = itemSnap(ft);
+      if (win && ft !== null) win[key] = snap(ft);
       render();
     });
   }
@@ -2568,8 +2566,8 @@
     let y = 1.5;
     // Center new items in the selected room.
     if (room && room.floor === state.floor) {
-      x = itemSnap(room.x + room.w / 2 - w / 2);
-      y = itemSnap(room.y + room.h / 2 - h / 2);
+      x = snap(room.x + room.w / 2 - w / 2);
+      y = snap(room.y + room.h / 2 - h / 2);
     }
     const item = { id: newId('item'), name, floor: state.floor, x, y, w, h };
     state.items.push(item);
@@ -2590,7 +2588,7 @@
     $(id).addEventListener('change', e => {
       const ft = readField(id, e.target.value);
       const item = findItem(state.selectedItem);
-      if (item && ft !== null) item[key] = itemSnap(ft);
+      if (item && ft !== null) item[key] = snap(ft);
       render();
     });
   }
@@ -2601,8 +2599,8 @@
     const cx = item.x + item.w / 2;
     const cy = item.y + item.h / 2;
     [item.w, item.h] = [item.h, item.w];
-    item.x = itemSnap(cx - item.w / 2);
-    item.y = itemSnap(cy - item.h / 2);
+    item.x = snap(cx - item.w / 2);
+    item.y = snap(cy - item.h / 2);
     render();
   }
   $('rotateItem').addEventListener('click', rotateSelectedItem);
@@ -2770,12 +2768,12 @@
     const p = planPoint(e);
     if (drag.type === 'room') {
       const r = findRoom(drag.id);
-      r.x = roomSnap(p.x - drag.dx);
-      r.y = roomSnap(p.y - drag.dy);
+      r.x = snap(p.x - drag.dx);
+      r.y = snap(p.y - drag.dy);
     } else if (drag.type === 'item') {
       const it = findItem(drag.id);
-      it.x = itemSnap(p.x - drag.dx);
-      it.y = itemSnap(p.y - drag.dy);
+      it.x = snap(p.x - drag.dx);
+      it.y = snap(p.y - drag.dy);
     } else if (drag.type === 'window') {
       const w = findWindow(drag.id);
       const side = nearestWallSide(p, w.side);
@@ -2785,11 +2783,11 @@
         drag.delta = w.width / 2;
       }
       const g = windowGeometry(w);
-      w.offset = itemSnap(Math.max(0, Math.min(g.length - w.width, (g.horizontal ? p.x : p.y) - drag.delta)));
+      w.offset = snap(Math.max(0, Math.min(g.length - w.width, (g.horizontal ? p.x : p.y) - drag.delta)));
     } else {
       const d = findDoor(drag.id);
       const g = doorGeometry(d);
-      d.offset = doorSnap(Math.max(0, Math.min(g.length - d.width, (g.horizontal ? p.x - g.room.x : p.y - g.room.y) - drag.delta)));
+      d.offset = snap(Math.max(0, Math.min(g.length - d.width, (g.horizontal ? p.x - g.room.x : p.y - g.room.y) - drag.delta)));
     }
     render();
   });

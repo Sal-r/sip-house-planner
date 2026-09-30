@@ -9,7 +9,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The tab shows the grid favicon.
 
 ## Floors
-- [ ] Basement and Main Floor tabs switch the plan and the Spaces panel.
+- [ ] Basement and Main Floor tabs switch the plan and the Rooms & Spaces panel.
 - [ ] The Basement and Second Floor tabs each have a small button on their left edge, about a quarter of the tab's width. It shows − when the floor is on and + when it is off.
 - [ ] Clicking + on Second Floor turns the tab on, opens it, and adds stairs matching the main floor stairs.
 - [ ] Clicking − on Second Floor asks for confirmation, then removes the floor. The tab stays, dimmed and not clickable.
@@ -32,7 +32,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The choice is remembered after refresh, and Print / PDF uses the chosen units.
 
 ## Rooms
-- [ ] Clicking a room on the plan or picking it from the Spaces dropdown selects it.
+- [ ] Clicking a room on the plan or picking it from the Rooms & Spaces dropdown selects it.
 - [ ] Picking a space, doorway, window, or item on another floor switches to that floor.
 - [ ] The info box above each dropdown shows the total and the count on each floor, and says "No ... yet" when empty.
 - [ ] After typing in a field (for example, a door width), a single pick from any dropdown selects that record.
@@ -46,7 +46,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Sidebar layout
 
-- [ ] At 1500px wide or more, Spaces and Furniture & Fixtures sit side by side with Doorways and Windows below, and all four boxes are the same width and height.
+- [ ] At 1500px wide or more, Rooms & Spaces and Furniture & Fixtures sit side by side with Doorways and Windows below, and all four boxes are the same width and height.
 - [ ] Below 1500px the four boxes stack in one column, and nothing is clipped.
 
 ## Undo
@@ -61,7 +61,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Suggested sizes
 
-- [ ] Spaces, Furniture & Fixtures, Doorways, and Windows each show: summary, dropdown, Add button, Suggested sizes menu, then the fields.
+- [ ] Rooms & Spaces, Furniture & Fixtures, Doorways, and Windows each show: summary, dropdown, Add button, Suggested sizes menu, then the fields.
 - [ ] Each Suggested sizes menu is off until something is selected, and it applies the chosen size to the selected space, doorway, window, or item.
 - [ ] Half Bath and Full Bath set the space's name, type, and size. Windows, doorways, and items stay centered where they were when resized.
 - [ ] The menu shows the size the selected record already has, or "Suggested sizes" when it matches none. Arrow keys work on it.
@@ -75,7 +75,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Doorways and windows
 - [ ] + Add Doorway works on an enclosed room and is disabled for open plan rooms.
-- [ ] Wall, Hinge, From Corner, Width, and Door Type all update the doorway; dragging slides it along the wall.
+- [ ] Wall, Hinge, From Corner, Width, and Door Type all update the doorway; dragging slides it along the wall in 3″ steps.
+- [ ] Typing 7.1 in a doorway's From Corner becomes 7, and 7.13 becomes 7.25. Rooms, windows, and items snap the same way.
 - [ ] Setting Door Type to Cased Opening (No Door) draws a dashed opening with end ticks, greys out Hinge, still cuts the wall, and can be dragged, selected, and focused by keyboard.
 - [ ] A doorway on an outside wall shows the ENTRANCE label.
 - [ ] + Add Window, dragging, Wall, Width, From Corner, and Remove Window all work.
