@@ -15,8 +15,9 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness, per-side wall toggles, and per-side half walls.
 - **Doorways:** add interior doorways with hinge side and swing direction, or as a cased opening with no door. Doorways on an outside wall are marked as entrances automatically.
 - **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
-- **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer.
-- **Multiple floors:** basement, main floor, and an optional second floor, with a one-click option to align the staircases.
+- **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
+- **Multiple floors:** a main floor plus an optional basement and an optional second floor, with a one-click option to align the staircases.
+- **Templates:** load one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
 - **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, doorways too close to corners, items hitting walls, and more.
 - **Area figures:** gross footprint, area inside the exterior walls, and approximate floor area after walls.
 - **Plan tools:** zoom, rotate the whole house 90°, mark the front of the house, and resize the plan area.
@@ -43,6 +44,8 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 - **Edit** the selected space's name, type, floor, walls, position, and size in the **Spaces** panel, under the dropdown.
 - **Keep a copy** with **Export Layout**. Use **Import Layout** to load it back, on this or any other browser.
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.
+- **Basement and second floor:** each has a small **−** or **+** button on the left of its tab. **−** removes the floor and **+** brings it back (the tab stays, dimmed, while a floor is off). Removing a floor deletes its spaces, doorways, windows, and items, and Undo restores them.
+- **Templates:** pick one from the **Templates** menu. It replaces your current layout after a confirmation, and Undo brings your layout back.
 - **Start over** with **Reset to Defaults**.
 
 ### Keyboard
@@ -53,6 +56,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 | Enter or Space | Select the focused shape |
 | Arrow keys | Move the focused shape 6″ or 10 cm (windows 3″ or 5 cm). Doorways and windows slide along their wall |
 | Shift + arrow keys | Move 1′ or 25 cm |
+| R | Rotate the selected item 90° (not while typing in a field) |
 | Up / Down on the resize bar | Make the plan area shorter or taller |
 
 ## Running it locally
@@ -92,6 +96,7 @@ sip-house-planner/
 ├── styles.css              All styles
 ├── app.js                  All app logic
 ├── default-layout.json     Layout loaded on first visit and on reset
+├── templates/              Starter plans for the Templates menu (one JSON file each)
 ├── assets/
 │   ├── favicon.svg, favicon-32.png, apple-touch-icon.png
 │   ├── og-image.png        Link preview image (1200 × 630)
@@ -112,6 +117,19 @@ sip-house-planner/
 2. In the repository, go to **Settings → Pages**.
 3. Under **Build and deployment**, choose **Deploy from a branch**, then **main** and **/ (root)**, and save.
 4. The site will be live at `https://sal-r.github.io/sip-house-planner/` within a minute or two.
+
+## Templates and credits
+
+The Templates menu has four layouts based on plans published by [Extreme Panel Technologies](https://extremepanel.com/):
+
+1. [Extreme Panels Tiny Cottage](https://extremepanel.com/project/extreme-tiny-cottage-plan/), designed by Lew Oliver
+2. [Extreme Panels Alvin](https://extremepanel.com/project/extreme-attainable-homes-alvin/)
+3. [Extreme Panels Simon](https://extremepanel.com/project/extreme-attainable-homes-simon/)
+4. [Extreme Panels Theodore](https://extremepanel.com/project/extreme-attainable-homes-theodore/)
+
+Each was redrawn by eye from the published floor plan image, so room sizes are close to the labels but not exact. The exterior walls are set to 8.5″ and the interior walls to 4.5″. Porches and decks sit outside the footprint and are left out. The Tiny Cottage's curved corner desk is drawn as an L-shaped desk made of two boxes. SIP House Planner is not affiliated with or endorsed by Extreme Panel Technologies, and these are not their official plans. A loaded template shows its credit and a link under the plan and on printed pages.
+
+To add your own template, export a layout, save it in the `templates` folder, and add one line for it to the `TEMPLATES` list near the top of `app.js`.
 
 ## Important: concept tool only
 

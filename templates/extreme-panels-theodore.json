@@ -1,0 +1,599 @@
+{
+  "app": "sip-house-planner",
+  "format": 1,
+  "layout": {
+    "schemaVersion": 3,
+    "width": 40.0,
+    "depth": 28.0,
+    "exteriorWall": 0.7083333333333334,
+    "interiorWall": 0.375,
+    "zoom": 100,
+    "floor": "main",
+    "upperEnabled": false,
+    "basementEnabled": false,
+    "selectedRoom": "living",
+    "selectedDoor": null,
+    "selectedFixture": "washer",
+    "scenario": "preferred",
+    "entranceMode": "front",
+    "frontSide": "south",
+    "windows": [
+      {
+        "id": "win-n1",
+        "floor": "main",
+        "side": "north",
+        "offset": 5.5,
+        "width": 2.0
+      },
+      {
+        "id": "win-n2",
+        "floor": "main",
+        "side": "north",
+        "offset": 11.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-n3",
+        "floor": "main",
+        "side": "north",
+        "offset": 15.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-n4",
+        "floor": "main",
+        "side": "north",
+        "offset": 23.0,
+        "width": 2.0
+      },
+      {
+        "id": "win-n5",
+        "floor": "main",
+        "side": "north",
+        "offset": 31.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-n6",
+        "floor": "main",
+        "side": "north",
+        "offset": 35.5,
+        "width": 3.0
+      },
+      {
+        "id": "win-w1",
+        "floor": "main",
+        "side": "west",
+        "offset": 11.0,
+        "width": 2.5
+      },
+      {
+        "id": "win-w2",
+        "floor": "main",
+        "side": "west",
+        "offset": 15.0,
+        "width": 2.5
+      },
+      {
+        "id": "win-w3",
+        "floor": "main",
+        "side": "west",
+        "offset": 22.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-s1",
+        "floor": "main",
+        "side": "south",
+        "offset": 2.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-s2",
+        "floor": "main",
+        "side": "south",
+        "offset": 6.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-s3",
+        "floor": "main",
+        "side": "south",
+        "offset": 11.5,
+        "width": 4.0
+      },
+      {
+        "id": "win-s4",
+        "floor": "main",
+        "side": "south",
+        "offset": 16.0,
+        "width": 2.5
+      },
+      {
+        "id": "win-s5",
+        "floor": "main",
+        "side": "south",
+        "offset": 24.0,
+        "width": 2.0
+      },
+      {
+        "id": "win-s6",
+        "floor": "main",
+        "side": "south",
+        "offset": 31.0,
+        "width": 4.0
+      },
+      {
+        "id": "win-s7",
+        "floor": "main",
+        "side": "south",
+        "offset": 36.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-e1",
+        "floor": "main",
+        "side": "east",
+        "offset": 4.0,
+        "width": 3.0
+      },
+      {
+        "id": "win-e2",
+        "floor": "main",
+        "side": "east",
+        "offset": 20.0,
+        "width": 3.0
+      }
+    ],
+    "selectedWindow": null,
+    "showItems": true,
+    "selectedItem": null,
+    "doors": [
+      {
+        "id": "door-back",
+        "roomId": "laundry",
+        "side": "north",
+        "offset": 1.0,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-laundry",
+        "roomId": "laundry",
+        "side": "south",
+        "offset": 3.0,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-front",
+        "roomId": "living",
+        "side": "south",
+        "offset": 9.5,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "id": "door-bed3",
+        "roomId": "bed3",
+        "side": "east",
+        "offset": 8.0,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "out"
+      },
+      {
+        "id": "door-bath-1",
+        "roomId": "bath-1",
+        "side": "south",
+        "offset": 5.5,
+        "width": 2.5,
+        "hinge": "start",
+        "swing": "out"
+      },
+      {
+        "id": "door-bed2",
+        "roomId": "bed2",
+        "side": "west",
+        "offset": 7.25,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "out"
+      },
+      {
+        "id": "door-bed1",
+        "roomId": "bed1",
+        "side": "west",
+        "offset": 1.0,
+        "width": 3.0,
+        "hinge": "start",
+        "swing": "out"
+      },
+      {
+        "id": "door-utility",
+        "roomId": "utility",
+        "side": "north",
+        "offset": 1.5,
+        "width": 2.5,
+        "hinge": "start",
+        "swing": "out"
+      },
+      {
+        "id": "door-bath-2",
+        "roomId": "bath-2",
+        "side": "west",
+        "offset": 1.0,
+        "width": 2.5,
+        "hinge": "start",
+        "swing": "out"
+      }
+    ],
+    "rooms": [
+      {
+        "id": "laundry",
+        "name": "Laundry",
+        "floor": "main",
+        "x": 0.7083,
+        "y": 0.7083,
+        "w": 9.0,
+        "h": 6.5833,
+        "kind": "utility",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "kitchen",
+        "name": "Kitchen",
+        "floor": "main",
+        "x": 0.7083,
+        "y": 7.2916,
+        "w": 9.0,
+        "h": 11.0,
+        "kind": "social",
+        "wallMode": "open"
+      },
+      {
+        "id": "dining",
+        "name": "Dining",
+        "floor": "main",
+        "x": 0.7083,
+        "y": 18.2916,
+        "w": 9.0,
+        "h": 9.0,
+        "kind": "social",
+        "wallMode": "open"
+      },
+      {
+        "id": "bed3",
+        "name": "Bedroom #3",
+        "floor": "main",
+        "x": 9.7083,
+        "y": 0.7083,
+        "w": 10.0,
+        "h": 12.0,
+        "kind": "private",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "living",
+        "name": "Living Room",
+        "floor": "main",
+        "x": 9.7083,
+        "y": 12.7083,
+        "w": 13.0,
+        "h": 14.5833,
+        "kind": "social",
+        "wallMode": "enclosed",
+        "walls": {
+          "north": false,
+          "east": false,
+          "south": false,
+          "west": false
+        }
+      },
+      {
+        "id": "bath-1",
+        "name": "Bath",
+        "floor": "main",
+        "x": 19.7083,
+        "y": 0.7083,
+        "w": 9.0,
+        "h": 7.0,
+        "kind": "wet",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "bed2",
+        "name": "Bedroom #2",
+        "floor": "main",
+        "x": 28.7083,
+        "y": 0.7083,
+        "w": 10.5833,
+        "h": 11.0,
+        "kind": "private",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "hall-1",
+        "name": "Hallway",
+        "floor": "main",
+        "x": 19.7083,
+        "y": 7.7083,
+        "w": 9.0,
+        "h": 5.0,
+        "kind": "circulation",
+        "wallMode": "open"
+      },
+      {
+        "id": "hall-2",
+        "name": "Hallway Lower",
+        "floor": "main",
+        "x": 22.7083,
+        "y": 12.7083,
+        "w": 6.0,
+        "h": 3.0,
+        "kind": "circulation",
+        "wallMode": "open"
+      },
+      {
+        "id": "utility",
+        "name": "Utility",
+        "floor": "main",
+        "x": 22.7083,
+        "y": 15.7083,
+        "w": 6.0,
+        "h": 3.0,
+        "kind": "utility",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "bath-2",
+        "name": "Bath",
+        "floor": "main",
+        "x": 22.7083,
+        "y": 18.7083,
+        "w": 6.0,
+        "h": 8.5833,
+        "kind": "wet",
+        "wallMode": "enclosed"
+      },
+      {
+        "id": "bed1",
+        "name": "Bedroom #1",
+        "floor": "main",
+        "x": 28.7083,
+        "y": 11.7083,
+        "w": 10.5833,
+        "h": 15.5833,
+        "kind": "private",
+        "wallMode": "enclosed"
+      }
+    ],
+    "items": [
+      {
+        "id": "washer-1",
+        "name": "Washer / Dryer",
+        "floor": "main",
+        "x": 6.75,
+        "y": 1.5,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "washer-2",
+        "name": "Washer / Dryer",
+        "floor": "main",
+        "x": 6.75,
+        "y": 4.25,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "k-west",
+        "name": "Base Cabinets",
+        "floor": "main",
+        "x": 0.8283,
+        "y": 7.75,
+        "w": 2.0,
+        "h": 8.0
+      },
+      {
+        "id": "fridge",
+        "name": "Refrigerator",
+        "floor": "main",
+        "x": 0.8283,
+        "y": 15.75,
+        "w": 2.9217,
+        "h": 2.2341
+      },
+      {
+        "id": "k-dish",
+        "name": "Base Cabinets",
+        "floor": "main",
+        "x": 6.9008,
+        "y": 8.0,
+        "w": 2.5,
+        "h": 3.5
+      },
+      {
+        "id": "range",
+        "name": "Range",
+        "floor": "main",
+        "x": 6.9008,
+        "y": 12.0,
+        "w": 2.5,
+        "h": 2.5
+      },
+      {
+        "id": "k-east",
+        "name": "Base Cabinets",
+        "floor": "main",
+        "x": 7.0,
+        "y": 14.5,
+        "w": 2.4008,
+        "h": 3.4841
+      },
+      {
+        "id": "round-table",
+        "name": "Round Dining Table",
+        "floor": "main",
+        "x": 2.5,
+        "y": 22.0,
+        "w": 4.5,
+        "h": 4.5
+      },
+      {
+        "id": "bed3",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 10.75,
+        "y": 0.8283,
+        "w": 6.75,
+        "h": 5.0
+      },
+      {
+        "id": "b1-tub",
+        "name": "Tub",
+        "floor": "main",
+        "x": 20.0158,
+        "y": 0.8283,
+        "w": 2.5,
+        "h": 5.0
+      },
+      {
+        "id": "b1-toilet",
+        "name": "Toilet",
+        "floor": "main",
+        "x": 23.75,
+        "y": 1.0,
+        "w": 1.75,
+        "h": 2.5
+      },
+      {
+        "id": "b1-vanity",
+        "name": "Vanity",
+        "floor": "main",
+        "x": 25.5,
+        "y": 1.0,
+        "w": 2.9008,
+        "h": 1.75
+      },
+      {
+        "id": "bed2",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 32.4216,
+        "y": 0.8283,
+        "w": 6.75,
+        "h": 5.0
+      },
+      {
+        "id": "armchair",
+        "name": "Armchair",
+        "floor": "main",
+        "x": 10.25,
+        "y": 14.25,
+        "w": 2.75,
+        "h": 2.75
+      },
+      {
+        "id": "coffee",
+        "name": "Coffee Table",
+        "floor": "main",
+        "x": 13.5,
+        "y": 14.75,
+        "w": 3.0,
+        "h": 2.0
+      },
+      {
+        "id": "sofa",
+        "name": "Sofa",
+        "floor": "main",
+        "x": 10.5,
+        "y": 18.25,
+        "w": 9.0,
+        "h": 3.0
+      },
+      {
+        "id": "heater",
+        "name": "Water Heater",
+        "floor": "main",
+        "x": 23.25,
+        "y": 16.25,
+        "w": 2.0,
+        "h": 2.0
+      },
+      {
+        "id": "handler",
+        "name": "Air Handler",
+        "floor": "main",
+        "x": 25.5,
+        "y": 16.1508,
+        "w": 2.5,
+        "h": 2.25
+      },
+      {
+        "id": "b2-shower",
+        "name": "Shower",
+        "floor": "main",
+        "x": 25.4008,
+        "y": 19.25,
+        "w": 3.0,
+        "h": 3.0
+      },
+      {
+        "id": "b2-vanity",
+        "name": "Vanity",
+        "floor": "main",
+        "x": 23.25,
+        "y": 22.5,
+        "w": 1.75,
+        "h": 3.0
+      },
+      {
+        "id": "b2-toilet",
+        "name": "Toilet",
+        "floor": "main",
+        "x": 23.25,
+        "y": 25.5,
+        "w": 1.75,
+        "h": 1.6716
+      },
+      {
+        "id": "closet-a",
+        "name": "Closet",
+        "floor": "main",
+        "x": 34.1716,
+        "y": 12.0158,
+        "w": 5.0,
+        "h": 1.5
+      },
+      {
+        "id": "closet-b",
+        "name": "Closet",
+        "floor": "main",
+        "x": 34.1716,
+        "y": 14.0,
+        "w": 5.0,
+        "h": 2.5
+      },
+      {
+        "id": "bed1",
+        "name": "Queen Bed",
+        "floor": "main",
+        "x": 32.4216,
+        "y": 21.0,
+        "w": 6.75,
+        "h": 5.0
+      }
+    ],
+    "fixtures": [],
+    "templateCredit": {
+      "name": "EXTREME PANELS THEODORE",
+      "by": "Extreme Panel Technologies",
+      "url": "https://extremepanel.com/project/extreme-attainable-homes-theodore/"
+    }
+  }
+}

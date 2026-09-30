@@ -111,6 +111,20 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .quiet-button:hover { background: #25434e; }
 
+/* Same look as .quiet-button so the Templates menu sits with the other top actions. */
+.quiet-select {
+  width: 8.5rem;
+  min-height: 0;
+  padding: 8px 12px;
+  border: 1px solid #57727a;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font-size: .84rem;
+}
+.quiet-select:hover { background: #25434e; }
+.quiet-select option { background: #fff; color: var(--ink); }
+
 .primary-button {
   display: block;
   width: 100%;
@@ -289,8 +303,14 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   border-radius: 9px;
   background: #e4eded;
   white-space: nowrap;
+  gap: 4px;
 }
-.floor-tab-list { display: flex; }
+.floor-tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.floor-tab-group { display: flex; }
 .floor-tabs button {
   padding: 9px 14px;
   border: 0;
@@ -305,32 +325,28 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   color: #123743;
   box-shadow: 0 1px 5px #14313c21;
 }
-.floor-tabs .add-floor-button {
-  margin-left: 4px;
-  padding: 8px 12px;
-  border: 1px dashed var(--teal-border);
-  border-radius: 6px;
-  background: transparent;
+
+/* The + or − button sits on the left edge of its tab, about a quarter of the
+   tab's width, so the two read as one control. Three classes beat the padding
+   rules for the tab buttons in the media queries further down. */
+.floor-tabs .floor-tab-group .floor-toggle {
+  width: 28px;
+  padding: 0;
+  border-radius: 6px 0 0 6px;
+  background: #d3e2e2;
   color: var(--teal-link);
-  font-size: .82rem;
-  white-space: nowrap;
+  font-size: 1.05rem;
+  line-height: 1;
 }
-.floor-tabs .add-floor-button:hover { background: #f3faf9; }
-.floor-tabs .remove-floor-button {
-  margin-left: 4px;
-  padding: 8px 12px;
-  border: 1px dashed #c96f63;
-  border-radius: 6px;
-  background: transparent;
-  color: #b3372b;
-  font-size: .82rem;
-  white-space: nowrap;
-}
-.floor-tabs .remove-floor-button:hover:not(:disabled) { background: #fdf0ee; }
-.floor-tabs .remove-floor-button:disabled {
-  border-color: #cad9d9;
+.floor-tabs .floor-tab-group .floor-toggle:hover { background: #c3d8d8; }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove { color: #b3372b; }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove:hover { background: #f4d9d5; }
+.floor-tab-group button[role="tab"] { border-radius: 0 6px 6px 0; }
+/* A floor that is off: the tab stays but is dimmed and can't be opened. */
+.floor-tab-group button[role="tab"]:disabled {
+  background: #edf3f3;
   color: var(--disabled-text);
-  opacity: 1;
+  cursor: default;
 }
 
 .plan-card,
@@ -457,6 +473,17 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .plan-resize:hover::before,
 .plan-resize.dragging::before { background: var(--focus); }
 .plan-resize:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+.template-credit {
+  margin: 0;
+  padding: 10px 17px;
+  border-top: 1px solid #e7eeed;
+  background: #f7faf9;
+  color: var(--teal-muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.template-credit a { color: var(--teal-link); font-weight: 700; }
 
 .plan-note {
   margin: 0;
@@ -806,6 +833,7 @@ svg.tap-only .interior-door { cursor: pointer; }
   }
   .action-menu.open { display: flex; }
   .action-menu .quiet-button { padding: 11px 12px; text-align: left; font-size: .92rem; }
+  .action-menu .quiet-select { width: 100%; padding: 11px 12px; font-size: .92rem; }
   .section-heading h1 { font-size: 1.8rem; }
 }
 
