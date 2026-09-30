@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-30T02:16:30.239Z",
+  "exportedAt": "2026-09-30T02:51:59.175Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -9,9 +9,9 @@
     "exteriorWall": 1,
     "interiorWall": 0.375,
     "zoom": 100,
-    "floor": "basement",
+    "floor": "main",
     "upperEnabled": false,
-    "selectedRoom": "secure",
+    "selectedRoom": "bed1",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -718,7 +718,10 @@
         },
         "wallMode": "enclosed",
         "halfWalls": {
-          "south": true
+          "north": false,
+          "east": false,
+          "south": true,
+          "west": false
         }
       },
       {
@@ -856,7 +859,10 @@
         },
         "wallMode": "enclosed",
         "halfWalls": {
-          "south": true
+          "north": false,
+          "east": false,
+          "south": true,
+          "west": false
         }
       },
       {
