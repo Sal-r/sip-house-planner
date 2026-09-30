@@ -59,9 +59,16 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The menu shows the size the selected record already has, or "Suggested sizes" when it matches none. Arrow keys work on it.
 - [ ] Switching to metric relabels the menus.
 
+## Half walls
+- [ ] Half Walls checkboxes are disabled for sides with no wall and for exterior sides, and enabled once that side's wall is checked.
+- [ ] Checking a Half Wall side draws that wall lighter and dashed. Unchecking the Walls On box for that side removes the wall and clears its half wall.
+- [ ] Where two rooms share a wall and one says full, the full wall shows.
+- [ ] Half walls survive Rotate, Duplicate Room, Export, and Import, and count in the walls area total.
+
 ## Doorways and windows
 - [ ] + Add Doorway works on an enclosed room and is disabled for open plan rooms.
-- [ ] Wall, Hinge, From Corner, Width, and Swing all update the doorway; dragging slides it along the wall.
+- [ ] Wall, Hinge, From Corner, Width, and Door Type all update the doorway; dragging slides it along the wall.
+- [ ] Setting Door Type to Cased Opening (No Door) draws a dashed opening with end ticks, greys out Hinge, still cuts the wall, and can be dragged, selected, and focused by keyboard.
 - [ ] A doorway on an outside wall shows the ENTRANCE label.
 - [ ] + Add Window, dragging, Wall, Width, From Corner, and Remove Window all work.
 - [ ] Dragging a window toward another wall moves it there, and it doesn't flicker between walls near a corner.

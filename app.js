@@ -296,6 +296,11 @@
       } else {
         delete room.walls;
       }
+      if (room.halfWalls && typeof room.halfWalls === 'object') {
+        room.halfWalls = Object.fromEntries(SIDES.map(side => [side, room.halfWalls[side] === true]));
+      } else {
+        delete room.halfWalls;
+      }
       return room;
     });
 
@@ -696,14 +701,14 @@
         if (horizontal ? (pos <= e + 0.001 || pos >= H - e - 0.001) : (pos <= e + 0.001 || pos >= W - e - 0.001)) continue;
         const start = Math.max(e, horizontal ? r.x : r.y);
         const end = Math.min(horizontal ? W - e : H - e, horizontal ? r.x + r.w : r.y + r.h);
-        if (end > start + 0.01) raw.push({ o: horizontal ? 'h' : 'v', pos, start, end, t });
+        if (end > start + 0.01) raw.push({ o: horizontal ? 'h' : 'v', pos, start, end, t, half: !!r.halfWalls?.[side] });
       }
     }
 
     // 2. Group collinear segments of the same thickness.
     const grouped = new Map();
     for (const seg of raw) {
-      const key = `${seg.o}:${seg.pos.toFixed(3)}:${seg.t.toFixed(4)}`;
+      const key = `${seg.o}:${seg.pos.toFixed(3)}:${seg.t.toFixed(4)}:${seg.half ? 'half' : 'full'}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key).push(seg);
     }
@@ -849,6 +854,14 @@
           east: r.walls.north !== false,
           south: r.walls.east !== false,
           west: r.walls.south !== false,
+        };
+      }
+      if (r.halfWalls) {
+        r.halfWalls = {
+          north: r.halfWalls.west === true,
+          east: r.halfWalls.north === true,
+          south: r.halfWalls.east === true,
+          west: r.halfWalls.south === true,
         };
       }
     }
@@ -1186,19 +1199,26 @@
     element('rect', { x: W - e, y: e, width: e, height: H - 2 * e, class: 'exterior-wall' });
   }
 
-  function drawInteriorDoor(d) {
-    const g = doorGeometry(d);
-    if (!g) return;
-    const group = element('g', {
-      'data-door': d.id,
-      'data-focus-key': `plan-door:${d.id}`,
-      class: `interior-door ${state.selectedDoor === d.id ? 'selected' : ''}`,
-      role: 'button',
-      tabindex: '0',
-      'aria-label': `${spokenLength(d.width)} doorway on the ${SIDE_NAME[g.side] || g.side} wall of ${g.room.name}`,
-    });
+  /** A cased opening (a doorway with no door): a dashed line across the gap with a tick at each end. */
+  function drawDoorOpening(g, group) {
+    const tick = 0.45;
+    const across = g.horizontal ? { x: 0, y: tick } : { x: tick, y: 0 };
+    element('line', { x1: g.start.x, y1: g.start.y, x2: g.end.x, y2: g.end.y, class: 'door-opening' }, group);
+    for (const end of [g.start, g.end]) {
+      element('line', {
+        x1: end.x - across.x,
+        y1: end.y - across.y,
+        x2: end.x + across.x,
+        y2: end.y + across.y,
+        class: 'door-opening-tick',
+      }, group);
+    }
+    // Wider invisible stroke so the opening is easy to grab.
+    element('line', { x1: g.start.x, y1: g.start.y, x2: g.end.x, y2: g.end.y, stroke: 'transparent', 'stroke-width': 0.7 }, group);
+  }
 
-    // Quarter-circle swing path from the closed leaf to the open leaf.
+  /** Quarter-circle swing path, hinge dot, and door leaf. */
+  function drawDoorSwing(d, g, group) {
     const a1 = Math.atan2(g.far.y - g.hinge.y, g.far.x - g.hinge.x);
     const a2 = Math.atan2(g.open.y - g.hinge.y, g.open.x - g.hinge.x);
     let turn = a2 - a1;
@@ -1215,6 +1235,26 @@
     element('path', { d: path, fill: 'none', stroke: 'transparent', 'stroke-width': 0.7 }, group);
     element('line', { x1: g.hinge.x, y1: g.hinge.y, x2: g.open.x, y2: g.open.y, class: 'door-leaf' }, group);
     element('circle', { cx: g.hinge.x, cy: g.hinge.y, r: 0.13, class: 'door-hinge' }, group);
+  }
+
+  function drawInteriorDoor(d) {
+    const g = doorGeometry(d);
+    if (!g) return;
+    const group = element('g', {
+      'data-door': d.id,
+      'data-focus-key': `plan-door:${d.id}`,
+      class: `interior-door ${state.selectedDoor === d.id ? 'selected' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      'aria-label': `${spokenLength(d.width)} doorway on the ${SIDE_NAME[g.side] || g.side} wall of ${g.room.name}`,
+    });
+
+    if (d.swing === 'none') {
+      drawDoorOpening(g, group);
+      element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} cased opening, no door`;
+      return;
+    }
+    drawDoorSwing(d, g, group);
     element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} doorway, swings ${d.swing === 'out' ? 'out' : 'in'}`;
   }
 
@@ -1282,83 +1322,6 @@
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
   }
 
-  // Item labels: average bold character width as a fraction of font size, the
-  // line spacing, and the smallest font size that is still readable on the plan.
-  const ITEM_LABEL_CHAR_WIDTH = 0.62;
-  const ITEM_LABEL_LINE_HEIGHT = 1.2;
-  const ITEM_LABEL_MIN_SIZE = 0.25;
-
-  /** Splits a name at spaces into lines of at most maxChars. A long single word keeps its own line. */
-  function wrapWords(name, maxChars) {
-    const lines = [];
-    let current = '';
-    for (const word of name.split(' ')) {
-      const next = current ? `${current} ${word}` : word;
-      if (next.length > maxChars && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = next;
-      }
-    }
-    if (current) lines.push(current);
-    return lines;
-  }
-
-  /**
-   * Wraps a name to fit text that runs along `length` and stacks lines across
-   * `cross`. Returns the lines, or null when it does not fit at this size.
-   */
-  function fitLabel(name, size, length, cross) {
-    const maxChars = Math.floor(length / (size * ITEM_LABEL_CHAR_WIDTH));
-    const lines = wrapWords(name, maxChars);
-    const longest = Math.max(...lines.map(line => line.length));
-    const stackHeight = lines.length * size * ITEM_LABEL_LINE_HEIGHT;
-    return longest <= maxChars && stackHeight <= cross ? lines : null;
-  }
-
-  /**
-   * Chooses how to draw an item's name. At each font size it tries wrapped
-   * horizontal text first, then vertical text if the box is taller than wide.
-   * Only when nothing fits at the smallest size is the name cut off with "…".
-   */
-  function itemLabelLayout(it) {
-    const startSize = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
-    const isTall = it.h > it.w;
-
-    for (let size = startSize; size >= ITEM_LABEL_MIN_SIZE; size -= 0.025) {
-      const horizontal = fitLabel(it.name, size, it.w, it.h);
-      if (horizontal) return { lines: horizontal, size, vertical: false };
-
-      const vertical = isTall ? fitLabel(it.name, size, it.h, it.w) : null;
-      if (vertical) return { lines: vertical, size, vertical: true };
-    }
-
-    // The full name is still in the hover tooltip and the item panel.
-    const length = isTall ? it.h : it.w;
-    const maxChars = Math.max(4, Math.floor(length / (ITEM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
-    const cutName = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
-    return { lines: [cutName], size: ITEM_LABEL_MIN_SIZE, vertical: isTall };
-  }
-
-  function drawItemLabel(it, group) {
-    const { lines, size, vertical } = itemLabelLayout(it);
-    const centerX = it.x + it.w / 2;
-    const centerY = it.y + it.h / 2;
-    // Vertical text is drawn horizontally, then the whole block is turned to
-    // read bottom to top. That keeps the line spacing math the same for both.
-    const parent = vertical
-      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
-      : group;
-    const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
-
-    lines.forEach((line, index) => {
-      const y = centerY + (index - (lines.length - 1) / 2) * lineHeight;
-      const text = label(centerX, y, line, 'item-label', parent);
-      text.setAttribute('font-size', `${size}px`);
-    });
-  }
-
   function drawItems(model) {
     const { bad } = itemChecks(model);
     for (const it of state.items.filter(item => item.floor === state.floor)) {
@@ -1371,7 +1334,11 @@
         'aria-label': `${it.name}, ${spokenSize(it.w, it.h, true)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
-      drawItemLabel(it, group);
+      const size = Math.max(0.3, Math.min(0.5, Math.min(it.w, it.h) / 4.2));
+      const maxChars = Math.max(4, Math.floor(it.w / (size * 0.62)));
+      const name = it.name.length > maxChars ? `${it.name.slice(0, maxChars - 1)}…` : it.name;
+      const text = label(it.x + it.w / 2, it.y + it.h / 2, name, 'item-label', group);
+      text.setAttribute('font-size', `${size}px`);
       element('title', {}, group).textContent = `${it.name}: ${fmtItemSize(it.w, it.h)}`;
     }
   }
@@ -1404,10 +1371,13 @@
     drawGrid(W, H);
 
     for (const r of state.rooms.filter(room => room.floor === state.floor)) drawRoom(r);
-    for (const s of model.segments) {
+    // Half walls go down first so a full wall on the same line covers them.
+    const wallsHalfFirst = [...model.segments].sort((a, b) => Number(!!b.half) - Number(!!a.half));
+    for (const s of wallsHalfFirst) {
+      const wallClass = s.half ? 'partition-wall half-wall' : 'partition-wall';
       element('line', s.o === 'h'
-        ? { x1: s.start, y1: s.pos, x2: s.end, y2: s.pos, class: 'partition-wall', 'stroke-width': s.t }
-        : { x1: s.pos, y1: s.start, x2: s.pos, y2: s.end, class: 'partition-wall', 'stroke-width': s.t });
+        ? { x1: s.start, y1: s.pos, x2: s.end, y2: s.pos, class: wallClass, 'stroke-width': s.t }
+        : { x1: s.pos, y1: s.start, x2: s.pos, y2: s.end, class: wallClass, 'stroke-width': s.t });
     }
     drawExteriorWalls();
     for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) drawInteriorDoor(d);
@@ -1558,6 +1528,14 @@
       wrapper.title = exterior ? `${box.dataset.label}: exterior SIP wall, no partition added` : '';
     }
 
+    for (const box of document.querySelectorAll('.half-side')) {
+      const side = box.dataset.side;
+      const wallOn = !!room && !isExteriorSide(room, side) && hasSide(room, side);
+      box.checked = wallOn && !!room.halfWalls?.[side];
+      box.disabled = !wallOn;
+      box.closest('label').classList.toggle('exterior', !wallOn);
+    }
+
     $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
     $('selectedClear').textContent = room
       ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
@@ -1573,7 +1551,7 @@
       label: floorName(floor),
       options: state.doors
         .filter(d => doorFloor(d) === floor)
-        .map(d => ({ value: d.id, text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}` })),
+        .map(d => ({ value: d.id, text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}${d.swing === 'none' ? ' · Cased Opening' : ''}` })),
     }));
     fillInfo($('doorInfo'), state.doors.length, 'doorway', 'doorways', countByFloor(state.doors, doorFloor));
     fillSelect($('doorSelect'), groups.filter(g => g.options.length), state.selectedDoor, state.doors.length ? 'Select a doorway' : 'No doorways yet');
@@ -1596,6 +1574,8 @@
       $('doorOffset').value = lengthField(selected.offset);
       $('doorWidth').value = lengthField(selected.width);
       $('doorSwing').value = selected.swing;
+      // A plain opening has no hinge, so the control would do nothing.
+      $('doorHinge').disabled = selected.swing === 'none';
     }
   }
 
@@ -1908,6 +1888,7 @@
       wallMode: source ? wallMode(source) : 'enclosed',
       ...(source && Number.isFinite(source.wallT) ? { wallT: source.wallT } : {}),
       ...(source?.walls ? { walls: { ...source.walls } } : {}),
+      ...(source?.halfWalls ? { halfWalls: { ...source.halfWalls } } : {}),
     };
     state.rooms.push(room);
     state.selectedRoom = room.id;
@@ -2075,6 +2056,15 @@
       const room = findRoom(state.selectedRoom);
       if (!room || box.disabled) return;
       room.walls = { north: true, east: true, south: true, west: true, ...room.walls, [box.dataset.side]: box.checked };
+      if (!box.checked && room.halfWalls) room.halfWalls = { ...room.halfWalls, [box.dataset.side]: false };
+      render();
+    });
+  }
+  for (const box of document.querySelectorAll('.half-side')) {
+    box.addEventListener('change', () => {
+      const room = findRoom(state.selectedRoom);
+      if (!room || box.disabled) return;
+      room.halfWalls = { ...room.halfWalls, [box.dataset.side]: box.checked };
       render();
     });
   }

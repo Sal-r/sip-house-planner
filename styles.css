@@ -271,7 +271,11 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   align-items: stretch;
   gap: 10px;
 }
+/* width: 0 keeps the long text from setting the width of the whole column, and
+   min-width: 100% then stretches it to the width of the floor tabs. */
 .disclaimer {
+  width: 0;
+  min-width: 100%;
   color: #35505a;
   font-size: 1.125rem;
   font-weight: 700;
@@ -648,6 +652,8 @@ svg .grid-major { stroke: #bed6d7; stroke-width: .075; }
 svg .outline { fill: #fff; stroke: #294c56; stroke-width: .22; }
 svg .exterior-wall { fill: var(--wall); }
 svg .partition-wall { stroke: var(--wall); stroke-linecap: butt; }
+/* Lighter and dashed so a half wall reads as different without relying on color alone. */
+svg .half-wall { stroke-opacity: .55; stroke-dasharray: .8 .3; }
 
 svg .room { stroke-width: .13; cursor: grab; transition: filter .12s; }
 svg .room:hover { filter: brightness(.97); }
@@ -667,8 +673,17 @@ svg .door-swing {
 }
 svg .door-leaf { stroke: #b65f2c; stroke-width: .18; stroke-linecap: round; pointer-events: none; }
 svg .door-hinge { fill: #fff; stroke: #ad5c2d; stroke-width: .12; pointer-events: none; }
+svg .door-opening {
+  stroke: #cf7838;
+  stroke-width: .16;
+  stroke-dasharray: .27 .17;
+  pointer-events: none;
+}
+svg .door-opening-tick { stroke: #b65f2c; stroke-width: .18; stroke-linecap: round; pointer-events: none; }
 svg .interior-door.selected .door-swing,
-svg .interior-door.selected .door-leaf { stroke: #ed9e28; stroke-width: .23; }
+svg .interior-door.selected .door-leaf,
+svg .interior-door.selected .door-opening,
+svg .interior-door.selected .door-opening-tick { stroke: #ed9e28; stroke-width: .23; }
 
 svg .entrance-bar { fill: #c58235; pointer-events: none; }
 svg .door-label { fill: #ad6d2c; font-size: .53px; font-weight: 700; }
@@ -721,7 +736,9 @@ svg [data-window]:focus-visible > .window-frame {
   stroke-dasharray: .45 .2;
 }
 svg [data-door]:focus-visible .door-swing,
-svg [data-door]:focus-visible .door-leaf { stroke: var(--focus); stroke-width: .26; }
+svg [data-door]:focus-visible .door-leaf,
+svg [data-door]:focus-visible .door-opening,
+svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-width: .26; }
 
 /* Tap mode (touch screens with Drag to Move off) */
 svg.tap-only .room,

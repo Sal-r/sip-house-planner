@@ -195,6 +195,13 @@
               <label class="wall-check"><input type="checkbox" class="wall-side" data-side="north" data-label="Top"> Top</label>
               <label class="wall-check"><input type="checkbox" class="wall-side" data-side="south" data-label="Bottom"> Bottom</label>
             </fieldset>
+            <fieldset class="wall-checks" title="Half walls are low partitions, like a knee wall beside a staircase. A side needs its wall checked above before it can be a half wall.">
+              <legend>Half Walls <span>needs the wall checked above</span></legend>
+              <label class="wall-check"><input type="checkbox" class="half-side" data-side="west" data-label="Left"> Left</label>
+              <label class="wall-check"><input type="checkbox" class="half-side" data-side="east" data-label="Right"> Right</label>
+              <label class="wall-check"><input type="checkbox" class="half-side" data-side="north" data-label="Top"> Top</label>
+              <label class="wall-check"><input type="checkbox" class="half-side" data-side="south" data-label="Bottom"> Bottom</label>
+            </fieldset>
           </div>
           <div class="four-fields room-coordinates">
             <label>X <span data-unit="length">ft</span><input id="roomX" type="number" step="0.5"></label>
@@ -266,15 +273,16 @@
               <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.5"></label>
               <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.5"></label>
             </div>
-            <label class="select-label">Swing
+            <label class="select-label">Door Type
               <select id="doorSwing">
-                <option value="in">Into Selected Room</option>
-                <option value="out">Out of Selected Room</option>
+                <option value="in">Door Swings Into Selected Room</option>
+                <option value="out">Door Swings Out of Selected Room</option>
+                <option value="none">Cased Opening (No Door)</option>
               </select>
             </label>
             <button id="removeDoor" class="delete-button" type="button">Remove Doorway</button>
           </div>
-          <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing.</p>
+          <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing. Choose Cased Opening for a doorway with no door, such as a staircase entry.</p>
         </section>
 
         <section class="panel windows-panel">

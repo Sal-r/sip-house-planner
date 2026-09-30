@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-29T05:22:36.581Z",
+  "exportedAt": "2026-09-30T02:16:30.239Z",
   "layout": {
     "schemaVersion": 3,
     "width": 42,
@@ -11,7 +11,7 @@
     "zoom": 100,
     "floor": "basement",
     "upperEnabled": false,
-    "selectedRoom": "space-1790659326447-aam7cz",
+    "selectedRoom": "secure",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -91,7 +91,7 @@
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": "item-flex-sofa",
+    "selectedItem": null,
     "doors": [
       {
         "id": "door-bed1",
@@ -151,10 +151,28 @@
         "id": "door-secure",
         "roomId": "secure",
         "side": "south",
-        "offset": 0.5,
+        "offset": 5,
         "width": 3,
         "hinge": "start",
         "swing": "in"
+      },
+      {
+        "id": "door-1790733900360-jjem9l",
+        "roomId": "stairs-basement",
+        "side": "south",
+        "offset": 4,
+        "width": 3.5,
+        "hinge": "start",
+        "swing": "none"
+      },
+      {
+        "id": "door-1790734345489-z2dr6n",
+        "roomId": "stairs-main",
+        "side": "south",
+        "offset": 0.5,
+        "width": 3.5,
+        "hinge": "end",
+        "swing": "none"
       }
     ],
     "items": [
@@ -432,7 +450,7 @@
         "id": "item-secure-safe",
         "name": "Safe",
         "floor": "basement",
-        "x": 38.5,
+        "x": 33,
         "y": 1,
         "w": 2.5,
         "h": 3
@@ -442,17 +460,17 @@
         "name": "Storage Shelves",
         "floor": "basement",
         "x": 39.5,
-        "y": 4.5,
+        "y": 1,
         "w": 1.5,
-        "h": 6
+        "h": 9.75
       },
       {
         "id": "item-secure-shelves-2",
         "name": "Storage Shelves",
         "floor": "basement",
-        "x": 29,
+        "x": 35.5,
         "y": 1,
-        "w": 9,
+        "w": 4,
         "h": 1.5
       },
       {
@@ -616,6 +634,24 @@
         "y": 7,
         "w": 1.5,
         "h": 4
+      },
+      {
+        "id": "item-1790734468318-6s12qu",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 28.25,
+        "y": 1,
+        "w": 1.5,
+        "h": 9.75
+      },
+      {
+        "id": "item-1790734471829-gypzwq",
+        "name": "Storage Shelves",
+        "floor": "basement",
+        "x": 29.75,
+        "y": 1,
+        "w": 3.25,
+        "h": 1.5
       }
     ],
     "rooms": [
@@ -677,10 +713,13 @@
         "walls": {
           "north": true,
           "east": true,
-          "south": false,
+          "south": true,
           "west": true
         },
-        "wallMode": "open"
+        "wallMode": "enclosed",
+        "halfWalls": {
+          "south": true
+        }
       },
       {
         "id": "side-hall",
@@ -812,10 +851,13 @@
         "walls": {
           "north": false,
           "east": true,
-          "south": false,
+          "south": true,
           "west": true
         },
-        "wallMode": "open"
+        "wallMode": "enclosed",
+        "halfWalls": {
+          "south": true
+        }
       },
       {
         "id": "basement-bath",
