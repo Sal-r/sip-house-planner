@@ -990,6 +990,79 @@
     return out;
   }
 
+  /** The wall opening of a doorway as a box, as thick as the wall it cuts. */
+  function doorwayBox(d, g) {
+    const thickness = isExteriorSide(g.room, g.side) ? state.exteriorWall : roomWallThickness(g.room);
+    return g.horizontal
+      ? { x: g.start.x, y: g.axis - thickness / 2, w: d.width, h: thickness }
+      : { x: g.axis - thickness / 2, y: g.start.y, w: thickness, h: d.width };
+  }
+
+  /**
+   * The quarter circle a door sweeps open, described by its hinge, the
+   * direction along the wall, and the direction it opens. Cased openings
+   * have no swing.
+   */
+  function doorSwing(d) {
+    const g = doorGeometry(d);
+    if (!g || d.swing === 'none') return null;
+    const direction = g.hinge === g.start ? 1 : -1;
+    const along = g.horizontal ? { x: direction, y: 0 } : { x: 0, y: direction };
+    const across = { x: (g.open.x - g.hinge.x) / d.width, y: (g.open.y - g.hinge.y) / d.width };
+    const corner = { x: g.hinge.x + (along.x + across.x) * d.width, y: g.hinge.y + (along.y + across.y) * d.width };
+    return {
+      hinge: g.hinge,
+      radius: d.width,
+      along,
+      across,
+      box: {
+        x: Math.min(g.hinge.x, corner.x),
+        y: Math.min(g.hinge.y, corner.y),
+        w: Math.abs(corner.x - g.hinge.x),
+        h: Math.abs(corner.y - g.hinge.y),
+      },
+    };
+  }
+
+  /** True when a box reaches into the quarter circle of a door swing. */
+  function boxHitsSwing(box, swing) {
+    const left = Math.max(box.x, swing.box.x);
+    const top = Math.max(box.y, swing.box.y);
+    const right = Math.min(box.x + box.w, swing.box.x + swing.box.w);
+    const bottom = Math.min(box.y + box.h, swing.box.y + swing.box.h);
+    if (right - left < 0.01 || bottom - top < 0.01) return false;
+    // The point of the shared area nearest the hinge decides whether it is inside the arc.
+    const nearestX = Math.min(Math.max(swing.hinge.x, left), right);
+    const nearestY = Math.min(Math.max(swing.hinge.y, top), bottom);
+    return Math.hypot(nearestX - swing.hinge.x, nearestY - swing.hinge.y) < swing.radius - 0.01;
+  }
+
+  function pointInSwing(point, swing) {
+    const dx = point.x - swing.hinge.x;
+    const dy = point.y - swing.hinge.y;
+    const along = dx * swing.along.x + dy * swing.along.y;
+    const across = dx * swing.across.x + dy * swing.across.y;
+    return along >= 0 && across >= 0 && Math.hypot(dx, dy) <= swing.radius;
+  }
+
+  /** Area where two door swings cover the same floor, found by checking points in a fine grid. */
+  function swingOverlapArea(a, b) {
+    const cell = 0.125;
+    const left = Math.max(a.box.x, b.box.x);
+    const top = Math.max(a.box.y, b.box.y);
+    const right = Math.min(a.box.x + a.box.w, b.box.x + b.box.w);
+    const bottom = Math.min(a.box.y + a.box.h, b.box.y + b.box.h);
+    let hits = 0;
+    for (let x = left + cell / 2; x < right; x += cell) {
+      for (let y = top + cell / 2; y < bottom; y += cell) {
+        if (pointInSwing({ x, y }, a) && pointInSwing({ x, y }, b)) hits++;
+      }
+    }
+    return hits * cell * cell;
+  }
+
+  const doorLabel = g => `the ${SIDE_NAME[g.side]} door on ${g.room.name}`;
+
   /** Items are checked against walls, the footprint, and each other. */
   function itemChecks(model) {
     const out = [];
@@ -1030,6 +1103,21 @@
           out.push({ level: 'warning', text: `${a.name} overlaps ${b.name}.` });
           bad.add(a.id);
           bad.add(b.id);
+        }
+      }
+    }
+
+    for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) {
+      const g = doorGeometry(d);
+      const swing = doorSwing(d);
+      const opening = doorwayBox(d, g);
+      for (const it of items) {
+        if (intersection(it, opening) > 0.01) {
+          out.push({ level: 'error', text: `${it.name} blocks ${doorLabel(g)}.` });
+          bad.add(it.id);
+        } else if (swing && boxHitsSwing(it, swing)) {
+          out.push({ level: 'warning', text: `${it.name} is in the swing of ${doorLabel(g)}.` });
+          bad.add(it.id);
         }
       }
     }
@@ -1178,11 +1266,18 @@
       for (let j = i + 1; j < doors.length; j++) {
         const a = doorGeometry(doors[i]);
         const b = doorGeometry(doors[j]);
-        if (!a || !b || a.horizontal !== b.horizontal || Math.abs(a.axis - b.axis) > 0.01) continue;
+        if (!a || !b) continue;
+        const sameWall = a.horizontal === b.horizontal && Math.abs(a.axis - b.axis) < 0.01;
         const startA = a.horizontal ? a.start.x : a.start.y;
         const startB = b.horizontal ? b.start.x : b.start.y;
-        if (Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
+        if (sameWall && Math.min(startA + doors[i].width, startB + doors[j].width) - Math.max(startA, startB) > 0.1) {
           out.push({ level: 'warning', text: 'Two doorway openings overlap on the same wall.' });
+          continue;
+        }
+        const swingA = doorSwing(doors[i]);
+        const swingB = doorSwing(doors[j]);
+        if (swingA && swingB && swingOverlapArea(swingA, swingB) > 0.5) {
+          out.push({ level: 'warning', text: `The swings of ${doorLabel(a)} and ${doorLabel(b)} overlap.` });
         }
       }
     }
@@ -1210,25 +1305,6 @@
     return el;
   }
 
-  /** Splits a room name into at most two lines that fit the room box. */
-  function roomLabelLines(r) {
-    const max = r.w < 7 ? 9 : 20;
-    let lines = [];
-    let current = '';
-    for (const word of r.name.split(' ')) {
-      if ((current + ' ' + word).trim().length > max && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = (current + ' ' + word).trim();
-      }
-    }
-    if (current) lines.push(current);
-    lines = lines.slice(0, 2).map(line => (line.length > max ? `${line.slice(0, max - 1)}…` : line));
-    if (r.name.length > lines.join(' ').length && lines.length === 2) lines[1] = `${lines[1].slice(0, max - 1)}…`;
-    return lines;
-  }
-
   function drawRoom(r) {
     const group = element('g', {
       'data-room': r.id,
@@ -1248,18 +1324,7 @@
       class: `room ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
     }, group);
 
-    const lines = roomLabelLines(r);
-    const centerX = r.x + r.w / 2;
-    const centerY = r.y + r.h / 2;
-    const spacing = 0.82;
-    const top = centerY - (lines.length - 1) * spacing / 2 - 0.2;
-    for (let i = 0; i < lines.length; i++) {
-      const text = label(centerX, top + i * spacing, lines[i], 'room-label', group);
-      text.setAttribute('text-anchor', 'middle');
-      if (r.w < 7) text.setAttribute('font-size', '.56px');
-    }
-    const dims = label(centerX, top + lines.length * spacing + 0.12, fmtSize(r.w, r.h), 'room-dim', group);
-    dims.setAttribute('text-anchor', 'middle');
+    drawRoomLabel(r, group);
     element('title', {}, group).textContent = `${r.name}: ${spokenSize(r.w, r.h)}, ${spokenArea(r.w * r.h)}`;
   }
 
@@ -1472,6 +1537,72 @@
       const text = label(centerX, y, line, 'item-label', parent);
       text.setAttribute('font-size', `${size}px`);
     });
+  }
+
+  // Room labels: the name and the size line share one block. The block is
+  // kept inside the room minus a margin, because partition walls are drawn
+  // centered on the room edge and cover part of the box.
+  const ROOM_LABEL_MARGIN = 0.5;
+  const ROOM_LABEL_MIN_SIZE = 0.3;
+  const ROOM_SIZE_RATIO = 0.76;
+
+  /**
+   * Chooses how to draw a room's name and size. At each font size it tries
+   * wrapped horizontal text first, then vertical text if the room is taller
+   * than wide. Only when nothing fits at the smallest size is the name cut
+   * off with "…". The full name stays in the hover tooltip and the side panel.
+   */
+  function roomLabelLayout(r) {
+    const sizeText = fmtSize(r.w, r.h);
+    const startSize = r.w < 7 ? 0.56 : 0.7;
+    const isTall = r.h > r.w;
+
+    const fits = (size, length, cross) => {
+      const dimSize = size * ROOM_SIZE_RATIO;
+      const lines = fitLabel(r.name, size, length, cross - dimSize * ITEM_LABEL_LINE_HEIGHT);
+      const sizeFits = sizeText.length * dimSize * ITEM_LABEL_CHAR_WIDTH <= length;
+      return lines && sizeFits ? { lines, size, dimSize } : null;
+    };
+
+    const width = r.w - ROOM_LABEL_MARGIN;
+    const height = r.h - ROOM_LABEL_MARGIN;
+    for (let size = startSize; size >= ROOM_LABEL_MIN_SIZE; size -= 0.02) {
+      const horizontal = fits(size, width, height);
+      if (horizontal) return { ...horizontal, vertical: false };
+
+      const vertical = isTall ? fits(size, height, width) : null;
+      if (vertical) return { ...vertical, vertical: true };
+    }
+
+    const length = isTall ? height : width;
+    const maxChars = Math.max(4, Math.floor(length / (ROOM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
+    const cutName = r.name.length > maxChars ? `${r.name.slice(0, maxChars - 1)}…` : r.name;
+    return { lines: [cutName], size: ROOM_LABEL_MIN_SIZE, dimSize: ROOM_LABEL_MIN_SIZE * ROOM_SIZE_RATIO, vertical: isTall };
+  }
+
+  function drawRoomLabel(r, group) {
+    const { lines, size, dimSize, vertical } = roomLabelLayout(r);
+    const centerX = r.x + r.w / 2;
+    const centerY = r.y + r.h / 2;
+    // Vertical labels are drawn horizontally, then turned to read bottom to top.
+    const parent = vertical
+      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
+      : group;
+
+    const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
+    const sizeLineHeight = dimSize * ITEM_LABEL_LINE_HEIGHT;
+    const blockTop = centerY - (lines.length * lineHeight + sizeLineHeight) / 2;
+
+    // Text baselines sit about 80% of the way down each line.
+    lines.forEach((line, index) => {
+      const text = label(centerX, blockTop + index * lineHeight + size * 0.8, line, 'room-label', parent);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', `${size}px`);
+    });
+    const sizeY = blockTop + lines.length * lineHeight + dimSize * 0.8;
+    const dims = label(centerX, sizeY, fmtSize(r.w, r.h), 'room-dim', parent);
+    dims.setAttribute('text-anchor', 'middle');
+    dims.setAttribute('font-size', `${dimSize}px`);
   }
 
   function drawItems(model) {
