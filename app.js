@@ -1210,25 +1210,6 @@
     return el;
   }
 
-  /** Splits a room name into at most two lines that fit the room box. */
-  function roomLabelLines(r) {
-    const max = r.w < 7 ? 9 : 20;
-    let lines = [];
-    let current = '';
-    for (const word of r.name.split(' ')) {
-      if ((current + ' ' + word).trim().length > max && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = (current + ' ' + word).trim();
-      }
-    }
-    if (current) lines.push(current);
-    lines = lines.slice(0, 2).map(line => (line.length > max ? `${line.slice(0, max - 1)}…` : line));
-    if (r.name.length > lines.join(' ').length && lines.length === 2) lines[1] = `${lines[1].slice(0, max - 1)}…`;
-    return lines;
-  }
-
   function drawRoom(r) {
     const group = element('g', {
       'data-room': r.id,
@@ -1248,18 +1229,7 @@
       class: `room ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
     }, group);
 
-    const lines = roomLabelLines(r);
-    const centerX = r.x + r.w / 2;
-    const centerY = r.y + r.h / 2;
-    const spacing = 0.82;
-    const top = centerY - (lines.length - 1) * spacing / 2 - 0.2;
-    for (let i = 0; i < lines.length; i++) {
-      const text = label(centerX, top + i * spacing, lines[i], 'room-label', group);
-      text.setAttribute('text-anchor', 'middle');
-      if (r.w < 7) text.setAttribute('font-size', '.56px');
-    }
-    const dims = label(centerX, top + lines.length * spacing + 0.12, fmtSize(r.w, r.h), 'room-dim', group);
-    dims.setAttribute('text-anchor', 'middle');
+    drawRoomLabel(r, group);
     element('title', {}, group).textContent = `${r.name}: ${spokenSize(r.w, r.h)}, ${spokenArea(r.w * r.h)}`;
   }
 
@@ -1472,6 +1442,72 @@
       const text = label(centerX, y, line, 'item-label', parent);
       text.setAttribute('font-size', `${size}px`);
     });
+  }
+
+  // Room labels: the name and the size line share one block. The block is
+  // kept inside the room minus a margin, because partition walls are drawn
+  // centered on the room edge and cover part of the box.
+  const ROOM_LABEL_MARGIN = 0.5;
+  const ROOM_LABEL_MIN_SIZE = 0.3;
+  const ROOM_SIZE_RATIO = 0.76;
+
+  /**
+   * Chooses how to draw a room's name and size. At each font size it tries
+   * wrapped horizontal text first, then vertical text if the room is taller
+   * than wide. Only when nothing fits at the smallest size is the name cut
+   * off with "…". The full name stays in the hover tooltip and the side panel.
+   */
+  function roomLabelLayout(r) {
+    const sizeText = fmtSize(r.w, r.h);
+    const startSize = r.w < 7 ? 0.56 : 0.7;
+    const isTall = r.h > r.w;
+
+    const fits = (size, length, cross) => {
+      const dimSize = size * ROOM_SIZE_RATIO;
+      const lines = fitLabel(r.name, size, length, cross - dimSize * ITEM_LABEL_LINE_HEIGHT);
+      const sizeFits = sizeText.length * dimSize * ITEM_LABEL_CHAR_WIDTH <= length;
+      return lines && sizeFits ? { lines, size, dimSize } : null;
+    };
+
+    const width = r.w - ROOM_LABEL_MARGIN;
+    const height = r.h - ROOM_LABEL_MARGIN;
+    for (let size = startSize; size >= ROOM_LABEL_MIN_SIZE; size -= 0.02) {
+      const horizontal = fits(size, width, height);
+      if (horizontal) return { ...horizontal, vertical: false };
+
+      const vertical = isTall ? fits(size, height, width) : null;
+      if (vertical) return { ...vertical, vertical: true };
+    }
+
+    const length = isTall ? height : width;
+    const maxChars = Math.max(4, Math.floor(length / (ROOM_LABEL_MIN_SIZE * ITEM_LABEL_CHAR_WIDTH)));
+    const cutName = r.name.length > maxChars ? `${r.name.slice(0, maxChars - 1)}…` : r.name;
+    return { lines: [cutName], size: ROOM_LABEL_MIN_SIZE, dimSize: ROOM_LABEL_MIN_SIZE * ROOM_SIZE_RATIO, vertical: isTall };
+  }
+
+  function drawRoomLabel(r, group) {
+    const { lines, size, dimSize, vertical } = roomLabelLayout(r);
+    const centerX = r.x + r.w / 2;
+    const centerY = r.y + r.h / 2;
+    // Vertical labels are drawn horizontally, then turned to read bottom to top.
+    const parent = vertical
+      ? element('g', { transform: `rotate(-90 ${centerX} ${centerY})` }, group)
+      : group;
+
+    const lineHeight = size * ITEM_LABEL_LINE_HEIGHT;
+    const sizeLineHeight = dimSize * ITEM_LABEL_LINE_HEIGHT;
+    const blockTop = centerY - (lines.length * lineHeight + sizeLineHeight) / 2;
+
+    // Text baselines sit about 80% of the way down each line.
+    lines.forEach((line, index) => {
+      const text = label(centerX, blockTop + index * lineHeight + size * 0.8, line, 'room-label', parent);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', `${size}px`);
+    });
+    const sizeY = blockTop + lines.length * lineHeight + dimSize * 0.8;
+    const dims = label(centerX, sizeY, fmtSize(r.w, r.h), 'room-dim', parent);
+    dims.setAttribute('text-anchor', 'middle');
+    dims.setAttribute('font-size', `${dimSize}px`);
   }
 
   function drawItems(model) {

@@ -687,8 +687,8 @@ svg .room:hover { filter: brightness(.97); }
 svg .room.selected { stroke: var(--selected); stroke-width: .32; }
 svg .room.path-room { stroke: #4b9d9b; stroke-dasharray: .35 .25; }
 svg .room.path-room.selected { stroke: var(--selected); }
-svg .room-label { fill: #1d3c47; font-size: .7px; font-weight: 750; pointer-events: none; }
-svg .room-dim { fill: #5b7a83; font-size: .53px; pointer-events: none; }
+svg .room-label { fill: #1d3c47; font-weight: 750; pointer-events: none; }
+svg .room-dim { fill: #5b7a83; pointer-events: none; }
 
 svg .interior-door { cursor: grab; }
 svg .door-swing {
