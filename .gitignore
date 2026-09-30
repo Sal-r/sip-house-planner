@@ -13,5 +13,5 @@ desktop.ini
 *.tmp
 
 # Layouts exported from the app (keeps personal drafts out of the repo).
-# default-layout.json is not matched by this pattern, so it stays tracked.
+# templates/default-layout.json is not matched by this pattern, so it stays tracked.
 sip-house-layout-*.json

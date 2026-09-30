@@ -14,6 +14,6 @@ Your work saves automatically in this browser. Use Export Layout to keep a
 copy or to move a layout between computers or browsers.
 
 You can also open index.html directly, but it will use the built-in layout
-instead of default-layout.json.
+instead of templates/default-layout.json.
 
 Online version: https://sal-r.github.io/sip-house-planner/

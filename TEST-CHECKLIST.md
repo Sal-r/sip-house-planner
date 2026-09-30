@@ -3,7 +3,7 @@
 Run through this after deploying (or locally with Start-Planner.bat). Test once on a desktop browser and once on a phone. Open the browser console (F12) first and confirm it stays free of red errors throughout.
 
 ## First load and saved data
-- [ ] In a private window, the default layout loads: 20 spaces, main floor showing, 32′ × 42′ footprint.
+- [ ] In a private window, the default layout loads from templates/default-layout.json: 11 spaces, main floor showing, 42′ × 32′ footprint.
 - [ ] In your normal browser, a draft you saved before the update still loads.
 - [ ] Refresh after making a change: the change is still there.
 - [ ] The tab shows the grid favicon.
@@ -110,10 +110,10 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] In a confirmation dialog, Tab stays inside it and Escape closes it.
 
 ## Templates
-- [ ] The Templates menu lists Tiny Cottage, Alvin, Simon, and Theodore, and picking one asks for confirmation first.
-- [ ] Each template loads with 8.5 in exterior and 4.5 in interior walls, no basement, and a credit line with a working link under the plan.
+- [ ] The Templates menu lists Default Layout, Tiny Cottage, Alvin, Simon, and Theodore, and picking one asks for confirmation first.
+- [ ] Each Extreme Panels template loads with 9 in exterior and 4.5 in interior walls, no basement, and a credit line with a working link at the top of the plan.
 - [ ] Undo right after loading a template brings the previous layout back and hides the credit.
-- [ ] Reset to Defaults on a template restores that template, including its credit. On a layout that did not come from a template, it restores the default layout and clears the credit.
+- [ ] Reset to Defaults on a template restores that template, including its credit. On the default layout, or a layout that did not come from a template, it restores the default layout and clears the credit.
 - [ ] Print / PDF on a template mentions the credit in the note.
 - [ ] Opened straight from disk (file://), picking a template explains that it needs to be served over http.
 
