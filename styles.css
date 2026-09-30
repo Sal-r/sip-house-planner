@@ -476,11 +476,11 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 
 .template-credit {
   margin: 0;
-  padding: 10px 17px;
-  border-top: 1px solid #e7eeed;
+  padding: 12px 17px;
+  border-bottom: 1px solid #e7eeed;
   background: #f7faf9;
   color: var(--teal-muted);
-  font-size: .78rem;
+  font-size: 1rem;
   line-height: 1.5;
 }
 .template-credit a { color: var(--teal-link); font-weight: 700; }
