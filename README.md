@@ -4,14 +4,14 @@ A browser-based floor plan tool for concept planning a SIP (structural insulated
 
 **Try it:** [sal-r.github.io/sip-house-planner](https://sal-r.github.io/sip-house-planner/)
 
-![SIP House Planner showing a color-coded main floor plan, the Spaces panel, and layout checks](assets/screenshots/planner-desktop.png)
+![SIP House Planner showing a color-coded main floor plan, the Rooms & Spaces panel, and layout checks](assets/screenshots/planner-desktop.png)
 
 It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependencies, and nothing to install. Your layout is saved in your own browser and is never uploaded anywhere.
 
 ## Features
 
 - **Feet or metric:** switch between feet and inches or meters and centimeters at any time. Layouts are saved the same way in both, so any file opens in either.
-- **Rooms:** add, name, move, and resize spaces on a plan drawn to scale with a 1′ grid. Rooms snap to 3″ (5 cm) steps, so sizes like 15.75′ are possible. Rooms are color-coded by type (living space, bedroom, bathroom, entry, hallway or stairs, utility or storage).
+- **Rooms:** add, name, move, and resize spaces on a plan drawn to scale with a 1′ grid. Rooms, doorways, windows, and items all snap to 3″ (5 cm) steps, so sizes like 15.75′ are possible. Rooms are color-coded by type (living space, bedroom, bathroom, entry, hallway or stairs, utility or storage).
 - **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness, per-side wall toggles, and per-side half walls.
 - **Doorways:** add interior doorways with hinge side and swing direction, or as a cased opening with no door. Doorways on an outside wall are marked as entrances automatically.
 - **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
@@ -41,7 +41,7 @@ Open the [live site](https://sal-r.github.io/sip-house-planner/). The first time
 - **Move** things by dragging them. On a touch screen, turn on **Drag to Move** first.
 - **Undo:** the **Undo** button above the plan (or Ctrl+Z, Cmd+Z on a Mac) steps back through your last 50 changes, including a whole drag, a Reset to Defaults, or an import. Selecting things, zooming, switching floors, and changing units are not counted. The history is kept in memory only, so it starts empty each time the page loads.
 - **Suggested sizes:** every panel has the same layout (summary, dropdown, Add button, Suggested sizes menu, then the fields). The Suggested sizes menu applies to whatever is selected: half or full bath for spaces, common widths for doorways and windows, and standard furniture and fixture sizes for items.
-- **Edit** the selected space's name, type, floor, walls, position, and size in the **Spaces** panel, under the dropdown.
+- **Edit** the selected space's name, type, floor, walls, position, and size in the **Rooms & Spaces** panel, under the dropdown.
 - **Keep a copy** with **Export Layout**. Use **Import Layout** to load it back, on this or any other browser.
 - **Switch units** with the **ft / m** buttons above the plan. The planner starts in feet for US browsers and in metric elsewhere, and remembers your choice.
 - **Basement and second floor:** each has a small **−** or **+** button on the left of its tab. **−** removes the floor and **+** brings it back (the tab stays, dimmed, while a floor is off). Removing a floor deletes its spaces, doorways, windows, and items, and Undo restores them.
@@ -126,7 +126,7 @@ The Templates menu has four layouts based on plans published by [Extreme Panel T
 3. [Extreme Panels Simon](https://extremepanel.com/project/extreme-attainable-homes-simon/)
 4. [Extreme Panels Theodore](https://extremepanel.com/project/extreme-attainable-homes-theodore/)
 
-Each was redrawn by eye from the published floor plan image, so room sizes are close to the labels but not exact. Every room and item is rounded to the nearest 3″ (0.25′) so it lines up with the planner's grid. To make that work, the exterior walls are set to 9″ (the published panels are 8.5″) and the interior walls to 4.5″. Porches and decks sit outside the footprint and are left out. The Tiny Cottage's curved corner desk is drawn as an L-shaped desk made of two boxes. SIP House Planner is not affiliated with or endorsed by Extreme Panel Technologies, and these are not their official plans. A loaded template shows its credit and a link under the plan and on printed pages.
+Each was redrawn by eye from the published floor plan image, so room sizes are close to the labels but not exact. Every room, item, and doorway is rounded to the nearest 3″ (0.25′) so it lines up with the planner's grid. To make that work, the exterior walls are set to 9″ (the published panels are 8.5″) and the interior walls to 4.5″. Porches and decks sit outside the footprint and are left out. The Tiny Cottage's curved corner desk is drawn as an L-shaped desk made of two boxes. SIP House Planner is not affiliated with or endorsed by Extreme Panel Technologies, and these are not their official plans. A loaded template shows its credit and a link at the top of the plan and on printed pages.
 
 To add your own template, export a layout, save it in the `templates` folder, and add one line for it to the `TEMPLATES` list near the top of `app.js`.
 

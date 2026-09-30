@@ -204,7 +204,7 @@
         "id": "door-front",
         "roomId": "dining",
         "side": "south",
-        "offset": 1.8,
+        "offset": 1.75,
         "width": 3.0,
         "hinge": "start",
         "swing": "in"
