@@ -618,8 +618,8 @@
   // centimeters. `valid` is the accepted range when it differs from the
   // field's min and max attributes.
   const FIELDS = {
-    houseWidth: { kind: 'length', imperial: { min: 24, max: 80, step: 1 }, metric: { min: 7.4, max: 24.3, step: 0.1 } },
-    houseDepth: { kind: 'length', imperial: { min: 24, max: 80, step: 1 }, metric: { min: 7.4, max: 24.3, step: 0.1 } },
+    houseWidth: { kind: 'length', imperial: { min: 8, max: 80, step: 1 }, metric: { min: 2.4, max: 24.3, step: 0.1 } },
+    houseDepth: { kind: 'length', imperial: { min: 8, max: 80, step: 1 }, metric: { min: 2.4, max: 24.3, step: 0.1 } },
     exteriorWall: { kind: 'thickness', imperial: { min: 0, max: 24, step: 0.25 }, metric: { min: 0, max: 60, step: 0.5 } },
     interiorWall: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
     roomWallT: { kind: 'thickness', imperial: { min: 0, max: 12, step: 0.25 }, metric: { min: 0, max: 30, step: 0.5 } },
