@@ -163,11 +163,34 @@ async function main() {
   });
 
   await check('the lot draws and warns when the house is inside the setback', async () => {
-    await page.click('#lotDetails summary');
     await page.check('#lotEnabled');
     const drawn = (await page.locator('.lot-line').count()) === 1 && (await page.locator('.setback-line').count()) === 1;
     await setField('lotLeft', 2);
     return drawn && /left lot line/.test(await page.textContent('#issues'));
+  });
+
+  await check('Rotate Building turns the house inside a fixed lot and keeps it centered', async () => {
+    await page.click('#centerLot');
+    const before = await saved();
+    await page.click('#rotateBuildingRight');
+    const after = await saved();
+    const centerBefore = [before.lot.left + before.width / 2, before.lot.top + before.depth / 2];
+    const centerAfter = [after.lot.left + after.width / 2, after.lot.top + after.depth / 2];
+    const sameCenter = centerBefore.every((value, i) => Math.abs(value - centerAfter[i]) <= 0.13);
+    const turned = after.width === before.depth && after.depth === before.width;
+    const lotKept = after.lot.width === before.lot.width && after.lot.depth === before.lot.depth;
+    await page.click('#rotateBuildingLeft');
+    const back = await saved();
+    return turned && lotKept && sameCenter && back.width === before.width && back.depth === before.depth;
+  });
+
+  await check('the toolbar rotate turns the house and the lot together', async () => {
+    const before = await saved();
+    await page.click('#rotateRight');
+    const after = await saved();
+    const swapped = after.width === before.depth && after.lot.width === before.lot.depth && after.lot.depth === before.lot.width;
+    await page.click('#rotateLeft');
+    return swapped;
   });
 
   // --- Units, saving, printing ------------------------------------------------
@@ -209,6 +232,20 @@ async function main() {
   });
   await openApp();
   await check('the desktop notice stays hidden on a wide window', async () => !(await page.locator('#mobileNotice').isVisible()));
+
+  // The four area tiles must hold five digits (99,999 sq ft) at common screen widths.
+  for (const width of [1500, 1700, 1906]) {
+    await openApp({ width, height: 1000 });
+    await check(`area tiles fit "99,999 sq ft" at ${width}px wide`, async () => {
+      await page.evaluate(() => {
+        for (const id of ['footprintArea', 'shellArea', 'clearArea', 'aboveGradeArea']) document.getElementById(id).textContent = '99,999 sq ft';
+      });
+      const clipped = await page.$$eval('.metric-row strong', tiles => tiles.filter(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right - 4));
+      const pageScrolls = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      const titleCut = await page.$$eval('.dimensions-panel .panel-title h2, .lot-panel .panel-title h2', titles => titles.filter(h => h.getBoundingClientRect().right > h.closest('.panel').getBoundingClientRect().right - 4));
+      return clipped.length === 0 && !pageScrolls && titleCut.length === 0;
+    });
+  }
 
   await browser.close();
   server.close();

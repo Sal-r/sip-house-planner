@@ -541,10 +541,11 @@ input:disabled, select:disabled { background: var(--field-disabled-bg); color: v
   gap: 12px;
   margin: 0;
 }
-.metric-row > div { padding: 15px 17px; }
+/* Each tile is a size container, so the number can scale to fit its width (up to 99,999 sq ft). */
+.metric-row > div { padding: 15px 17px; container-type: inline-size; }
 .metric-row span, .metric-row strong { display: block; }
 .metric-row span { color: var(--subtle-text); font-size: .78rem; }
-.metric-row strong { margin-top: 3px; font-size: 1.4rem; letter-spacing: -.03em; }
+.metric-row strong { margin-top: 3px; font-size: clamp(.95rem, 9cqw, 1.4rem); letter-spacing: -.03em; white-space: nowrap; }
 .metric-note { margin: 8px 3px 14px; color: var(--muted-text); font-size: .76rem; }
 
 /* 5. Plan card */
@@ -989,16 +990,34 @@ svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-
   .mobile-notice:not([hidden]) { display: flex; }
 }
 
-/* Lot and setback lines on the plan, and the Lot and Setback section in the Footprint panel */
+/* Lot and setback lines on the plan */
 svg .lot-line { fill: none; stroke: var(--plan-dim-line); stroke-width: .2; stroke-dasharray: 1.2 .6; pointer-events: none; }
 svg .setback-line { fill: none; stroke: var(--orange); stroke-width: .1; stroke-dasharray: .3 .3; pointer-events: none; }
 svg .lot-label { fill: var(--plan-dim-text); font-weight: 700; pointer-events: none; }
-.lot-details { margin-top: 12px; }
-.lot-details summary { cursor: pointer; font-weight: 700; font-size: .86rem; color: var(--label); }
-.lot-details[open] summary { margin-bottom: 8px; }
-.lot-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: .86rem; }
+
+/* Lot Footprint box: the toggle, then three fields across */
+.lot-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 700; font-size: .86rem; }
 .lot-toggle input { width: auto; margin: 0; }
-.lot-details .two-fields { margin-bottom: 8px; align-items: end; }
+.lot-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.lot-fields input { padding-left: 7px; padding-right: 7px; }
+.lot-fields .inline-button { padding-left: 4px; padding-right: 4px; white-space: normal; }
+.lot-help { margin-top: 10px; }
+
+/* Rotate Building: a small bordered group under Front of House */
+.rotate-building {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--label);
+}
+.rotate-building .rotate-buttons { display: inline-flex; }
 
 /* Space under the stair info line before the next row of fields */
 .stair-controls { margin-bottom: 10px; }
@@ -1036,7 +1055,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .side-stack { order: 1; }
   .findings { order: 6; }
   .dimensions-panel { order: 7; }
-  .walls-panel { order: 8; }
+  .lot-panel { order: 8; }
+  .walls-panel { order: 9; }
 
   .metric-row { gap: 8px; }
   .metric-note { display: none; }
@@ -1086,7 +1106,7 @@ svg.tap-only .interior-door { cursor: pointer; }
   .workspace { padding-left: 12px; padding-right: 12px; }
   .floor-tabs button { padding: 9px 10px; }
   .metric-row > div { padding: 11px; }
-  .metric-row strong { font-size: 1.05rem; }
+  .metric-row strong { font-size: clamp(.8rem, 10cqw, 1.05rem); }
   .metric-row span { font-size: .7rem; }
   .plan-scroll { padding: 10px; }
   .plan-toolbar { font-size: .7rem; }
@@ -1102,13 +1122,13 @@ svg.tap-only .interior-door { cursor: pointer; }
 }
 
 /* Wide screens (1500px+): a 24-column dashboard.
-   Row 1: intro, Footprint, Wall Thickness, Layout Checks.
+   Row 1: intro, Building Footprint, Lot Footprint, Walls, Layout Checks.
    Row 2: the plan on the left. Next to it, a 2 x 2 grid of equal boxes:
           Spaces and Furniture & Fixtures on top, Doorways and Windows below. */
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 266px auto;
+    grid-template-rows: 280px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -1118,9 +1138,9 @@ svg.tap-only .interior-door { cursor: pointer; }
 
   .intro {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 12px;
-    grid-column: 1 / 13;
+    grid-column: 1 / 10;
     grid-row: 1;
     min-width: 0;
     height: 100%;
@@ -1146,15 +1166,17 @@ svg.tap-only .interior-door { cursor: pointer; }
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 10px 15px;
+    padding: 10px 12px;
   }
-  .intro .metric-row strong { font-size: 1.3rem; }
+  .intro .metric-row strong { font-size: clamp(.9rem, 10.5cqw, 1.3rem); }
   .intro .metric-note { display: none; }
 
-  .dimensions-panel { grid-column: 13 / 16; }
-  .walls-panel { grid-column: 16 / 20; }
-  .findings { grid-column: 20 / 25; }
+  .dimensions-panel { grid-column: 10 / 13; }
+  .lot-panel { grid-column: 13 / 17; }
+  .walls-panel { grid-column: 17 / 21; }
+  .findings { grid-column: 21 / 25; }
   .dimensions-panel,
+  .lot-panel,
   .walls-panel,
   .findings {
     align-self: stretch;
@@ -1165,12 +1187,22 @@ svg.tap-only .interior-door { cursor: pointer; }
     overflow: auto;
   }
   .dimensions-panel .panel-title,
+  .lot-panel .panel-title,
   .walls-panel .panel-title,
   .findings .panel-title { margin-bottom: 10px; }
   .dimensions-panel .panel-title > span,
+  .lot-panel .panel-title > span,
   .walls-panel .panel-title > span { display: none; }
   .dimensions-panel .field-help,
   .walls-panel .field-help { margin-top: 8px; }
+  /* Smaller titles keep "Building Footprint" and "Lot Footprint" on one line at 1500px. */
+  .dimensions-panel .panel-title h2,
+  .lot-panel .panel-title h2 { font-size: 1rem; white-space: nowrap; }
+  .dimensions-panel,
+  .lot-panel { padding: 12px 13px; }
+  .rotate-building { margin-top: 8px; padding: 5px 8px; }
+  /* The row is short, so the lot's setback note is left to the README here. */
+  .lot-panel .lot-help { display: none; }
   /* The row is short, so the thickness explanation gives way to the heights. */
   .walls-panel .thickness-help { display: none; }
   .findings ul { max-height: none; }
@@ -1203,6 +1235,12 @@ svg.tap-only .interior-door { cursor: pointer; }
   }
 
   footer { max-width: none; padding-left: 22px; padding-right: 22px; }
+}
+
+/* Between 1500px and 1599px the footprint boxes are only about 170px wide. */
+@media (min-width: 1500px) and (max-width: 1599px) {
+  .dimensions-panel .panel-title h2,
+  .lot-panel .panel-title h2 { font-size: .88rem; }
 }
 
 /* 13. Print: only the per-floor sheets built by app.js are printed */

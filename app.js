@@ -1084,7 +1084,12 @@
   }
 
   /** Turns the whole house 90° clockwise on every floor. */
-  function rotateClockwise() {
+  /**
+   * Turns the plan 90° clockwise. By default the lot turns with the house.
+   * With keepLot, only the building turns: the lot stays where it is and the
+   * house keeps its center on it.
+   */
+  function rotateClockwise({ keepLot = false } = {}) {
     const W = state.width;
     const H = state.depth;
     const next = { north: 'east', east: 'south', south: 'west', west: 'north' };
@@ -1131,7 +1136,7 @@
       }
     }
     for (const it of state.items) turn(it);
-    if (state.lot?.width > 0) {
+    if (state.lot?.width > 0 && !keepLot) {
       const box = { x: -state.lot.left, y: -state.lot.top, w: state.lot.width, h: state.lot.depth };
       turn(box);
       Object.assign(state.lot, { left: -box.x, top: -box.y, width: box.w, depth: box.h });
@@ -1145,6 +1150,13 @@
     if (next[state.frontSide]) state.frontSide = next[state.frontSide];
     state.width = H;
     state.depth = W;
+    if (keepLot && state.lot?.width > 0) {
+      // The turned house is H wide and W deep. Put its center back where it was.
+      const centerX = state.lot.left + W / 2;
+      const centerY = state.lot.top + H / 2;
+      state.lot.left = snap(centerX - H / 2);
+      state.lot.top = snap(centerY - W / 2);
+    }
   }
 
   /** Where a spot on a stair lands on the plan. `along` runs the way the stairs climb, and `across` is measured from the left side when facing that way. */
@@ -2896,7 +2908,6 @@
         top: DEFAULT_LOT_MARGIN,
       });
     }
-    $('lotDetails').open = lot.enabled || $('lotDetails').open;
     render();
   });
   for (const [id, key] of [['lotWidth', 'width'], ['lotDepth', 'depth'], ['lotLeft', 'left'], ['lotTop', 'top'], ['lotSetback', 'setback']]) {
@@ -3406,6 +3417,15 @@
     rotateClockwise();
     rotateClockwise();
     rotateClockwise();
+    render();
+  });
+  // The building turns inside the lot. The left button is three turns right.
+  $('rotateBuildingRight').addEventListener('click', () => {
+    rotateClockwise({ keepLot: true });
+    render();
+  });
+  $('rotateBuildingLeft').addEventListener('click', () => {
+    for (let turn = 0; turn < 3; turn++) rotateClockwise({ keepLot: true });
     render();
   });
   $('zoomOut').addEventListener('click', () => {

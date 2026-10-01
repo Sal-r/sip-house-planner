@@ -42,7 +42,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
 
 ## Lot and setback
-- [ ] The Footprint panel has a collapsed Lot and Setback section. Its fields stay off until Show Lot is on, and turning Show Lot on opens the section.
+- [ ] The top row has a Building Footprint box and a separate Lot Footprint box side by side. The lot fields stay off until Show Lot is on.
 - [ ] The first time Show Lot is turned on, the lot is the house plus 20 ft on every side with the house centered, a dashed lot line and a dotted setback line (3 ft inside it) are drawn, a "Lot W × D" label shows, and the whole lot is visible in the plan.
 - [ ] House From Left set to 2 ft shows a warning naming the left lot line, the distance, and the 3 ft setback. A negative value shows an error that the house goes past the lot line. Raising it to 3 ft clears the warning, and a setback of 0 clears it too.
 - [ ] Setback and the lot fields accept metric entry (setback 1 m works). A new lot shows the 3 ft setback as 0.91 m.
@@ -52,7 +52,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Turning Show Lot off hides the lines and clears the lot warnings, and turning it back on keeps the values you set. Undo steps back through lot edits.
 - [ ] The lot survives a reload, Export Layout, and Import Layout. A file from before the lot existed, and all templates, open with the lot off. A damaged lot in a file falls back to off.
 - [ ] Print / PDF shows the lot lines and label on each floor's page.
-- [ ] At 1500px and wider the Footprint panel scrolls inside its box when the lot section is open, and nothing is cut off.
+- [ ] At 1500, 1700, and 1906 px wide the Building Footprint, Lot Footprint, Walls, and Layout Checks boxes all fit on the top row with no sideways scrolling, and their titles and fields are not cut off. Under 1500px the Lot Footprint box follows Building Footprint.
 
 ## Utility markers and notes
 - [ ] The item Suggested sizes menu has headings Notes (Note) and Utility Markers (Electrical, HVAC, Plumbing), still in A to Z order.
@@ -170,6 +170,11 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The four area figures update as you change the plan.
 
 ## Plan tools
+- [ ] The four area tiles at the top are narrower than before. Putting a five digit area like 99,999 sq ft in each one still fits with no clipping at 1500, 1700, and 1906 px wide, in feet and in meters.
+- [ ] Rotate Building (in the Building Footprint box) turns the house 90° left or right inside the lot. Width and depth swap, the rooms, doors, windows, items, stairs, outdoor spaces, and front marker turn with it, the lot does not turn, and the house stays centered on the same spot on the lot (From Left and From Top change to match). Layout Checks update for the new position.
+- [ ] Three Rotate Building right turns equal one turn left, and four turns return everything to where it started. Undo steps back one turn at a time.
+- [ ] With the lot off, Rotate Building still works and the lot values are kept for when it is turned back on.
+- [ ] The rotate buttons above the plan still turn the whole plan, lot included, and their tooltips say so.
 - [ ] Rotate left and right turn the whole house, including doors, windows, and the front marker.
 - [ ] Zoom out stops at 50% and zoom in stops at 250%.
 - [ ] Dragging the bar under the plan resizes it; double-clicking fits the plan; the size is remembered after refresh.
