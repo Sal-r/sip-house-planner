@@ -192,14 +192,16 @@
   // Suggested sizes for the menu in each panel. Choosing one applies it to the
   // selected space, doorway, window, or item. Rooms vary too much for a long
   // list, so only the two bathrooms and the outdoor spaces are offered.
+  // An optional fifth value sets the walls: garages and sheds are closed in,
+  // decks and porches are open. Without one, the room's walls are left alone.
   const ROOM_PRESETS = {
-    deck: ['Deck', 'outdoor', 12, 12],
+    deck: ['Deck', 'outdoor', 12, 12, 'open'],
     fullBath: ['Full Bath', 'wet', 5, 8],
-    garageOne: ['Garage - 1 Car', 'outdoor', 12, 20],
-    garageTwo: ['Garage - 2 Car', 'outdoor', 22, 22],
+    garageOne: ['Garage - 1 Car', 'outdoor', 12, 20, 'enclosed'],
+    garageTwo: ['Garage - 2 Car', 'outdoor', 22, 22, 'enclosed'],
     halfBath: ['Half Bath', 'wet', 5, 5],
-    porch: ['Porch', 'outdoor', 6, 12],
-    shed: ['Shed', 'outdoor', 8, 10],
+    porch: ['Porch', 'outdoor', 6, 12, 'open'],
+    shed: ['Shed', 'outdoor', 8, 10, 'enclosed'],
   };
   const DOOR_PRESETS = {
     closet: ['Closet', 2],
@@ -207,6 +209,8 @@
     standard: ['Standard', 3],
     double: ['Double', 5],
     wideDouble: ['Wide Double', 6],
+    garageSingle: ['Garage - 1 Car', 9],
+    garageDouble: ['Garage - 2 Car', 16],
   };
   const WINDOW_PRESETS = {
     small: ['Small', 2],
@@ -710,8 +714,8 @@
 
   // A room is open plan (no partition walls) or enclosed. Living spaces and
   // the main hallway default to open.
-  // Outdoor spaces (porch, deck, shed, garage) never get partition walls.
-  const wallMode = r => (r.kind === 'outdoor' ? 'open' : r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed'));
+  // Outdoor spaces start open (driveway, garden, carport, deck). A garage or shed can be set to enclosed.
+  const wallMode = r => r.wallMode || ((r.kind === 'outdoor' || r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed');
   const isOutdoor = r => r.kind === 'outdoor';
   /** The lot as a box in plan coordinates (the house footprint starts at 0, 0), or null when the lot is off. */
   const lotBox = () => (state.lot?.enabled
@@ -719,14 +723,17 @@
     : null);
   /** True when a room sits entirely inside the house footprint. */
   const insideFootprint = r => r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= state.width + 0.01 && r.y + r.h <= state.depth + 0.01;
+  /** A room that is not within the footprint (a garage, or a bath next to the house) has its own walls, not the SIP wall. */
+  const isOutsideHouse = r => !insideFootprint(r);
   const roomWallThickness = r => (Number.isFinite(r.wallT) ? r.wallT : state.interiorWall);
   const hasSide = (r, side) => r.walls?.[side] !== false;
   const sidePosition = (r, side) => (
     side === 'north' ? r.y : side === 'south' ? r.y + r.h : side === 'west' ? r.x : r.x + r.w
   );
 
-  /** True when a room side sits on the exterior SIP wall. */
+  /** True when a room side sits on the exterior SIP wall. A room outside the house never does. */
   const isExteriorSide = (r, side) => {
+    if (isOutsideHouse(r)) return false;
     const e = state.exteriorWall;
     const pos = sidePosition(r, side);
     const limit = isHorizontalSide(side) ? state.depth : state.width;
@@ -813,7 +820,7 @@
     itemW: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
     itemH: { kind: 'length', imperial: { min: 0.5, max: 80, step: 0.25 }, metric: { min: 0.15, max: 24.4, step: 0.05 } },
     doorOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
-    doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.25 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
+    doorWidth: { kind: 'length', imperial: { min: 2, max: 20, step: 0.25 }, metric: { min: 0.6, max: 6, step: 0.05 } },
     windowOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
     windowWidth: { kind: 'length', imperial: { min: 1, max: 20, step: 0.25, valid: [1, 80] }, metric: { min: 0.3, max: 6, step: 0.05, valid: [0.3, 24.4] } },
     // Heights are typed in inches or centimeters, like wall thickness.
@@ -938,8 +945,8 @@
   /**
    * The house wall a doorway is an entrance on, or null when it is not one.
    * A room inside the house counts when its door is in the exterior wall.
-   * An outdoor space counts only where its door sits on the stretch of house
-   * wall it touches. Its own side faces the opposite way, so west touches the
+   * A room outside the house (an outdoor space, or a bath next to it) counts
+   * only where its door sits on the stretch of house wall it touches. Its own side faces the opposite way, so west touches the
    * house's east wall and so on. A door on the far side, or past the end of
    * the house wall, is not an entrance.
    */
@@ -947,7 +954,7 @@
     const r = findRoom(d.roomId);
     if (!r) return null;
     const side = d.side || 'east';
-    if (!isOutdoor(r)) return isExteriorSide(r, side) ? side : null;
+    if (!isOutsideHouse(r)) return isExteriorSide(r, side) ? side : null;
 
     const houseSide = { north: 'south', south: 'north', west: 'east', east: 'west' }[side];
     const wallLine = { north: state.depth, south: 0, west: state.width, east: 0 }[side];
@@ -965,41 +972,63 @@
     return state.doors.filter(d => findRoom(d.roomId)?.floor === floor && entranceSide(d));
   }
 
+  /** The parts of start..end that lie past a house wall of length houseLength. */
+  function spansBeyondHouse(start, end, houseLength) {
+    const spans = [];
+    if (start < -0.01) spans.push([start, Math.min(end, 0)]);
+    if (end > houseLength + 0.01) spans.push([Math.max(start, houseLength), end]);
+    return spans;
+  }
+
   /**
-   * Builds the partition walls for one floor: every enclosed room side that
-   * isn't on the exterior wall, merged where rooms share a wall, with doorway
-   * openings cut out. Also returns the areas used by the metrics.
+   * Wall segments for one enclosed room, as { o, pos, start, end, t, half, outside, shift }.
+   * Inside the house they stop at the exterior wall. A room outside the house
+   * (a garage) gets all its sides, drawn just inside its box, except along the
+   * house wall it rests against. `shift` is that inward nudge.
    */
-  function wallModel(floor) {
+  function roomWallSegments(r, outside) {
     const e = state.exteriorWall;
     const W = state.width;
     const H = state.depth;
-    const shell = { x: e, y: e, w: Math.max(0, W - 2 * e), h: Math.max(0, H - 2 * e) };
+    const t = roomWallThickness(r);
+    const segments = [];
+    for (const side of ['north', 'south', 'west', 'east']) {
+      if (!hasSide(r, side)) continue;
+      const horizontal = isHorizontalSide(side);
+      const pos = sidePosition(r, side);
+      const half = !!r.halfWalls?.[side];
+      const roomStart = horizontal ? r.x : r.y;
+      const roomEnd = roomStart + (horizontal ? r.w : r.h);
+      const base = { o: horizontal ? 'h' : 'v', pos, t, half, outside };
 
-    // 1. Raw wall segments from each enclosed room.
-    const raw = [];
-    for (const r of state.rooms.filter(room => room.floor === floor && wallMode(room) === 'enclosed')) {
-      const t = roomWallThickness(r);
-      for (const side of ['north', 'south', 'west', 'east']) {
-        if (!hasSide(r, side)) continue;
-        const horizontal = isHorizontalSide(side);
-        const pos = sidePosition(r, side);
-        if (horizontal ? (pos <= e + 0.001 || pos >= H - e - 0.001) : (pos <= e + 0.001 || pos >= W - e - 0.001)) continue;
-        const start = Math.max(e, horizontal ? r.x : r.y);
-        const end = Math.min(horizontal ? W - e : H - e, horizontal ? r.x + r.w : r.y + r.h);
-        if (end > start + 0.01) raw.push({ o: horizontal ? 'h' : 'v', pos, start, end, t, half: !!r.halfWalls?.[side] });
+      if (outside) {
+        const inward = side === 'north' || side === 'west' ? 1 : -1;
+        const houseLine = { north: H, south: 0, west: W, east: 0 }[side];
+        const spans = Math.abs(pos - houseLine) < 0.01
+          ? spansBeyondHouse(roomStart, roomEnd, horizontal ? W : H)
+          : [[roomStart, roomEnd]];
+        for (const [start, end] of spans) segments.push({ ...base, start, end, shift: inward * t / 2 });
+        continue;
       }
-    }
 
-    // 2. Group collinear segments of the same thickness.
+      if (horizontal ? (pos <= e + 0.001 || pos >= H - e - 0.001) : (pos <= e + 0.001 || pos >= W - e - 0.001)) continue;
+      const start = Math.max(e, roomStart);
+      const end = Math.min(horizontal ? W - e : H - e, roomEnd);
+      if (end > start + 0.01) segments.push({ ...base, start, end, shift: 0 });
+    }
+    return segments;
+  }
+
+  /** Merges overlapping collinear segments, then cuts the doorway openings out of them. */
+  function mergeAndCutWalls(raw, floor) {
+    // Group collinear segments of the same thickness.
     const grouped = new Map();
     for (const seg of raw) {
-      const key = `${seg.o}:${seg.pos.toFixed(3)}:${seg.t.toFixed(4)}:${seg.half ? 'half' : 'full'}`;
+      const key = `${seg.o}:${seg.pos.toFixed(3)}:${seg.t.toFixed(4)}:${seg.half ? 'half' : 'full'}:${seg.outside}:${seg.shift}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key).push(seg);
     }
 
-    // 3. Merge overlapping segments, then cut doorway openings.
     const segments = [];
     for (const group of grouped.values()) {
       group.sort((a, b) => a.start - b.start);
@@ -1010,10 +1039,12 @@
         else merged.push({ ...seg });
       }
 
+      // A door only cuts the walls of rooms of its own kind (inside or outside the house).
       const openings = state.doors
         .filter(d => {
           const g = doorGeometry(d);
           return g && g.room.floor === floor && wallMode(g.room) === 'enclosed'
+            && isOutsideHouse(g.room) === group[0].outside
             && (g.horizontal ? 'h' : 'v') === group[0].o && Math.abs(g.axis - group[0].pos) < 0.01;
         })
         .map(d => {
@@ -1033,6 +1064,28 @@
         if (cursor < seg.end - 0.01) segments.push({ ...seg, start: cursor });
       }
     }
+    return segments;
+  }
+
+  /**
+   * Builds the partition walls for one floor: every enclosed room side that
+   * isn't on the exterior wall, merged where rooms share a wall, with doorway
+   * openings cut out. Also returns the areas used by the metrics. Walls of rooms
+   * outside the house are in `outsideSegments` and never count in those areas.
+   */
+  function wallModel(floor) {
+    const e = state.exteriorWall;
+    const W = state.width;
+    const H = state.depth;
+    const shell = { x: e, y: e, w: Math.max(0, W - 2 * e), h: Math.max(0, H - 2 * e) };
+
+    const raw = [];
+    for (const r of state.rooms.filter(room => room.floor === floor && wallMode(room) === 'enclosed')) {
+      raw.push(...roomWallSegments(r, isOutsideHouse(r)));
+    }
+
+    const segments = mergeAndCutWalls(raw.filter(s => !s.outside), floor);
+    const outsideSegments = mergeAndCutWalls(raw.filter(s => s.outside), floor);
 
     const rects = segments.map(s => (s.o === 'h'
       ? { x: s.start, y: s.pos - s.t / 2, w: s.end - s.start, h: s.t }
@@ -1042,6 +1095,7 @@
       shell,
       raw,
       segments,
+      outsideSegments,
       rects,
       shellArea: shell.w * shell.h,
       partitionArea: unionArea(rects, shell),
@@ -1668,7 +1722,7 @@
       const b = a + d.width;
       const onWall = model.raw.some(s => s.o === (g.horizontal ? 'h' : 'v')
         && Math.abs(s.pos - g.axis) < 0.01 && s.start < b && s.end > a);
-      if (wallMode(g.room) === 'enclosed' && !onWall && !isExteriorSide(g.room, g.side)) {
+      if (wallMode(g.room) === 'enclosed' && !onWall && !entranceSide(d)) {
         out.push({ level: 'warning', text: `Door on ${g.room.name} is on a side with no wall. Turn that wall on or move the doorway.` });
       }
       if (wallMode(g.room) !== 'enclosed') {
@@ -2302,12 +2356,13 @@
 
     for (const r of state.rooms.filter(room => room.floor === state.floor)) drawRoom(r);
     // Half walls go down first so a full wall on the same line covers them.
-    const wallsHalfFirst = [...model.segments].sort((a, b) => Number(!!b.half) - Number(!!a.half));
+    const wallsHalfFirst = [...model.segments, ...model.outsideSegments].sort((a, b) => Number(!!b.half) - Number(!!a.half));
     for (const s of wallsHalfFirst) {
       const wallClass = s.half ? 'partition-wall half-wall' : 'partition-wall';
+      const line = s.pos + s.shift;
       element('line', s.o === 'h'
-        ? { x1: s.start, y1: s.pos, x2: s.end, y2: s.pos, class: wallClass, 'stroke-width': s.t }
-        : { x1: s.pos, y1: s.start, x2: s.pos, y2: s.end, class: wallClass, 'stroke-width': s.t });
+        ? { x1: s.start, y1: line, x2: s.end, y2: line, class: wallClass, 'stroke-width': s.t }
+        : { x1: line, y1: s.start, x2: line, y2: s.end, class: wallClass, 'stroke-width': s.t });
     }
     drawExteriorWalls();
     for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) drawInteriorDoor(d);
@@ -2486,7 +2541,7 @@
     renderStairControls(room);
     $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
     $('selectedClear').textContent = room && isOutdoor(room)
-      ? `Outdoor space, ${fmtArea(room.w * room.h, false)}. It has no walls and is not counted in the house areas.`
+      ? `Outdoor space, ${fmtArea(room.w * room.h, false)}. It is not counted in the house areas.`
       : room
       ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
       : 'Add a space to edit it.';
@@ -3033,8 +3088,9 @@
     const preset = ROOM_PRESETS[e.target.value];
     const room = findRoom(state.selectedRoom);
     if (room && preset) {
-      const [name, kind, w, h] = preset;
+      const [name, kind, w, h, walls] = preset;
       Object.assign(room, { name, kind, w, h });
+      if (walls) room.wallMode = walls;
       if (kind === 'stairs') room.stair = stairOf(room);
       else delete room.stair;
       if (kind === 'outdoor' && insideFootprint(room)) moveOutsideFront(room);
