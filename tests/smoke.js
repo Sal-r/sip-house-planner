@@ -1,0 +1,225 @@
+/*
+ * Smoke test: opens the real app in a browser and checks that the main things
+ * work. It is for developers only. The app never loads this file.
+ *
+ * Run it from the project folder:
+ *
+ *   node tests/smoke.js
+ *
+ * It starts its own small web server, so nothing else needs to be running.
+ * It needs Playwright. If `require('playwright')` fails, set PLAYWRIGHT_MODULE
+ * to the path of the playwright package (the cloud environment has one).
+ * It prints one line per check and exits with an error if any check fails.
+ */
+
+'use strict';
+
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..');
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+
+function loadPlaywright() {
+  try {
+    return require('playwright');
+  } catch (_) {
+    return require(process.env.PLAYWRIGHT_MODULE || '/opt/node-tools/node_modules/playwright');
+  }
+}
+
+/** Serves the project folder over http, because the app cannot load its templates from file://. */
+function startServer() {
+  const server = http.createServer((req, res) => {
+    const urlPath = decodeURIComponent(req.url.split('?')[0]);
+    const file = path.join(ROOT, urlPath === '/' ? 'index.html' : urlPath);
+    if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+      res.writeHead(404).end();
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
+    fs.createReadStream(file).pipe(res);
+  });
+  return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server)));
+}
+
+async function main() {
+  const { chromium } = loadPlaywright();
+  const server = await startServer();
+  const url = `http://127.0.0.1:${server.address().port}/`;
+  const browser = await chromium.launch();
+
+  const results = [];
+  const errors = [];
+  let page;
+
+  /** Opens a fresh page (empty browser storage) and starts collecting errors. */
+  async function openApp(viewport = { width: 1500, height: 1100 }) {
+    const context = await browser.newContext({ viewport });
+    page = await context.newPage();
+    page.on('pageerror', e => errors.push(String(e)));
+    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+    await page.addInitScript(() => { window.print = () => {}; });
+    await page.goto(url);
+    await page.waitForSelector('#plan [data-room]');
+    return page;
+  }
+
+  /** Runs one check. A thrown error or a false result is a failure. */
+  async function check(name, run) {
+    const before = errors.length;
+    try {
+      const ok = await run();
+      const newErrors = errors.slice(before);
+      if (ok === false || newErrors.length) throw new Error(newErrors.length ? `console errors: ${newErrors.join(' | ')}` : 'returned false');
+      results.push({ name, ok: true });
+    } catch (error) {
+      results.push({ name, ok: false, why: String(error.message).split('\n')[0] });
+    }
+  }
+
+  const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('sip-house-planner-v1')));
+  const confirmIfAsked = async () => {
+    if (await page.locator('#confirmYes').isVisible()) await page.click('#confirmYes');
+  };
+  const setField = async (id, value) => {
+    await page.fill(`#${id}`, String(value));
+    await page.press(`#${id}`, 'Tab');
+  };
+
+  // --- Start-up and templates ------------------------------------------------
+
+  await openApp();
+  await check('default layout loads with rooms drawn', async () => (await page.locator('#plan [data-room]').count()) > 5);
+  await check('saved layout is the current version', async () => (await saved()).schemaVersion === 6);
+
+  const templates = await page.$$eval('#templateSelect option', options => options.map(o => o.value).filter(Boolean));
+  for (const value of templates) {
+    await check(`template "${value}" loads`, async () => {
+      await page.selectOption('#templateSelect', value);
+      await confirmIfAsked();
+      await page.waitForTimeout(250);
+      return (await page.locator('#plan [data-room]').count()) > 0;
+    });
+  }
+  await page.selectOption('#templateSelect', templates[0]);
+  await confirmIfAsked();
+  await page.waitForTimeout(250);
+
+  // --- Editing and undo -------------------------------------------------------
+
+  await check('Add Room then Undo restores the room count', async () => {
+    const before = (await saved()).rooms.length;
+    await page.click('#addRoom');
+    const added = (await saved()).rooms.length === before + 1;
+    await page.click('#undo');
+    return added && (await saved()).rooms.length === before;
+  });
+
+  await check('a second floor can be added and opened', async () => {
+    await page.click('#upperToggle');
+    await confirmIfAsked();
+    await page.click('#upperTab');
+    const onUpper = (await saved()).floor === 'upper';
+    await page.click('#mainTab');
+    return onUpper;
+  });
+
+  // --- Heights and stairs -----------------------------------------------------
+
+  await check('wall height edits stick and change the floor to floor help', async () => {
+    await setField('wallHeight', 108);
+    return (await saved()).wallHeights.main === 9 && /Floor to floor/.test(await page.textContent('#heightHelp'));
+  });
+
+  await check('every stair type draws without errors', async () => {
+    await page.selectOption('#roomSelect', 'stairs-main');
+    for (const type of ['straight', 'turnLeft', 'turnRight', 'u', 'spiral']) {
+      await page.selectOption('#stairType', type);
+      if (!(await page.locator('[data-room="stairs-main"] .stair-art').count())) return false;
+    }
+    return /risers/.test(await page.textContent('#stairInfo'));
+  });
+
+  // --- Outdoor spaces, markers, lot -------------------------------------------
+
+  await check('an outdoor space sits outside the footprint and the plan grows', async () => {
+    const before = await page.getAttribute('#plan', 'viewBox');
+    await page.click('#addRoom');
+    await page.selectOption('#roomPreset', 'porch');
+    const state = await saved();
+    const porch = state.rooms.find(r => r.kind === 'outdoor');
+    const outside = porch.x >= state.width || porch.y >= state.depth || porch.x + porch.w <= 0 || porch.y + porch.h <= 0;
+    return outside && (await page.getAttribute('#plan', 'viewBox')) !== before && !/beyond the/.test(await page.textContent('#issues'));
+  });
+
+  await check('item menu is grouped and the utility markers draw', async () => {
+    const headings = await page.$$eval('#itemPreset optgroup', groups => groups.map(g => g.label));
+    const sorted = JSON.stringify(headings) === JSON.stringify([...headings].sort());
+    await page.click('#addItem');
+    await page.selectOption('#itemPreset', 'markerHvac');
+    return sorted && headings.includes('UTILITY MARKERS') && (await page.locator('.marker-hvac').count()) > 0;
+  });
+
+  await check('the lot draws and warns when the house is inside the setback', async () => {
+    await page.click('#lotDetails summary');
+    await page.check('#lotEnabled');
+    const drawn = (await page.locator('.lot-line').count()) === 1 && (await page.locator('.setback-line').count()) === 1;
+    await setField('lotLeft', 2);
+    return drawn && /left lot line/.test(await page.textContent('#issues'));
+  });
+
+  // --- Units, saving, printing ------------------------------------------------
+
+  await check('switching to metric and back keeps the layout', async () => {
+    const before = (await saved()).width;
+    await page.click('#unitsMetric');
+    const shown = await page.inputValue('#houseWidth');
+    await page.click('#unitsImperial');
+    return Number(shown) !== before && (await saved()).width === before;
+  });
+
+  await check('an older saved layout (version 3) still loads', async () => {
+    await page.evaluate(() => {
+      const old = JSON.parse(localStorage.getItem('sip-house-planner-v1'));
+      old.schemaVersion = 3;
+      for (const key of ['wallHeights', 'floorThickness', 'lot']) delete old[key];
+      localStorage.setItem('sip-house-planner-v1', JSON.stringify(old));
+    });
+    await page.reload();
+    await page.waitForSelector('#plan [data-room]');
+    const state = await saved();
+    return state.schemaVersion === 6 && state.wallHeights.main === 8 && state.lot.enabled === false;
+  });
+
+  await check('Print / PDF builds one page per floor', async () => {
+    await page.click('#printPlan');
+    await page.waitForTimeout(200);
+    return (await page.locator('.print-page').count()) >= 2;
+  });
+
+  // --- The desktop notice ------------------------------------------------------
+
+  await openApp({ width: 600, height: 900 });
+  await check('the desktop notice shows on a narrow window and can be dismissed', async () => {
+    const shown = await page.locator('#mobileNotice').isVisible();
+    await page.click('#mobileNoticeDismiss');
+    return shown && !(await page.locator('#mobileNotice').isVisible());
+  });
+  await openApp();
+  await check('the desktop notice stays hidden on a wide window', async () => !(await page.locator('#mobileNotice').isVisible()));
+
+  await browser.close();
+  server.close();
+
+  for (const r of results) console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : `\n      ${r.why}`}`);
+  const failed = results.filter(r => !r.ok).length;
+  console.log(`\n${results.length - failed} of ${results.length} checks passed.`);
+  process.exit(failed ? 1 : 0);
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

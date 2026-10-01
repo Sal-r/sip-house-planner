@@ -143,3 +143,8 @@ SIP House Planner is for early concept sketches. **It is not a construction docu
 ## License
 
 Copyright © 2026 Sal-r. All rights reserved. You're welcome to use the hosted app. The source code and assets are not licensed for reuse. See [LICENSE](LICENSE).
+
+## For developers
+
+- **Smoke test:** `node tests/smoke.js` opens the real app in a browser, loads each template, tries the main features, and prints a pass or fail line for each check. It starts its own server and needs [Playwright](https://playwright.dev/). The app never loads it.
+- **Draft code checks:** `drafts/code-checks.js` is a set of building code style checks (bedroom egress windows, minimum room sizes, hallway width, ceiling height, exit door width). It is not part of the app and nothing loads it. The numbers are rounded examples, not legal or code advice, and would need checking against the code for your area before anyone used them. Try it with `node drafts/code-checks.js templates/default-layout.json`.
