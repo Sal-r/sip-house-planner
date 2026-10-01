@@ -37,6 +37,43 @@
   const SIDE_LABEL = { north: 'Top', east: 'Right', south: 'Bottom', west: 'Left' };
   const FLOOR_NAME = { main: 'Main Floor', upper: 'Second Floor', basement: 'Basement' };
 
+  // Heights, in feet. Doors and windows are measured from the floor. A window
+  // sill is the bottom of the glass, and the head is the top of the opening.
+  const DEFAULT_WALL_HEIGHT = 8;
+  const DEFAULT_FLOOR_THICKNESS = 1;
+  const DEFAULT_DOOR_HEAD = 80 / 12;
+  const DEFAULT_WINDOW_SILL = 3;
+  const DEFAULT_WINDOW_HEAD = 80 / 12;
+
+  // Stairs. A stair is a room of kind 'stairs' with a `stair` object:
+  // { type, climb, turn, landing }. `climb` is the side the first flight heads
+  // toward going up, `turn` is left or right (U shape and spiral), and
+  // `landing` is the flat landing's depth in feet.
+  const STAIR_TYPES = ['straight', 'turnLeft', 'turnRight', 'u', 'spiral'];
+  const STAIR_TYPE_NAME = { straight: 'Straight', turnLeft: 'Turn Left', turnRight: 'Turn Right', u: 'U Shape', spiral: 'Spiral' };
+  const DEFAULT_LANDING = 3;
+  // Hints only, not code advice: the riser the stairs aim for, and the smallest
+  // tread, flight width, and spiral width before a warning shows.
+  const MAX_RISER = 7.75 / 12;
+  const MIN_TREAD = 10 / 12;
+  const MIN_STAIR_WIDTH = 3;
+  const MIN_SPIRAL_DIAMETER = 5;
+
+  /** A stair room's settings with anything missing or invalid filled in. */
+  function stairOf(room) {
+    const saved = room.stair || {};
+    const type = STAIR_TYPES.includes(saved.type) ? saved.type : 'straight';
+    let landing = Number.isFinite(saved.landing) ? Math.min(Math.max(saved.landing, 0), 10) : 0;
+    if (type === 'spiral') landing = 0;
+    else if (type !== 'straight' && landing < 1) landing = DEFAULT_LANDING;
+    return {
+      type,
+      climb: SIDES.includes(saved.climb) ? saved.climb : (room.h >= room.w ? 'north' : 'east'),
+      turn: saved.turn === 'right' ? 'right' : 'left',
+      landing,
+    };
+  }
+
   // Templates offered in the Templates menu. Each file is a normal exported
   // layout. The credit shown under the plan comes from the file itself.
   // The default layout is the first entry. It is what a first visit loads and
@@ -63,11 +100,14 @@
 
   // Room types. Each one's fill color is a --room-* token in styles.css, so the
   // dark theme can mute them. An unknown type from an imported file draws as utility.
-  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation'];
+  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation', 'stairs', 'outdoor'];
 
-  // [name, width, depth, menu heading] in feet for each entry in the item
+  // [name, width, depth, menu heading, marker] in feet for each entry in the item
   // Suggested sizes menu. The heading only organizes the menu, so any item can
-  // go in any room. The menu sorts itself by heading, then by name.
+  // go in any room. The menu sorts itself by heading, then by name. A marker
+  // is a symbol or note drawn in place of a furniture label: electrical,
+  // plumbing, hvac, or note. Markers skip the item checks, because they often
+  // sit on a wall.
   const ITEM_PRESETS = {
     custom: ['Custom Box', 3, 3],
 
@@ -122,6 +162,8 @@
     miniSplit: ['Mini-Split Indoor Unit', 3, 1, 'MECHANICAL'],
     heater: ['Water Heater', 2, 2, 'MECHANICAL'],
 
+    note: ['Note', 4, 1.5, 'NOTES', 'note'],
+
     desk: ['Desk', 5, 2.5, 'OFFICE'],
     filingCabinet: ['Filing Cabinet', 1.5, 2, 'OFFICE'],
     officeChair: ['Office Chair', 2, 2, 'OFFICE'],
@@ -129,7 +171,12 @@
     shelving: ['Shelving Unit', 4, 1.5, 'STORAGE AND WORKSHOP'],
     storageCabinet: ['Storage Cabinet', 3, 2, 'STORAGE AND WORKSHOP'],
     bench: ['Workbench', 6, 2.5, 'STORAGE AND WORKSHOP'],
+
+    markerElectrical: ['Electrical', 1.25, 1.25, 'UTILITY MARKERS', 'electrical'],
+    markerHvac: ['HVAC', 1.25, 1.25, 'UTILITY MARKERS', 'hvac'],
+    markerPlumbing: ['Plumbing', 1.25, 1.25, 'UTILITY MARKERS', 'plumbing'],
   };
+  const ITEM_MARKERS = ['electrical', 'plumbing', 'hvac', 'note'];
 
   // The menu list: headings A to Z, then names A to Z inside each heading.
   const ITEM_PRESET_MENU = Object.entries(ITEM_PRESETS)
@@ -138,10 +185,15 @@
 
   // Suggested sizes for the menu in each panel. Choosing one applies it to the
   // selected space, doorway, window, or item. Rooms vary too much for a long
-  // list, so only the two bathrooms are offered.
+  // list, so only the two bathrooms and the outdoor spaces are offered.
   const ROOM_PRESETS = {
-    halfBath: ['Half Bath', 'wet', 5, 5],
+    deck: ['Deck', 'outdoor', 12, 12],
     fullBath: ['Full Bath', 'wet', 5, 8],
+    garageOne: ['Garage - 1 Car', 'outdoor', 12, 20],
+    garageTwo: ['Garage - 2 Car', 'outdoor', 22, 22],
+    halfBath: ['Half Bath', 'wet', 5, 5],
+    porch: ['Porch', 'outdoor', 6, 12],
+    shed: ['Shed', 'outdoor', 8, 10],
   };
   const DOOR_PRESETS = {
     closet: ['Closet', 2],
@@ -170,11 +222,13 @@
   // compatibility with saved drafts and exported files. Fixtures were replaced
   // by items, but sanitizeLayout still uses them to upgrade old drafts.
   const createDefaultState = () => ({
-    schemaVersion: 3,
+    schemaVersion: 5,
     width: 32,
     depth: 42,
     exteriorWall: 1,
     interiorWall: 0.375,
+    wallHeights: { basement: DEFAULT_WALL_HEIGHT, main: DEFAULT_WALL_HEIGHT, upper: DEFAULT_WALL_HEIGHT },
+    floorThickness: DEFAULT_FLOOR_THICKNESS,
     zoom: 100,
     floor: 'main',
     upperEnabled: false,
@@ -257,7 +311,7 @@
       { id: 'mudroom', name: 'Entry', floor: 'main', x: 13, y: 1, w: 6, h: 6, kind: 'entry', walls: { north: true, east: true, south: false, west: true } },
       { id: 'living', name: 'Living Room', floor: 'main', x: 19, y: 1, w: 12, h: 14, kind: 'social' },
       { id: 'hall', name: 'Hallway', floor: 'main', x: 13, y: 7, w: 6, h: 28, kind: 'circulation' },
-      { id: 'stairs-main', name: 'Stairs', floor: 'main', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: true }, wallMode: 'open' },
+      { id: 'stairs-main', name: 'Stairs', floor: 'main', x: 1, y: 14, w: 10, h: 8, kind: 'stairs', walls: { north: true, east: false, south: true, west: true }, wallMode: 'open' },
       { id: 'side-hall', name: 'Hall', floor: 'main', x: 11, y: 14, w: 2, h: 13, kind: 'circulation', wallMode: 'open' },
       { id: 'dining', name: 'Dining Room', floor: 'main', x: 19, y: 15, w: 12, h: 14, kind: 'social' },
       { id: 'bath1', name: 'Bathroom', floor: 'main', x: 1, y: 22, w: 10, h: 5, kind: 'wet', walls: { north: true, east: true, south: true, west: true } },
@@ -267,7 +321,7 @@
       { id: 'secure', name: 'Secure Room', floor: 'basement', x: 1, y: 1, w: 10, h: 13, kind: 'utility', walls: { north: false, east: true, south: true, west: false } },
       { id: 'basement-hall', name: 'Hallway', floor: 'basement', x: 11, y: 1, w: 6, h: 40, kind: 'circulation', wallMode: 'open' },
       { id: 'flex', name: 'Flex Space', floor: 'basement', x: 17, y: 1, w: 14, h: 30, kind: 'utility', wallMode: 'enclosed' },
-      { id: 'stairs-basement', name: 'Stairs', floor: 'basement', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: false }, wallMode: 'open' },
+      { id: 'stairs-basement', name: 'Stairs', floor: 'basement', x: 1, y: 14, w: 10, h: 8, kind: 'stairs', walls: { north: true, east: false, south: true, west: false }, wallMode: 'open' },
       { id: 'basement-bath', name: 'Bathroom', floor: 'basement', x: 1, y: 22, w: 10, h: 5, kind: 'wet' },
       { id: 'mech', name: 'Mechanical / Laundry', floor: 'basement', x: 1, y: 27, w: 6, h: 14, kind: 'utility', walls: { north: false, east: false, south: false, west: false } },
       { id: 'basement-nook', name: 'Hallway', floor: 'basement', x: 7, y: 27, w: 4, h: 4, kind: 'circulation', wallMode: 'open' },
@@ -304,7 +358,7 @@
 
   /**
    * Validates a saved layout (browser draft, imported file, or
-   * templates/default-layout.json) and upgrades older formats to schema version 3.
+   * templates/default-layout.json) and upgrades older formats to schema version 5.
    * Returns a clean state object, or null if the data isn't a layout.
    */
   function sanitizeLayout(saved) {
@@ -331,7 +385,7 @@
     const state = {
       ...base,
       ...saved,
-      schemaVersion: 3,
+      schemaVersion: 5,
       rooms,
       doors,
       fixtures: base.fixtures.map(f => ({ ...f, ...saved.fixtures.find(x => x.id === f.id) })),
@@ -343,8 +397,13 @@
       : [];
 
     if (Array.isArray(saved.items)) {
-      state.items = saved.items.filter(it => it && typeof it.id === 'string' && typeof it.name === 'string'
-        && isValidFloor(it.floor) && hasFiniteBox(it));
+      state.items = saved.items
+        .filter(it => it && typeof it.id === 'string' && typeof it.name === 'string' && isValidFloor(it.floor) && hasFiniteBox(it))
+        .map(it => {
+          const item = { ...it };
+          if (!ITEM_MARKERS.includes(item.marker)) delete item.marker;
+          return item;
+        });
     } else {
       // Drafts from before items existed: turn the old fixture markers into items.
       const sizes = {
@@ -377,8 +436,31 @@
       state.windows = state.windows.filter(w => w.floor !== 'basement');
     }
 
+    // Schema 4 added heights. Older files get the defaults, and so does any
+    // height that is out of range.
+    const savedHeights = saved.wallHeights && typeof saved.wallHeights === 'object' ? saved.wallHeights : {};
+    state.wallHeights = Object.fromEntries(FLOORS.map(floor => [
+      floor,
+      Number.isFinite(savedHeights[floor]) && savedHeights[floor] >= 6 && savedHeights[floor] <= 20 ? savedHeights[floor] : DEFAULT_WALL_HEIGHT,
+    ]));
+    if (!(Number.isFinite(state.floorThickness) && state.floorThickness >= 0.25 && state.floorThickness <= 3)) {
+      state.floorThickness = DEFAULT_FLOOR_THICKNESS;
+    }
+    state.doors = state.doors.map(d => ({
+      ...d,
+      head: Number.isFinite(d.head) && d.head >= 5 && d.head <= 10 ? d.head : DEFAULT_DOOR_HEAD,
+    }));
+    state.windows = state.windows.map(w => {
+      const valid = Number.isFinite(w.sill) && Number.isFinite(w.head) && w.sill >= 0 && w.sill < w.head && w.head <= 12;
+      return { ...w, sill: valid ? w.sill : DEFAULT_WINDOW_SILL, head: valid ? w.head : DEFAULT_WINDOW_HEAD };
+    });
+
     state.rooms = state.rooms.map(r => {
       const room = { ...r };
+      // Schema 5 gave stairs their own kind. Older files drew them as hallways.
+      if (room.kind === 'circulation' && (room.id.startsWith('stairs') || /^stairs?$/i.test(room.name.trim()))) room.kind = 'stairs';
+      if (room.kind === 'stairs') room.stair = stairOf(room);
+      else delete room.stair;
       if (!(Number.isFinite(room.wallT) && room.wallT >= 0 && room.wallT <= 1)) delete room.wallT;
       if (room.walls && typeof room.walls === 'object') {
         room.walls = Object.fromEntries(SIDES.map(side => [side, room.walls[side] !== false]));
@@ -453,6 +535,8 @@
     depth: state.depth,
     exteriorWall: state.exteriorWall,
     interiorWall: state.interiorWall,
+    wallHeights: state.wallHeights,
+    floorThickness: state.floorThickness,
     frontSide: state.frontSide,
     upperEnabled: state.upperEnabled,
     basementEnabled: state.basementEnabled,
@@ -557,6 +641,30 @@
     ...(state.basementEnabled ? ['basement'] : []),
   ];
   const isHorizontalSide = side => side === 'north' || side === 'south';
+
+  // Heights. The fallback layout has no door or window heights until it is
+  // sanitized, so each reader supplies the default.
+  const wallHeight = floor => state.wallHeights?.[floor] ?? DEFAULT_WALL_HEIGHT;
+  const doorHead = door => door.head ?? DEFAULT_DOOR_HEAD;
+  const windowSill = win => win.sill ?? DEFAULT_WINDOW_SILL;
+  const windowHead = win => win.head ?? DEFAULT_WINDOW_HEAD;
+  /** The floor above a floor, or null on the top floor. */
+  const floorAbove = floor => {
+    if (floor === 'basement') return 'main';
+    return floor === 'main' && state.upperEnabled ? 'upper' : null;
+  };
+  /** Floor level to the next floor's level: the walls plus the floor between. */
+  const floorToFloor = floor => wallHeight(floor) + (state.floorThickness ?? DEFAULT_FLOOR_THICKNESS);
+  /** The floor below a floor, or null on the lowest floor. */
+  const floorBelow = floor => {
+    if (floor === 'upper') return 'main';
+    return floor === 'main' && state.basementEnabled ? 'basement' : null;
+  };
+  /** How far a stair room climbs: up to the next floor, or from the floor below. Alone on one floor, it assumes one floor to floor. */
+  const stairRise = room => {
+    const below = floorBelow(room.floor);
+    return floorToFloor((floorAbove(room.floor) || !below) ? room.floor : below);
+  };
   const capitalize = text => text[0].toUpperCase() + text.slice(1);
 
   // Number formatting for labels. Two decimals so quarter feet show as 15.75, not 15.8.
@@ -581,7 +689,11 @@
 
   // A room is open plan (no partition walls) or enclosed. Living spaces and
   // the main hallway default to open.
-  const wallMode = r => r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed');
+  // Outdoor spaces (porch, deck, shed, garage) never get partition walls.
+  const wallMode = r => (r.kind === 'outdoor' ? 'open' : r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed'));
+  const isOutdoor = r => r.kind === 'outdoor';
+  /** True when a room sits entirely inside the house footprint. */
+  const insideFootprint = r => r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= state.width + 0.01 && r.y + r.h <= state.depth + 0.01;
   const roomWallThickness = r => (Number.isFinite(r.wallT) ? r.wallT : state.interiorWall);
   const hasSide = (r, side) => r.walls?.[side] !== false;
   const sidePosition = (r, side) => (
@@ -641,6 +753,7 @@
 
   // Display text
   const fmtLength = ft => (isMetric() ? `${meters(ft)} m` : `${roundText(ft)}′`);
+  const fmtInches = ft => (isMetric() ? `${roundText(ft * CM_PER_FT, 1)} cm` : `${roundText(ft * 12, 1)}″`);
   const fmtSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${roundText(w)}′ × ${roundText(h)}′`);
   const fmtArea = (sqft, grouped = true) => {
     const value = Math.round(isMetric() ? sqft * SQM_PER_SQFT : sqft);
@@ -678,6 +791,13 @@
     doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.25 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
     windowOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
     windowWidth: { kind: 'length', imperial: { min: 1, max: 20, step: 0.25, valid: [1, 80] }, metric: { min: 0.3, max: 6, step: 0.05, valid: [0.3, 24.4] } },
+    // Heights are typed in inches or centimeters, like wall thickness.
+    wallHeight: { kind: 'thickness', imperial: { min: 72, max: 240, step: 1 }, metric: { min: 180, max: 600, step: 1 } },
+    floorThickness: { kind: 'thickness', imperial: { min: 3, max: 36, step: 0.25 }, metric: { min: 8, max: 90, step: 0.5 } },
+    doorHead: { kind: 'thickness', imperial: { min: 60, max: 120, step: 1 }, metric: { min: 150, max: 300, step: 1 } },
+    windowSill: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
+    stairLanding: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
+    windowHead: { kind: 'thickness', imperial: { min: 12, max: 144, step: 1 }, metric: { min: 30, max: 360, step: 1 } },
   };
 
   /** A length in feet, shown in a form field. */
@@ -962,6 +1082,7 @@
     }
     for (const r of state.rooms) {
       turn(r);
+      if (r.stair) r.stair = { ...r.stair, climb: next[r.stair.climb] || r.stair.climb };
       if (r.walls) {
         r.walls = {
           north: r.walls.west !== false,
@@ -989,6 +1110,101 @@
     if (next[state.frontSide]) state.frontSide = next[state.frontSide];
     state.width = H;
     state.depth = W;
+  }
+
+  /** Where a spot on a stair lands on the plan. `along` runs the way the stairs climb, and `across` is measured from the left side when facing that way. */
+  function stairPoint(room, climb, [along, across]) {
+    if (climb === 'north') return { x: room.x + across, y: room.y + room.h - along };
+    if (climb === 'south') return { x: room.x + room.w - across, y: room.y + along };
+    if (climb === 'east') return { x: room.x + along, y: room.y + across };
+    return { x: room.x + room.w - along, y: room.y + room.h - across };
+  }
+
+  /**
+   * One flight of stairs, as a strip of the stair box in stair coordinates.
+   * `axis` is the way it runs, `dir` is 1 or -1 along that axis, and `treads`
+   * are spread evenly, so each is a step's share of the strip. Returns the
+   * strip with its tread lines and the depth of one tread.
+   */
+  function stairFlight(axis, dir, along, across, treads) {
+    const [lo, hi] = axis === 'along' ? along : across;
+    const start = dir > 0 ? lo : hi;
+    const lines = [];
+    for (let i = 1; i <= treads; i++) {
+      const pos = start + dir * (hi - lo) * i / (treads + 1);
+      lines.push(axis === 'along' ? [[pos, across[0]], [pos, across[1]]] : [[along[0], pos], [along[1], pos]]);
+    }
+    const strip = axis === 'along' ? across : along;
+    return { along, across, lines, treadDepth: (hi - lo) / (treads + 1), width: strip[1] - strip[0] };
+  }
+
+  /**
+   * Lays a stair out as flights, landings, and an arrow path, all in stair
+   * coordinates (see stairPoint). The risers come from the floor to floor
+   * height. A landing counts as one step, so it takes one tread away.
+   */
+  function stairPlan(room) {
+    const stair = stairOf(room);
+    const vertical = stair.climb === 'north' || stair.climb === 'south';
+    const length = vertical ? room.h : room.w;
+    const width = vertical ? room.w : room.h;
+    const rise = stairRise(room);
+    const risers = Math.max(1, Math.ceil(rise / MAX_RISER - 0.001));
+    const plan = { stair, length, width, rise, risers, flights: [], landings: [], path: [], spiral: stair.type === 'spiral' };
+    if (plan.spiral) {
+      plan.treads = risers - 1;
+      return plan;
+    }
+
+    const turns = stair.type === 'turnLeft' || stair.type === 'turnRight';
+    const landing = Math.min(stair.landing, length, turns ? width : length);
+    const treads = Math.max(0, risers - 1 - (landing > 0 ? 1 : 0));
+    const first = Math.ceil(treads / 2);
+    const second = treads - first;
+    const edge = 0.3;
+    plan.treads = treads;
+
+    if (stair.type === 'straight') {
+      const run = (length - landing) / 2;
+      if (landing > 0) {
+        plan.flights.push(
+          stairFlight('along', 1, [0, run], [0, width], first),
+          stairFlight('along', 1, [run + landing, length], [0, width], second),
+        );
+        plan.landings.push({ along: [run, run + landing], across: [0, width] });
+      } else {
+        plan.flights.push(stairFlight('along', 1, [0, length], [0, width], treads));
+      }
+      plan.path = [[edge, width / 2], [length - edge, width / 2]];
+    } else if (turns) {
+      // The first flight hugs the side opposite the turn, so the second flight crosses the rest of the box.
+      const left = stair.type === 'turnLeft';
+      const near = left ? [width - landing, width] : [0, landing];
+      const far = left ? [0, width - landing] : [landing, width];
+      plan.flights.push(
+        stairFlight('along', 1, [0, length - landing], near, first),
+        stairFlight('across', left ? -1 : 1, [length - landing, length], far, second),
+      );
+      plan.landings.push({ along: [length - landing, length], across: near });
+      const nearMiddle = (near[0] + near[1]) / 2;
+      plan.path = [[edge, nearMiddle], [length - landing / 2, nearMiddle], [length - landing / 2, left ? edge : width - edge]];
+    } else {
+      const left = stair.turn === 'left';
+      const out = left ? [width / 2, width] : [0, width / 2];
+      const back = left ? [0, width / 2] : [width / 2, width];
+      plan.flights.push(
+        stairFlight('along', 1, [0, length - landing], out, first),
+        stairFlight('along', -1, [0, length - landing], back, second),
+      );
+      plan.landings.push({ along: [length - landing, length], across: [0, width] });
+      const outMiddle = (out[0] + out[1]) / 2;
+      const backMiddle = (back[0] + back[1]) / 2;
+      plan.path = [[edge, outMiddle], [length - landing / 2, outMiddle], [length - landing / 2, backMiddle], [edge, backMiddle]];
+    }
+
+    plan.minTread = Math.min(...plan.flights.map(f => f.treadDepth));
+    plan.minWidth = Math.min(...plan.flights.map(f => f.width));
+    return plan;
   }
 
   // ==========================================================================
@@ -1037,6 +1253,45 @@
         if (w.side === g.side && overlapsOnWall(a, b, w.offset, w.offset + w.width)) {
           out.push({ level: 'warning', text: `A window overlaps the entrance door on the ${SIDE_NAME[w.side]} wall.` });
         }
+      }
+    }
+    return out;
+  }
+
+  /** Doors and windows that reach higher than the wall they are in. */
+  function heightChecks() {
+    const out = [];
+    const limit = wallHeight(state.floor);
+    for (const w of state.windows.filter(win => win.floor === state.floor)) {
+      if (windowHead(w) > limit + 0.01) {
+        out.push({ level: 'warning', text: `A window on the ${SIDE_NAME[w.side]} wall is taller than the ${fmtLength(limit)} wall.` });
+      }
+    }
+    for (const d of state.doors) {
+      if (findRoom(d.roomId)?.floor === state.floor && doorHead(d) > limit + 0.01) {
+        out.push({ level: 'warning', text: `A doorway in ${findRoom(d.roomId).name} is taller than the ${fmtLength(limit)} wall.` });
+      }
+    }
+    return out;
+  }
+
+  /** Hints for the stairs on this floor. Not code advice. */
+  function stairChecks(rooms) {
+    const out = [];
+    for (const room of rooms.filter(r => r.kind === 'stairs')) {
+      if (!floorAbove(room.floor) && !floorBelow(room.floor)) continue;
+      const plan = stairPlan(room);
+      if (plan.spiral) {
+        if (Math.min(room.w, room.h) < MIN_SPIRAL_DIAMETER) {
+          out.push({ level: 'warning', text: `${room.name} is ${fmtLength(Math.min(room.w, room.h))} across. A spiral stair usually needs about ${fmtLength(MIN_SPIRAL_DIAMETER)}.` });
+        }
+        continue;
+      }
+      if (plan.minTread < MIN_TREAD - 0.01) {
+        out.push({ level: 'warning', text: `${room.name} treads come out about ${fmtInches(plan.minTread)} deep. Make the box longer, or use a turn or U shape.` });
+      }
+      if (plan.minWidth < MIN_STAIR_WIDTH - 0.01) {
+        out.push({ level: 'warning', text: `${room.name} is about ${fmtLength(plan.minWidth)} wide. Check the passage width.` });
       }
     }
     return out;
@@ -1128,7 +1383,7 @@
     const e = state.exteriorWall;
     const W = state.width;
     const H = state.depth;
-    const items = state.items.filter(it => it.floor === state.floor);
+    const items = state.items.filter(it => it.floor === state.floor && !it.marker);
 
     const walls = model.rects.map(r => ({ ...r, kind: 'an interior wall' }));
     if (e > 0) {
@@ -1201,7 +1456,7 @@
 
     // Footprint, size, and overlap
     for (const r of rooms) {
-      if (r.x < 0 || r.y < 0 || r.x + r.w > state.width + 0.01 || r.y + r.h > state.depth + 0.01) {
+      if (!isOutdoor(r) && !insideFootprint(r)) {
         out.push({ level: 'error', text: `${r.name} extends beyond the ${fmtSize(state.width, state.depth)} footprint.` });
       }
       if (r.w < 3 || r.h < 3) {
@@ -1294,6 +1549,8 @@
 
     // Windows and entrances
     out.push(...windowChecks());
+    out.push(...heightChecks());
+    out.push(...stairChecks(rooms));
     if (!FLOORS.some(floor => entranceDoors(floor).length)) {
       out.push({ level: 'warning', text: 'No entrance yet. Add a doorway on an outside wall.' });
     }
@@ -1374,9 +1631,87 @@
     return el;
   }
 
+  /** An arrow along a path (plan points), with UP or DN at the end where the climb starts. */
+  function drawStairArrow(points, goesUp, parent) {
+    element('path', { d: `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`, class: 'stair-arrow' }, parent);
+    const last = points.length - 1;
+    const tip = points[goesUp ? last : 0];
+    const before = points[goesUp ? last - 1 : 1];
+    const length = Math.hypot(tip.x - before.x, tip.y - before.y) || 1;
+    const dx = (tip.x - before.x) / length;
+    const dy = (tip.y - before.y) / length;
+    const size = 0.5;
+    const base = { x: tip.x - dx * size, y: tip.y - dy * size };
+    const side = size * 0.45;
+    element('path', {
+      d: `M ${tip.x} ${tip.y} L ${base.x - dy * side} ${base.y + dx * side} L ${base.x + dy * side} ${base.y - dx * side} Z`,
+      class: 'stair-arrow-head',
+    }, parent);
+
+    // The label sits at the tail, a little way along the path.
+    const tail = points[goesUp ? 0 : last];
+    const next = points[goesUp ? 1 : last - 1];
+    const run = Math.hypot(next.x - tail.x, next.y - tail.y) || 1;
+    const text = label(tail.x + (next.x - tail.x) / run * 0.75, tail.y + (next.y - tail.y) / run * 0.75 + 0.25, goesUp ? 'UP' : 'DN', 'stair-text', parent);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-size', '0.7px');
+  }
+
+  /** A spiral stair: a circle with a tread line every so often and an arrow winding around it. */
+  function drawSpiral(room, plan, goesUp, parent) {
+    const cx = room.x + room.w / 2;
+    const cy = room.y + room.h / 2;
+    const radius = Math.max(0.5, Math.min(room.w, room.h) / 2 - 0.1);
+    const hub = Math.min(0.35, radius / 4);
+    element('circle', { cx, cy, r: radius, class: 'stair-line' }, parent);
+    element('circle', { cx, cy, r: hub, class: 'stair-line' }, parent);
+
+    // The first tread sits behind the climb direction. Turn right winds clockwise going up.
+    const startAngle = { north: Math.PI / 2, east: Math.PI, south: -Math.PI / 2, west: 0 }[plan.stair.climb];
+    const sign = plan.stair.turn === 'right' ? 1 : -1;
+    const spot = (angle, r) => ({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+    for (let i = 1; i <= plan.treads; i++) {
+      const angle = startAngle + sign * 2 * Math.PI * i / (plan.treads + 1);
+      const from = spot(angle, hub);
+      const to = spot(angle, radius);
+      element('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'stair-line' }, parent);
+    }
+    const arc = [];
+    for (let step = 0; step <= 18; step++) arc.push(spot(startAngle + sign * 2 * Math.PI * 0.85 * step / 18, radius * 0.62));
+    drawStairArrow(arc, goesUp, parent);
+  }
+
+  /** Tread lines, landings, and the climb arrow for a stair room. */
+  function drawStairs(room, group) {
+    const plan = stairPlan(room);
+    const art = element('g', { class: 'stair-art' }, group);
+    const goesUp = !!floorAbove(room.floor);
+    if (plan.spiral) {
+      drawSpiral(room, plan, goesUp, art);
+      return;
+    }
+
+    const at = spot => stairPoint(room, plan.stair.climb, spot);
+    const outline = (along, across) => {
+      const corners = [[along[0], across[0]], [along[1], across[0]], [along[1], across[1]], [along[0], across[1]]].map(at);
+      return `M ${corners.map(p => `${p.x} ${p.y}`).join(' L ')} Z`;
+    };
+    for (const flight of plan.flights) {
+      element('path', { d: outline(flight.along, flight.across), class: 'stair-line' }, art);
+      for (const [a, b] of flight.lines) {
+        const from = at(a);
+        const to = at(b);
+        element('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'stair-line' }, art);
+      }
+    }
+    for (const landing of plan.landings) element('path', { d: outline(landing.along, landing.across), class: 'stair-line' }, art);
+    drawStairArrow(plan.path.map(at), goesUp, art);
+  }
+
   function drawRoom(r) {
     const group = element('g', {
       'data-room': r.id,
+      ...(r.kind === 'stairs' ? { class: 'stairs-room' } : {}),
       'data-focus-key': `plan-room:${r.id}`,
       role: 'button',
       tabindex: '0',
@@ -1392,6 +1727,7 @@
       class: `room room-${ROOM_KINDS.includes(r.kind) ? r.kind : 'utility'} ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
     }, group);
 
+    if (r.kind === 'stairs') drawStairs(r, group);
     drawRoomLabel(r, group);
     element('title', {}, group).textContent = `${r.name}: ${spokenSize(r.w, r.h)}, ${spokenArea(r.w * r.h)}`;
   }
@@ -1532,16 +1868,34 @@
     element('title', {}, group).textContent = `Window: ${fmtLength(w.width)} on the ${SIDE_NAME[w.side]} wall, ${fmtLength(w.offset)} from the corner`;
   }
 
+  /**
+   * How far outdoor spaces on this floor stick out past a wall, where they
+   * overlap the house's length. The labels and dimension lines on that side
+   * move out by this much so they stay clear of a porch or deck.
+   */
+  function outsideReach(side) {
+    const W = state.width;
+    const H = state.depth;
+    let reach = 0;
+    for (const r of state.rooms.filter(room => isOutdoor(room) && room.floor === state.floor)) {
+      const touchesSpan = isHorizontalSide(side) ? r.x < W && r.x + r.w > 0 : r.y < H && r.y + r.h > 0;
+      const past = { north: -r.y, south: r.y + r.h - H, west: -r.x, east: r.x + r.w - W }[side];
+      if (touchesSpan) reach = Math.max(reach, past);
+    }
+    return Math.max(0, reach);
+  }
+
   function drawFrontSide() {
     const side = state.frontSide;
     const W = state.width;
     const H = state.depth;
     if (!side || side === 'none') return;
+    const reach = outsideReach(side);
     const [x, y, rotation] = {
-      north: [W / 2, -2.2, 0],
-      south: [W / 2, H + 2.85, 0],
-      west: [-2.7, H / 2, -90],
-      east: [W + 2.35, H / 2, 90],
+      north: [W / 2, -2.2 - reach, 0],
+      south: [W / 2, H + 2.85 + reach, 0],
+      west: [-2.7 - reach, H / 2, -90],
+      east: [W + 2.35 + reach, H / 2, 90],
     }[side];
     const text = label(x, y, 'FRONT OF HOUSE', 'front-label');
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
@@ -1553,10 +1907,11 @@
     const W = state.width;
     const H = state.depth;
     const mid = g.horizontal ? (g.start.x + g.end.x) / 2 : (g.start.y + g.end.y) / 2;
-    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1, 0]
-      : g.side === 'south' ? [mid, H + 0.85, 0]
-      : g.side === 'west' ? [-0.8, mid, -90]
-      : [W + 0.95, mid, 90];
+    const reach = outsideReach(g.side);
+    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1 - reach, 0]
+      : g.side === 'south' ? [mid, H + 0.85 + reach, 0]
+      : g.side === 'west' ? [-0.8 - reach, mid, -90]
+      : [W + 0.95 + reach, mid, 90];
     // The bar fills the wall from face to face, so a window in the same spot
     // is visibly in conflict. With no exterior wall, use a thin bar on the edge.
     const t = state.exteriorWall > 0 ? state.exteriorWall : 0.3;
@@ -1730,19 +2085,36 @@
     dims.setAttribute('font-size', `${dimSize}px`);
   }
 
+  /** The symbol inside a utility marker's box, drawn in a 1 x 1 space around its center. */
+  function drawMarkerSymbol(marker, cx, cy, size, parent) {
+    const art = element('g', { transform: `translate(${cx} ${cy}) scale(${size})`, class: `marker-symbol marker-${marker}`, 'pointer-events': 'none' }, parent);
+    if (marker === 'electrical') {
+      element('path', { d: 'M 0.08 -0.42 L -0.26 0.06 L -0.04 0.06 L -0.12 0.42 L 0.26 -0.1 L 0.04 -0.1 Z' }, art);
+    } else if (marker === 'plumbing') {
+      element('path', { d: 'M 0 -0.42 C 0.1 -0.22 0.3 -0.02 0.3 0.16 A 0.3 0.3 0 0 1 -0.3 0.16 C -0.3 -0.02 -0.1 -0.22 0 -0.42 Z' }, art);
+    } else {
+      // A fan: four blades around a hub.
+      for (let turn = 0; turn < 4; turn++) {
+        element('ellipse', { cx: 0, cy: -0.24, rx: 0.11, ry: 0.22, transform: `rotate(${turn * 90} 0 0) rotate(20 0 -0.24)` }, art);
+      }
+      element('circle', { cx: 0, cy: 0, r: 0.08, class: 'marker-hub' }, art);
+    }
+  }
+
   function drawItems(model) {
     const { bad } = itemChecks(model);
     for (const it of state.items.filter(item => item.floor === state.floor)) {
       const group = element('g', {
         'data-item': it.id,
         'data-focus-key': `plan-item:${it.id}`,
-        class: `item ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
+        class: `item ${it.marker ? `marker-item marker-item-${it.marker}` : ''} ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
         role: 'button',
         tabindex: '0',
         'aria-label': `${it.name}, ${spokenSize(it.w, it.h)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
-      drawItemLabel(it, group);
+      if (it.marker && it.marker !== 'note') drawMarkerSymbol(it.marker, it.x + it.w / 2, it.y + it.h / 2, Math.min(it.w, it.h) * 0.85, group);
+      else drawItemLabel(it, group);
       element('title', {}, group).textContent = `${it.name}: ${fmtSize(it.w, it.h)}`;
     }
   }
@@ -1766,15 +2138,32 @@
   // FRONT OF HOUSE, which ends about 3.1 ft out. The margin leaves room past that
   // on every side, so nothing is cut off at the edge.
   const PLAN_MARGIN = 3.5;
-  const planSize = () => ({ w: state.width + 2 * PLAN_MARGIN, h: state.depth + 2 * PLAN_MARGIN });
+  /**
+   * The area the plan shows: the footprint plus its margin, widened to take in
+   * outdoor spaces on any floor (with the same margin, for their own labels), so the
+   * view does not jump between floors.
+   */
+  function planBounds() {
+    let left = -PLAN_MARGIN;
+    let top = -PLAN_MARGIN;
+    let right = state.width + PLAN_MARGIN;
+    let bottom = state.depth + PLAN_MARGIN;
+    for (const r of state.rooms.filter(isOutdoor)) {
+      left = Math.min(left, r.x - PLAN_MARGIN);
+      top = Math.min(top, r.y - PLAN_MARGIN);
+      right = Math.max(right, r.x + r.w + PLAN_MARGIN);
+      bottom = Math.max(bottom, r.y + r.h + PLAN_MARGIN);
+    }
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
 
   /** Draws the current floor. The SVG uses feet as its units. */
   function renderPlan(model) {
     const W = state.width;
     const H = state.depth;
-    const size = planSize();
+    const size = planBounds();
     svg.replaceChildren();
-    svg.setAttribute('viewBox', `${-PLAN_MARGIN} ${-PLAN_MARGIN} ${size.w} ${size.h}`);
+    svg.setAttribute('viewBox', `${size.x} ${size.y} ${size.w} ${size.h}`);
     // Fit the plan inside the scroll box (a size container), then apply zoom.
     const ratio = (size.w / size.h).toFixed(5);
     svg.setAttribute('style', `width:calc(min(100cqw, 100cqh * ${ratio}) * ${state.zoom / 100});min-width:0;max-height:none;height:auto;aspect-ratio:${size.w}/${size.h};margin:0 auto`);
@@ -1801,14 +2190,15 @@
     // Overall dimensions
     // The lines sit past the ENTRANCE labels (which end about 1.1' from the
     // wall) so the two never touch.
-    const lineGap = 1.45;
-    const textGap = 2.3;
-    element('line', { x1: 0, y1: H + lineGap, x2: W, y2: H + lineGap, class: 'dimension' });
-    label(W / 2, H + textGap, fmtLength(W), 'dimension-text');
-    element('line', { x1: -lineGap, y1: 0, x2: -lineGap, y2: H, class: 'dimension' });
+    // An outdoor space on the bottom or left pushes its line out past itself.
+    const bottomGap = 1.45 + outsideReach('south');
+    const leftGap = 1.45 + outsideReach('west');
+    element('line', { x1: 0, y1: H + bottomGap, x2: W, y2: H + bottomGap, class: 'dimension' });
+    label(W / 2, H + bottomGap + 0.85, fmtLength(W), 'dimension-text');
+    element('line', { x1: -leftGap, y1: 0, x2: -leftGap, y2: H, class: 'dimension' });
     // Rotated text grows leftward from its baseline, so its baseline sits
     // nearer the plan than the bottom label's does.
-    const depthTextX = -(textGap - 0.55);
+    const depthTextX = -(leftGap + 0.85 - 0.55);
     const depthLabel = label(depthTextX, H / 2, fmtLength(H), 'dimension-text');
     depthLabel.setAttribute('transform', `rotate(-90 ${depthTextX} ${H / 2})`);
   }
@@ -1911,6 +2301,8 @@
         .map(r => ({ value: r.id, text: `${r.name} · ${fmtSize(r.w, r.h)}` })),
     }));
     fillInfo($('roomInfo'), state.rooms.length, 'space', 'spaces', countByFloor(state.rooms, r => r.floor));
+    const outdoorArea = state.rooms.filter(isOutdoor).reduce((sum, r) => sum + r.w * r.h, 0);
+    if (outdoorArea > 0) $('roomInfo').append(document.createElement('br'), `Outdoor: ${fmtArea(outdoorArea)}, not in the house areas.`);
     fillSelect($('roomSelect'), groups.filter(g => g.options.length), state.selectedRoom, state.selectedRoom ? '' : 'No space selected');
     $('roomSelect').disabled = !state.rooms.length;
   }
@@ -1962,10 +2354,36 @@
       box.closest('label').classList.toggle('exterior', !wallOn);
     }
 
+    renderStairControls(room);
     $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
-    $('selectedClear').textContent = room
+    $('selectedClear').textContent = room && isOutdoor(room)
+      ? `Outdoor space, ${fmtArea(room.w * room.h, false)}. It has no walls and is not counted in the house areas.`
+      : room
       ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
       : 'Add a space to edit it.';
+  }
+
+  /** The stair section of the room editor. Only stairs show it. */
+  function renderStairControls(room) {
+    const isStairs = room?.kind === 'stairs';
+    $('stairControls').hidden = !isStairs;
+    if (!isStairs) return;
+
+    const stair = stairOf(room);
+    $('stairType').value = stair.type;
+    $('stairClimb').value = stair.climb;
+    $('stairTurn').value = stair.turn;
+    $('stairLanding').value = thicknessField(stair.landing);
+    $('stairTurnLabel').hidden = stair.type !== 'u' && stair.type !== 'spiral';
+    $('stairLandingLabel').hidden = stair.type === 'spiral';
+
+    const plan = stairPlan(room);
+    const connected = floorAbove(room.floor) || floorBelow(room.floor);
+    let info = `${plan.risers} risers of about ${fmtInches(plan.rise / plan.risers)} to climb ${fmtLength(plan.rise)}.`;
+    if (!connected) info = 'Add a basement or second floor to size the risers and treads.';
+    else if (plan.spiral) info += ` The spiral is ${fmtLength(Math.min(room.w, room.h))} across.`;
+    else info += ` ${plan.treads} treads, about ${fmtInches(plan.minTread)} deep.`;
+    $('stairInfo').textContent = info;
   }
 
   /** Interior Doorways panel. */
@@ -1999,6 +2417,7 @@
       $('doorHinge').value = selected.hinge;
       $('doorOffset').value = lengthField(selected.offset);
       $('doorWidth').value = lengthField(selected.width);
+      $('doorHead').value = thicknessField(doorHead(selected));
       $('doorSwing').value = selected.bifold ? `bifold-${selected.swing}` : selected.swing;
       // A plain opening has no hinge, so the control would do nothing.
       // A four-panel bifold has a pair at each jamb, so there is no single hinge side.
@@ -2037,6 +2456,8 @@
       $('windowSide').value = selected.side;
       $('windowOffset').value = lengthField(selected.offset);
       $('windowWidth').value = lengthField(selected.width);
+      $('windowSill').value = thicknessField(windowSill(selected));
+      $('windowHead').value = thicknessField(windowHead(selected));
     }
   }
 
@@ -2083,6 +2504,16 @@
     const emptyText = itemsOnFloor ? 'No items overlap walls or each other.' : 'Add an item to check it against walls and other items.';
     fillChecks($('itemIssues'), out.length ? out : [{ level: 'good', text: emptyText }]);
     $('showItems').checked = state.showItems !== false;
+  }
+
+  /** Wall height for the open floor, the floor thickness, and the floor to floor result. */
+  function renderHeights() {
+    $('wallHeight').value = thicknessField(wallHeight(state.floor));
+    $('floorThickness').value = thicknessField(state.floorThickness);
+    const above = floorAbove(state.floor);
+    $('heightHelp').textContent = above
+      ? `${floorName(state.floor)} walls. Floor to floor, up to the ${floorName(above)}: ${fmtLength(floorToFloor(state.floor))}.`
+      : `${floorName(state.floor)} walls. This is the top floor.`;
   }
 
   function renderMetrics(model) {
@@ -2160,6 +2591,7 @@
     $('houseDepth').value = lengthField(state.depth);
     $('exteriorWall').value = thicknessField(state.exteriorWall);
     $('interiorWall').value = thicknessField(state.interiorWall);
+    renderHeights();
     $('zoomLabel').textContent = `${state.zoom}%`;
     $('zoomOut').disabled = state.zoom <= ZOOM_MIN;
     $('zoomIn').disabled = state.zoom >= ZOOM_MAX;
@@ -2276,7 +2708,8 @@
 
   /** Adds a floor with a staircase that lines up with the main floor stairs. */
   function addStairsFloor(floor, stairsId) {
-    state.rooms.push({ id: stairsId, name: 'Stairs', floor, kind: 'circulation', ...stairsBoxFromMain() });
+    const box = stairsBoxFromMain();
+    state.rooms.push({ id: stairsId, name: 'Stairs', floor, kind: 'stairs', ...box, stair: stairOf(findRoom('stairs-main') || box) });
     state.floor = floor;
     state.selectedRoom = stairsId;
   }
@@ -2347,6 +2780,15 @@
       if (ft !== null) state[key] = ft;
     });
   }
+  // Heights follow the same units as thickness. The wall height belongs to the open floor.
+  onNumberChange('wallHeight', (_, raw) => {
+    const ft = readField('wallHeight', raw);
+    if (ft !== null) state.wallHeights[state.floor] = ft;
+  });
+  onNumberChange('floorThickness', (_, raw) => {
+    const ft = readField('floorThickness', raw);
+    if (ft !== null) state.floorThickness = ft;
+  });
   $('frontSide').addEventListener('change', e => {
     state.frontSide = e.target.value;
     render();
@@ -2371,7 +2813,8 @@
     const floor = state.floor;
     const w = source?.w ?? 10;
     const h = source?.h ?? 10;
-    const pos = freePosition(floor, w, h);
+    // A copy of an outdoor space goes beside it, since the free spots are all inside the house.
+    const pos = source && isOutdoor(source) ? { x: snap(source.x + source.w + 1), y: source.y } : freePosition(floor, w, h);
     const room = {
       id: newId('space'),
       name: source ? `${source.name} Copy` : `New Room ${state.rooms.filter(r => r.floor === floor).length + 1}`,
@@ -2385,12 +2828,24 @@
       ...(source && Number.isFinite(source.wallT) ? { wallT: source.wallT } : {}),
       ...(source?.walls ? { walls: { ...source.walls } } : {}),
       ...(source?.halfWalls ? { halfWalls: { ...source.halfWalls } } : {}),
+      ...(source?.stair ? { stair: { ...source.stair } } : {}),
     };
     state.rooms.push(room);
     state.selectedRoom = room.id;
     render();
     $('roomName').focus();
     $('roomName').select();
+  }
+
+  /** Puts an outdoor space just outside the front wall (the bottom if no front is set), centered on it. */
+  function moveOutsideFront(room) {
+    const side = SIDES.includes(state.frontSide) ? state.frontSide : 'south';
+    if (isHorizontalSide(side)) room.x = snap((state.width - room.w) / 2);
+    else room.y = snap((state.depth - room.h) / 2);
+    if (side === 'north') room.y = -room.h;
+    else if (side === 'south') room.y = state.depth;
+    else if (side === 'west') room.x = -room.w;
+    else room.x = state.width;
   }
 
   // Suggested sizes: applied to the selected record. Windows, doorways, and
@@ -2401,6 +2856,9 @@
     if (room && preset) {
       const [name, kind, w, h] = preset;
       Object.assign(room, { name, kind, w, h });
+      if (kind === 'stairs') room.stair = stairOf(room);
+      else delete room.stair;
+      if (kind === 'outdoor' && insideFootprint(room)) moveOutsideFront(room);
     }
     render();
   });
@@ -2430,10 +2888,12 @@
     const preset = ITEM_PRESETS[e.target.value];
     const item = findItem(state.selectedItem);
     if (item && preset && e.target.value !== 'custom') {
-      const [name, w, h] = preset;
+      const [name, w, h, , marker] = preset;
       const centerX = item.x + item.w / 2;
       const centerY = item.y + item.h / 2;
       Object.assign(item, { name, w, h, x: snap(centerX - w / 2), y: snap(centerY - h / 2) });
+      if (marker) item.marker = marker;
+      else delete item.marker;
     }
     render();
   });
@@ -2531,7 +2991,36 @@
     const name = value.trim().slice(0, 48);
     if (name) room.name = name;
   });
-  onRoomChange('roomKind', (room, value) => { room.kind = value; });
+  onRoomChange('roomKind', (room, value) => {
+    room.kind = value;
+    if (value === 'stairs') room.stair = stairOf(room);
+    else delete room.stair;
+  });
+
+  // Stair settings. Each edit starts from the room's complete settings.
+  const onStairChange = (id, edit) => onRoomChange(id, (room, value) => {
+    const stair = stairOf(room);
+    edit(stair, value);
+    room.stair = stair;
+  });
+  onStairChange('stairType', (stair, value) => {
+    if (!STAIR_TYPES.includes(value)) return;
+    stair.type = value;
+    if (value === 'straight' || value === 'spiral') stair.landing = 0;
+    else if (stair.landing < 1) stair.landing = DEFAULT_LANDING;
+  });
+  onStairChange('stairClimb', (stair, value) => {
+    if (SIDES.includes(value)) stair.climb = value;
+  });
+  onStairChange('stairTurn', (stair, value) => {
+    if (value === 'left' || value === 'right') stair.turn = value;
+  });
+  // A landing is at least 12″ on stairs that turn. A straight stair uses 0 for none.
+  onStairChange('stairLanding', (stair, value) => {
+    const ft = readField('stairLanding', value);
+    if (ft === null || stair.type === 'spiral') return;
+    stair.landing = stair.type === 'straight' ? ft : Math.max(ft, 1);
+  });
   onRoomChange('roomWalls', (room, value) => { room.wallMode = value; });
   onRoomChange('roomFloor', (room, value) => {
     if (floorOrder().includes(value)) {
@@ -2595,6 +3084,7 @@
       width,
       hinge: 'start',
       swing: 'in',
+      head: DEFAULT_DOOR_HEAD,
     };
     state.doors.push(door);
     state.selectedDoor = door.id;
@@ -2618,6 +3108,10 @@
   for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
     onLengthChange(onDoorChange, id, key);
   }
+  onDoorChange('doorHead', (door, value) => {
+    const ft = readField('doorHead', value);
+    if (ft !== null) door.head = ft;
+  });
   $('removeDoor').addEventListener('click', () => {
     if (!state.selectedDoor) return;
     state.doors = state.doors.filter(d => d.id !== state.selectedDoor);
@@ -2647,7 +3141,15 @@
         offset = a + (b - a - width) / 2;
       }
     }
-    const win = { id: newId('window'), floor: state.floor, side, offset: snap(offset), width };
+    const win = {
+      id: newId('window'),
+      floor: state.floor,
+      side,
+      offset: snap(offset),
+      width,
+      sill: DEFAULT_WINDOW_SILL,
+      head: DEFAULT_WINDOW_HEAD,
+    };
     state.windows.push(win);
     state.selectedWindow = win.id;
     render();
@@ -2672,6 +3174,15 @@
   for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
     onLengthChange(onWindowChange, id, key);
   }
+  // The sill must stay below the head, so a value that crosses it is ignored.
+  onWindowChange('windowSill', (win, value) => {
+    const ft = readField('windowSill', value);
+    if (ft !== null && ft < windowHead(win)) win.sill = ft;
+  });
+  onWindowChange('windowHead', (win, value) => {
+    const ft = readField('windowHead', value);
+    if (ft !== null && ft > windowSill(win)) win.head = ft;
+  });
   $('removeWindow').addEventListener('click', () => {
     if (!state.selectedWindow) return;
     state.windows = state.windows.filter(w => w.id !== state.selectedWindow);
@@ -2706,7 +3217,7 @@
   $('itemName').addEventListener('change', e => {
     const item = findItem(state.selectedItem);
     if (item) {
-      const name = e.target.value.trim().slice(0, 40);
+      const name = e.target.value.trim().slice(0, 120);
       if (name) item.name = name;
     }
     render();
@@ -3161,7 +3672,7 @@
     state.selectedWindow = null;
 
     const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    const ratio = `${planSize().w}/${planSize().h}`;
+    const ratio = `${planBounds().w}/${planBounds().h}`;
     for (const floor of floorOrder()) {
       state.floor = floor;
       const model = wallModel(floor);
@@ -3179,7 +3690,7 @@
       const title = document.createElement('h1');
       title.textContent = floorName(floor);
       const meta = document.createElement('p');
-      meta.textContent = `SIP House Planner · ${fmtSize(state.width, state.depth)} footprint · approx. ${fmtArea(Math.max(0, model.shellArea - model.partitionArea))} after walls · ${date}`;
+      meta.textContent = `SIP House Planner · ${fmtSize(state.width, state.depth)} footprint · approx. ${fmtArea(Math.max(0, model.shellArea - model.partitionArea))} after walls · ${fmtLength(wallHeight(floor))} walls · ${date}`;
       head.append(title, meta);
 
       const plan = document.createElement('div');
@@ -3192,7 +3703,7 @@
         const li = document.createElement('li');
         const name = document.createElement('strong');
         name.textContent = r.name;
-        li.append(name, ` ${fmtSize(r.w, r.h)}`);
+        li.append(name, ` ${fmtSize(r.w, r.h)}${isOutdoor(r) ? ' (outdoor)' : ''}`);
         list.append(li);
       }
 

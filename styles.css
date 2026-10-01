@@ -116,6 +116,8 @@
   --room-wet: #cfe3f7;
   --room-utility: #d5eccb;
   --room-circulation: #f8d3d3;
+  --room-stairs: #e4dccb;
+  --room-outdoor: #e4e8e6;
 }
 
 /* Dark theme. Only on screen, so printing and PDF export always stay light. */
@@ -206,6 +208,8 @@
     --room-wet: #c2d5e4;
     --room-utility: #c6dbc6;
     --room-circulation: #dec9cb;
+    --room-stairs: #d2cbbb;
+    --room-outdoor: #cfd6d3;
   }
 }
 
@@ -864,6 +868,17 @@ svg .room-private { fill: var(--room-private); }
 svg .room-entry { fill: var(--room-entry); }
 svg .room-wet { fill: var(--room-wet); }
 svg .room-circulation { fill: var(--room-circulation); }
+svg .room-stairs { fill: var(--room-stairs); }
+/* Dashed so an outdoor space reads as different without relying on color alone. */
+svg .room-outdoor { fill: var(--room-outdoor); stroke-dasharray: .5 .3; }
+/* Stair art sits under the room label, which gets a halo in the room color so it stays readable over the tread lines. */
+svg .stair-line { fill: none; stroke: var(--partition-wall); stroke-width: .07; pointer-events: none; }
+svg .stair-arrow { fill: none; stroke: var(--wall); stroke-width: .12; stroke-linejoin: round; pointer-events: none; }
+svg .stair-arrow-head { fill: var(--wall); pointer-events: none; }
+svg .stair-text { fill: var(--wall); font-weight: 750; pointer-events: none; }
+svg .stairs-room .room-label,
+svg .stairs-room .room-dim,
+svg .stairs-room .stair-text { paint-order: stroke; stroke: var(--room-stairs); stroke-width: .3; stroke-linejoin: round; }
 svg .room:hover { filter: brightness(.97); }
 svg .room.selected { stroke: var(--selected); stroke-width: .32; }
 svg .room.path-room { stroke: #4b9d9b; stroke-dasharray: .35 .25; }
@@ -922,6 +937,13 @@ svg .item.conflict rect {
   stroke-dasharray: .3 .18;
 }
 svg .item.selected.conflict rect { stroke-width: .22; }
+/* Utility markers and notes. The symbol colors reuse existing tokens. */
+svg .marker-item rect { fill: #fffdf8; }
+svg .marker-item-note rect { stroke-dasharray: .35 .2; fill-opacity: .75; }
+svg .marker-symbol { fill: var(--wall); }
+svg .marker-electrical { fill: var(--orange); }
+svg .marker-plumbing { fill: var(--focus); }
+svg .marker-symbol .marker-hub { fill: #fffdf8; }
 svg .item-label {
   fill: #6b4f28;
   font-weight: 700;
@@ -966,6 +988,12 @@ svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-
 @media (max-width: 800px), (pointer: coarse) {
   .mobile-notice:not([hidden]) { display: flex; }
 }
+
+/* Space under the stair info line before the next row of fields */
+.stair-controls { margin-bottom: 10px; }
+
+/* A second row of fields under the wall thickness help text */
+.height-fields { margin-top: 10px; align-items: end; }
 
 /* Tap mode (touch screens with Drag to Move off) */
 svg.tap-only .room,
@@ -1069,7 +1097,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 236px auto;
+    grid-template-rows: 266px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -1113,8 +1141,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .intro .metric-note { display: none; }
 
   .dimensions-panel { grid-column: 13 / 16; }
-  .walls-panel { grid-column: 16 / 19; }
-  .findings { grid-column: 19 / 25; }
+  .walls-panel { grid-column: 16 / 20; }
+  .findings { grid-column: 20 / 25; }
   .dimensions-panel,
   .walls-panel,
   .findings {
@@ -1132,6 +1160,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .walls-panel .panel-title > span { display: none; }
   .dimensions-panel .field-help,
   .walls-panel .field-help { margin-top: 8px; }
+  /* The row is short, so the thickness explanation gives way to the heights. */
+  .walls-panel .thickness-help { display: none; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 

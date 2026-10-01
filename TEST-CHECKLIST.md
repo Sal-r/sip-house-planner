@@ -30,6 +30,49 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Exterior walls are dark teal and interior partition walls are gray, on screen and in the Print / PDF sheet. Half walls stay dashed.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 
+## Heights
+- [ ] The Walls panel shows Wall Height and Floor Thickness in inches (centimeters in metric). A new layout shows 96 and 12 inches.
+- [ ] Wall Height edits the open floor only. Switching to the Second Floor or Basement tab shows that floor's own height, and the help line names the floor.
+- [ ] With a second floor on, the Main Floor help line shows the floor to floor height (wall height plus floor thickness) up to the Second Floor. The Basement help line shows its height up to the Main Floor.
+- [ ] A new window shows Sill Height 36 and Head Height 80 inches. A new doorway shows Head Height 80 inches.
+- [ ] A window sill at or above its head, or a head at or below its sill, is ignored and the field goes back to the saved value.
+- [ ] A window or doorway head taller than the floor's wall height shows a Layout Checks warning, and the warning clears when the height is fixed.
+- [ ] Heights survive a reload, Export Layout and Import Layout, and Undo. Switching ft and m keeps the same heights.
+- [ ] A layout exported before heights existed (or a template) still loads with 8′ walls, 3′ sills, and 80 inch heads.
+- [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
+
+## Utility markers and notes
+- [ ] The item Suggested sizes menu has headings Notes (Note) and Utility Markers (Electrical, HVAC, Plumbing), still in A to Z order.
+- [ ] Electrical draws a lightning bolt, Plumbing a water drop, and HVAC a four-blade fan, each centered in a small box. The colors read in both themes.
+- [ ] A marker or note placed on a wall, on top of furniture, or in a doorway shows no Item Checks warning. A marker outside the footprint shows no warning either. Furniture still gets its checks.
+- [ ] A Note shows its name as dashed-box text that wraps and shrinks to fit. Renaming it to a long sentence (up to 120 characters) works, and enlarging the box makes the text bigger.
+- [ ] A note on the Main Floor does not appear on the Basement or Second Floor, and each floor's print page shows only its own notes and markers.
+- [ ] Hiding Show Items hides markers and notes too.
+- [ ] Switching a marker to a furniture preset turns it back into a normal item, and Undo restores the marker. Markers and notes survive a reload, Export Layout, and Import Layout.
+
+## Outdoor spaces
+- [ ] The room Type menu has Outdoor Space. The Suggested sizes menu lists Deck, Full Bath, Garage - 1 Car, Garage - 2 Car, Half Bath, Porch, Shed in A to Z order.
+- [ ] Add Room, then pick Porch (or any outdoor size). The space moves to just outside the front wall, centered (the bottom wall if the front is Not Set), and the plan grows so nothing is cut off. Picking one on a space already outside only resizes it.
+- [ ] An outdoor space has no Partitions walls controls to edit, Add Doorway stays off for it, and it is drawn with a dashed outline and a gray fill in both themes.
+- [ ] Dragging an outdoor space anywhere, and typing negative X or Y, works. The plan area follows it, and the view does not jump when you switch floor tabs.
+- [ ] A porch on the front wall pushes the ENTRANCE label, FRONT OF HOUSE, and the dimension line out past itself. A deck on the bottom or a garage on the left moves its dimension line out too. Nothing overlaps the outdoor space's own name.
+- [ ] No "extends beyond the footprint" error for an outdoor space, and that error still shows for a normal room placed outside. An outdoor space overlapping a bedroom still shows the overlap error.
+- [ ] The four house area figures do not change when outdoor spaces are added. The Rooms & Spaces box shows "Outdoor: N sq ft, not in the house areas." and the selected outdoor space says it is not counted in the house areas.
+- [ ] Duplicating an outdoor space puts the copy beside it. Rotating the house, Undo, a reload, Export Layout, and Import Layout all keep the outdoor spaces where they were. Metric shows the outdoor area in m².
+- [ ] Print / PDF includes the outdoor spaces in the plan and marks them "(outdoor)" in the room list.
+
+## Stairs
+- [ ] The room Type menu has Hallway and Stairs as separate choices. Choosing Stairs shows Stair Type, Goes Up Toward, Landing, and an info line. Other types hide them.
+- [ ] Each stair type draws on the plan: Straight (tread lines and arrow), Turn Left and Turn Right (a flight, a landing square, and a flight across), U Shape (two flights side by side with a landing across the end), Spiral (circle with radiating treads and a curved arrow).
+- [ ] Goes Up Toward turns the stairs to Top, Right, Bottom, or Left. Turns (Left or Right) mirrors a U Shape and reverses the winding of a Spiral. Turns only shows for U Shape and Spiral, and Landing is hidden for Spiral.
+- [ ] The arrow reads UP on a floor with a floor above it and DN on the top floor. The label and room name stay readable over the tread lines in both themes.
+- [ ] Landing: a straight stair with 0 has none and with a depth shows a landing partway up. Stairs that turn will not go below 12 in. Changing the type to Straight clears the landing, and changing to a turn type sets 36 in.
+- [ ] The info line gives the risers, the riser height, and the tread depth. Changing Wall Height or Floor Thickness changes the risers (the main floor stair follows the main floor height when there is a second floor, and the basement height when there is only a basement). Alone on one floor it says to add a basement or second floor.
+- [ ] A box too short for its treads shows a Layout Checks hint about tread depth. A stair under 3 ft wide or a spiral under 5 ft across also shows a hint.
+- [ ] Rotating the house keeps each stair going the same way relative to the house. Duplicate copies the stair settings. Undo restores them, and they survive a reload, Export Layout, and Import Layout.
+- [ ] Adding a second floor or basement creates stairs that copy the main stair type and direction. Align All Staircases still lines the boxes up (it does not check the type).
+- [ ] An older file where the stairs were hallways (or any file with a space named Stairs) opens as Straight stairs. All templates still open.
+
 ## Units
 - [ ] ft / m switches every label, field, list, check message, and the grid (25 cm squares in metric).
 - [ ] Switching back and forth doesn't move or resize anything.
