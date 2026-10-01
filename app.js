@@ -2736,6 +2736,30 @@
     }
     render();
   }
+  // --- Color theme ------------------------------------------------------------
+  // Dark is the default. index.html sets data-theme before the page paints, so
+  // this only keeps the buttons in step and saves a change. The choice is a
+  // browser preference, not part of the layout.
+
+  const THEME_KEY = 'sip-house-planner-theme';
+
+  function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    $('themeLight').setAttribute('aria-pressed', String(theme === 'light'));
+    $('themeDark').setAttribute('aria-pressed', String(theme === 'dark'));
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (_) {
+      // Storage unavailable: the choice lasts until the page is closed.
+    }
+  }
+
+  $('themeLight').addEventListener('click', () => setTheme('light'));
+  $('themeDark').addEventListener('click', () => setTheme('dark'));
+  const startingTheme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  $('themeLight').setAttribute('aria-pressed', String(startingTheme === 'light'));
+  $('themeDark').setAttribute('aria-pressed', String(startingTheme === 'dark'));
+
   $('unitsImperial').addEventListener('click', () => setUnits('imperial'));
   $('unitsMetric').addEventListener('click', () => setUnits('metric'));
 
