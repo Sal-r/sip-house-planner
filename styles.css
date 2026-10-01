@@ -107,6 +107,15 @@
   --plan-dim-text: #57767f;
   --plan-entrance-text: #ad6d2c;
   --plan-front-text: #88652e;
+  --plan-room-dim: #5b7a83;
+
+  /* Room fills by room type. */
+  --room-social: #fff1b3;
+  --room-private: #e3d5f2;
+  --room-entry: #ffd9b0;
+  --room-wet: #cfe3f7;
+  --room-utility: #d5eccb;
+  --room-circulation: #f8d3d3;
 }
 
 /* Dark theme. Only on screen, so printing and PDF export always stay light. */
@@ -186,6 +195,17 @@
     --plan-dim-text: #34474c;
     --plan-entrance-text: #5f3c18;
     --plan-front-text: #56401d;
+
+    /* Room fills blended 30% toward the sheet, so the brightest pastels (yellow
+       especially) no longer glare. The size text under each room name is darker
+       to keep at least 5:1 contrast on them. */
+    --plan-room-dim: #35505a;
+    --room-social: #e3deb5;
+    --room-private: #d0cbe1;
+    --room-entry: #e3ceb3;
+    --room-wet: #c2d5e4;
+    --room-utility: #c6dbc6;
+    --room-circulation: #dec9cb;
   }
 }
 
@@ -838,13 +858,18 @@ svg .partition-wall { stroke: var(--partition-wall); stroke-linecap: butt; }
 /* Lighter and dashed so a half wall reads as different without relying on color alone. */
 svg .half-wall { stroke-opacity: .55; stroke-dasharray: .8 .3; }
 
-svg .room { stroke-width: .13; cursor: grab; transition: filter .12s; }
+svg .room { fill: var(--room-utility); stroke-width: .13; cursor: grab; transition: filter .12s; }
+svg .room-social { fill: var(--room-social); }
+svg .room-private { fill: var(--room-private); }
+svg .room-entry { fill: var(--room-entry); }
+svg .room-wet { fill: var(--room-wet); }
+svg .room-circulation { fill: var(--room-circulation); }
 svg .room:hover { filter: brightness(.97); }
 svg .room.selected { stroke: var(--selected); stroke-width: .32; }
 svg .room.path-room { stroke: #4b9d9b; stroke-dasharray: .35 .25; }
 svg .room.path-room.selected { stroke: var(--selected); }
 svg .room-label { fill: #1d3c47; font-weight: 750; pointer-events: none; }
-svg .room-dim { fill: #5b7a83; pointer-events: none; }
+svg .room-dim { fill: var(--plan-room-dim); pointer-events: none; }
 
 svg .interior-door { cursor: grab; }
 svg .door-swing {

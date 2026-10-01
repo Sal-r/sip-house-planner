@@ -23,7 +23,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Plan tools:** zoom, rotate the whole house 90°, mark the front of the house, and resize the plan area.
 - **Save and share:** autosaves in your browser. Export and import layouts as JSON files.
 - **Print to PDF:** prints one letter-size landscape page per floor, with a room list.
-- **Dark and light themes:** dark is the default. A sun and moon switch next to My Workspace changes it (in the Menu on phones) and your choice is remembered in your browser. In dark mode the plan sits on a muted gray sheet instead of a bright white one. Walls, rooms, and items keep their colors, and Print / PDF is always light.
+- **Dark and light themes:** dark is the default. A sun and moon switch next to My Workspace changes it (in the Menu on phones) and your choice is remembered in your browser. In dark mode the plan sits on a muted gray sheet instead of a bright white one, and the room colors are softened to match. Walls and items keep their colors, and Print / PDF is always light with the original room colors.
 - **Works on phones:** the layout adapts to small screens, with a Drag to Move switch so swiping still scrolls the page.
 
 ## Screenshots

@@ -61,15 +61,9 @@
   const ZOOM_MAX = 250;
   const ZOOM_STEP = 25;
 
-  // Room fill colors by room type.
-  const ROOM_FILLS = {
-    social: '#fff1b3',
-    private: '#e3d5f2',
-    entry: '#ffd9b0',
-    wet: '#cfe3f7',
-    utility: '#d5eccb',
-    circulation: '#f8d3d3',
-  };
+  // Room types. Each one's fill color is a --room-* token in styles.css, so the
+  // dark theme can mute them. An unknown type from an imported file draws as utility.
+  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation'];
 
   // [name, width, depth] in feet for each entry in the Add Item dropdown.
   const ITEM_PRESETS = {
@@ -1349,9 +1343,8 @@
       width: r.w,
       height: r.h,
       rx: 0.15,
-      fill: ROOM_FILLS[r.kind] || ROOM_FILLS.utility,
       stroke: '#8aa7ac',
-      class: `room ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
+      class: `room room-${ROOM_KINDS.includes(r.kind) ? r.kind : 'utility'} ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
     }, group);
 
     drawRoomLabel(r, group);
