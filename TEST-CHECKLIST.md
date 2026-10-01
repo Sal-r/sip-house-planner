@@ -92,6 +92,9 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Center on Room centers the selected window on its room's wall, the button names the room, and it is disabled when no room touches that wall.
 
 ## Furniture and fixtures
+- [ ] The item Suggested sizes menu has headings in A to Z order (Bathroom, Bedroom, Dining, Kitchen, Laundry, Living, Mechanical, Office, Storage and Workshop), and the items under each heading are A to Z. The beds read Bed - Bunk, Bed - Full, Bed - King, Bed - Queen, Bed - Twin.
+- [ ] Picking a preset renames and resizes the selected item, and the menu then shows that preset. An item can be placed in any room whatever its heading.
+- [ ] Items in the templates (Bed - Queen, Stove / Range) show their matching size in the menu.
 - [ ] + Add Item places the chosen preset in the selected room.
 - [ ] Name, X, Y, Width, Depth, Rotate 90°, Duplicate, and Remove all work.
 - [ ] Long item names wrap onto more lines (Round Table shows as Round, then Table), tall narrow items read bottom to top, and a name is cut off with … only when nothing else fits.
@@ -145,6 +148,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Text in both themes is readable: panels, inputs, dropdowns, checks (warning and error), the confirmation dialog, and disabled controls.
 
 ## Phone
+- [ ] On a phone or a window narrower than 800px, a banner under the top bar says to use a desktop browser. Dismiss hides it, and it comes back in a new browser session. It does not show on a wide desktop window.
 - [ ] The top buttons collapse into a Menu button, and the menu opens and closes.
 - [ ] With Drag to Move off, swiping scrolls the page and tapping selects.
 - [ ] With Drag to Move on, dragging moves rooms and items.

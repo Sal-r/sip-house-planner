@@ -15,7 +15,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness, per-side wall toggles, and per-side half walls. Exterior walls are drawn dark teal and interior partition walls gray, so the two kinds are easy to tell apart on screen and in print.
 - **Doorways:** add interior doorways with hinge side and swing direction, as a bifold (folding) door, or as a cased opening with no door. Bifolds have two panels, or four once they are wider than 4′. Doorways on an outside wall are marked as entrances automatically.
 - **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
-- **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
+- **Furniture and fixtures:** 50 presets plus a custom box, on their own layer. The Suggested sizes menu is grouped under headings (Bathroom, Bedroom, Dining, Kitchen, Laundry, Living, Mechanical, Office, Storage and Workshop), A to Z, with the items A to Z under each heading. The headings only organize the menu, so any item can go in any room. Turn any item 90° with the Rotate 90° button or the R key.
 - **Multiple floors:** a main floor plus an optional basement and an optional second floor, with a one-click option to align the staircases.
 - **Templates:** load the default layout or one of four starter plans from the Templates menu. They are redrawn from Extreme Panel Technologies plans and credited under the plan (see Templates and credits below).
 - **Layout checks:** flags overlapping rooms, rooms outside the footprint, stairs that don't line up between floors, swinging doors too close to corners (cased openings can sit right at a corner), items hitting walls, items blocking a doorway or sitting in a door's swing, door swings that cross each other, and more.
@@ -24,7 +24,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Save and share:** autosaves in your browser. Export and import layouts as JSON files.
 - **Print to PDF:** prints one letter-size landscape page per floor, with a room list.
 - **Dark and light themes:** dark is the default. A sun and moon switch next to My Workspace changes it (in the Menu on phones) and your choice is remembered in your browser. In dark mode the plan sits on a muted gray sheet instead of a bright white one, and the room colors are softened to match. Walls and items keep their colors, and Print / PDF is always light with the original room colors.
-- **Works on phones:** the layout adapts to small screens, with a Drag to Move switch so swiping still scrolls the page.
+- **Best on desktop:** phones and other small touch screens show a dismissible banner saying so. Mobile is still under development because it was hard to match the desktop features with so many menus. The layout still adapts to small screens, with a Drag to Move switch so swiping scrolls the page.
 
 ## Screenshots
 

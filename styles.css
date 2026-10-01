@@ -948,6 +948,25 @@ svg [data-door]:focus-visible .door-leaf,
 svg [data-door]:focus-visible .door-opening,
 svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-width: .26; }
 
+/* Tell phone and touch screen visitors that desktop works best. It is hidden
+   until the screen is narrow or touch only, and Dismiss hides it for this visit. */
+.mobile-notice {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 3px solid var(--gold);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: .86rem;
+}
+.mobile-notice p { flex: 1; margin: 0; }
+.mobile-notice .quiet-button { border-color: var(--btn-border); color: var(--btn-text); }
+.mobile-notice[hidden] { display: none; }
+@media (max-width: 800px), (pointer: coarse) {
+  .mobile-notice:not([hidden]) { display: flex; }
+}
+
 /* Tap mode (touch screens with Drag to Move off) */
 svg.tap-only .room,
 svg.tap-only .item,
