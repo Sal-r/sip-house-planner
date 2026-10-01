@@ -97,6 +97,16 @@
   --error-bg: #fff0eb;
   --error-text: #9a4334;
   --error-border: #d57560;
+
+  /* The plan drawing area. Dark mode swaps these for a muted gray sheet. */
+  --plan-bg: #f9fbfa;
+  --plan-outline: #fff;
+  --plan-grid: #e4efed;
+  --plan-grid-major: #bed6d7;
+  --plan-dim-line: #78999e;
+  --plan-dim-text: #57767f;
+  --plan-entrance-text: #ad6d2c;
+  --plan-front-text: #88652e;
 }
 
 /* Dark theme. Only on screen, so printing and PDF export always stay light. */
@@ -163,6 +173,19 @@
     --error-bg: #321f1b;
     --error-text: #f2b4a7;
     --error-border: #c4604b;
+  }
+
+  /* The plan sheet: a muted gray-teal, less bright than the white sheet of light mode.
+     Labels around the plan are darker so they keep their contrast on it. */
+  :root[data-theme="dark"] .plan-scroll {
+    --plan-bg: #a3b3b9;
+    --plan-outline: #b4c2c7;
+    --plan-grid: #a6b5bb;
+    --plan-grid-major: #8d9fa6;
+    --plan-dim-line: #4c6064;
+    --plan-dim-text: #34474c;
+    --plan-entrance-text: #5f3c18;
+    --plan-front-text: #56401d;
   }
 }
 
@@ -579,7 +602,7 @@ input:disabled, select:disabled { background: var(--field-disabled-bg); color: v
   padding: 18px;
   overflow: auto;
   container-type: size;
-  background: #f9fbfa;
+  background: var(--plan-bg);
   color-scheme: light;
 }
 /* Size is set inline by app.js so the plan fits the scroll box at any zoom. */
@@ -806,9 +829,9 @@ footer {
 
 /* 11. SVG plan drawing (units are feet, so sizes here are small numbers) */
 svg text { font-family: var(--font-plan); user-select: none; }
-svg .grid-line { stroke: #e4efed; stroke-width: .055; }
-svg .grid-major { stroke: #bed6d7; stroke-width: .075; }
-svg .outline { fill: #fff; stroke: #294c56; stroke-width: .22; }
+svg .grid-line { stroke: var(--plan-grid); stroke-width: .055; }
+svg .grid-major { stroke: var(--plan-grid-major); stroke-width: .075; }
+svg .outline { fill: var(--plan-outline); stroke: #294c56; stroke-width: .22; }
 svg .exterior-wall { fill: var(--wall); }
 /* A lighter gray than the exterior wall so interior partitions read as a different kind of wall. */
 svg .partition-wall { stroke: var(--partition-wall); stroke-linecap: butt; }
@@ -846,10 +869,10 @@ svg .interior-door.selected .door-opening,
 svg .interior-door.selected .door-opening-tick { stroke: #ed9e28; stroke-width: .23; }
 
 svg .entrance-bar { fill: #c58235; pointer-events: none; }
-svg .door-label { fill: #ad6d2c; font-size: .53px; font-weight: 700; }
+svg .door-label { fill: var(--plan-entrance-text); font-size: .53px; font-weight: 700; }
 svg .entrance-label { text-anchor: middle; dominant-baseline: central; letter-spacing: .06em; }
 svg .front-label {
-  fill: var(--gold-text);
+  fill: var(--plan-front-text);
   font-size: .5px;
   font-weight: 800;
   letter-spacing: .14em;
@@ -882,8 +905,8 @@ svg .item-label {
   pointer-events: none;
 }
 
-svg .dimension { stroke: #78999e; stroke-width: .09; }
-svg .dimension-text { fill: #57767f; font-size: .55px; text-anchor: middle; }
+svg .dimension { stroke: var(--plan-dim-line); stroke-width: .09; }
+svg .dimension-text { fill: var(--plan-dim-text); font-size: .55px; text-anchor: middle; }
 
 /* Keyboard focus on plan shapes: a dashed focus-blue edge, distinct from the
    solid selection highlight. Only shows for keyboard navigation. */
