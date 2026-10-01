@@ -1011,30 +1011,42 @@
       : { x: g.axis - thickness / 2, y: g.start.y, w: thickness, h: d.width };
   }
 
-  /**
-   * The quarter circle a door sweeps open, described by its hinge, the
-   * direction along the wall, and the direction it opens. Cased openings
-   * have no swing.
-   */
-  function doorSwing(d) {
-    const g = doorGeometry(d);
-    if (!g || d.swing === 'none') return null;
-    const direction = g.hinge === g.start ? 1 : -1;
-    const along = g.horizontal ? { x: direction, y: 0 } : { x: 0, y: direction };
-    const across = { x: (g.open.x - g.hinge.x) / d.width, y: (g.open.y - g.hinge.y) / d.width };
-    const corner = { x: g.hinge.x + (along.x + across.x) * d.width, y: g.hinge.y + (along.y + across.y) * d.width };
+  /** A bifold door has two panels, or four (a pair at each jamb) once it is wider than 4 feet. */
+  const bifoldPanelCount = width => (width > 4 ? 4 : 2);
+
+  /** A quarter circle swept by a door, from its hinge, along the wall, and out the way it opens. */
+  function swingZone(hinge, along, across, radius) {
+    const corner = { x: hinge.x + (along.x + across.x) * radius, y: hinge.y + (along.y + across.y) * radius };
     return {
-      hinge: g.hinge,
-      radius: d.width,
+      hinge,
+      radius,
       along,
       across,
       box: {
-        x: Math.min(g.hinge.x, corner.x),
-        y: Math.min(g.hinge.y, corner.y),
-        w: Math.abs(corner.x - g.hinge.x),
-        h: Math.abs(corner.y - g.hinge.y),
+        x: Math.min(hinge.x, corner.x),
+        y: Math.min(hinge.y, corner.y),
+        w: Math.abs(corner.x - hinge.x),
+        h: Math.abs(corner.y - hinge.y),
       },
     };
+  }
+
+  /**
+   * The areas a door sweeps open. A swinging door has one, a bifold has one
+   * half its width (or one at each jamb, a quarter of its width each, when it
+   * has four panels), and a cased opening has none.
+   */
+  function doorSwings(d) {
+    const g = doorGeometry(d);
+    if (!g || d.swing === 'none') return [];
+    const across = { x: (g.open.x - g.hinge.x) / d.width, y: (g.open.y - g.hinge.y) / d.width };
+    const forward = g.horizontal ? { x: 1, y: 0 } : { x: 0, y: 1 };
+    const back = { x: -forward.x, y: -forward.y };
+    if (!d.bifold) return [swingZone(g.hinge, g.hinge === g.start ? forward : back, across, d.width)];
+    if (bifoldPanelCount(d.width) === 2) {
+      return [swingZone(g.hinge, g.hinge === g.start ? forward : back, across, d.width / 2)];
+    }
+    return [swingZone(g.start, forward, across, d.width / 4), swingZone(g.end, back, across, d.width / 4)];
   }
 
   /** True when a box reaches into the quarter circle of a door swing. */
@@ -1116,13 +1128,13 @@
 
     for (const d of state.doors.filter(door => findRoom(door.roomId)?.floor === state.floor)) {
       const g = doorGeometry(d);
-      const swing = doorSwing(d);
+      const swings = doorSwings(d);
       const opening = doorwayBox(d, g);
       for (const it of items) {
         if (intersection(it, opening) > 0.01) {
           out.push({ level: 'error', text: `${it.name} blocks ${doorLabel(g)}.` });
           bad.add(it.id);
-        } else if (swing && boxHitsSwing(it, swing)) {
+        } else if (swings.some(swing => boxHitsSwing(it, swing))) {
           out.push({ level: 'warning', text: `${it.name} is in the swing of ${doorLabel(g)}.` });
           bad.add(it.id);
         }
@@ -1263,14 +1275,16 @@
         out.push({ level: 'warning', text: `${g.room.name} is open plan; its doorway has no partition wall to cut.` });
       }
       // A swinging door needs room beside it for the leaf and trim to clear the
-      // corner. A cased opening has nothing to clear, so it only has to fit on the wall.
+      // corner. A cased opening has nothing to clear, and a bifold folds back
+      // against its own jamb, so both only have to fit on the wall.
       const isCased = d.swing === 'none';
-      const cornerMargin = isCased ? 0 : 0.5;
+      const cornerMargin = isCased || d.bifold ? 0 : 0.5;
       if (d.offset < cornerMargin - 0.001 || d.offset + d.width > g.length - cornerMargin + 0.001) {
+        const kind = isCased ? 'Cased opening' : 'Bifold door';
         out.push({
           level: 'warning',
-          text: isCased
-            ? `Cased opening on ${g.room.name} extends past the wall.`
+          text: cornerMargin === 0
+            ? `${kind} on ${g.room.name} extends past the wall.`
             : `Door on ${g.room.name} is too close to a corner or extends past the wall.`,
         });
       }
@@ -1290,9 +1304,9 @@
           out.push({ level: 'warning', text: 'Two doorway openings overlap on the same wall.' });
           continue;
         }
-        const swingA = doorSwing(doors[i]);
-        const swingB = doorSwing(doors[j]);
-        if (swingA && swingB && swingOverlapArea(swingA, swingB) > 0.5) {
+        const swingsA = doorSwings(doors[i]);
+        const swingsB = doorSwings(doors[j]);
+        if (swingsA.some(swingA => swingsB.some(swingB => swingOverlapArea(swingA, swingB) > 0.5))) {
           out.push({ level: 'warning', text: `The swings of ${doorLabel(a)} and ${doorLabel(b)} overlap.` });
         }
       }
@@ -1373,24 +1387,56 @@
     element('line', { x1: g.start.x, y1: g.start.y, x2: g.end.x, y2: g.end.y, stroke: 'transparent', 'stroke-width': 0.7 }, group);
   }
 
-  /** Quarter-circle swing path, hinge dot, and door leaf. */
-  function drawDoorSwing(d, g, group) {
-    const a1 = Math.atan2(g.far.y - g.hinge.y, g.far.x - g.hinge.x);
-    const a2 = Math.atan2(g.open.y - g.hinge.y, g.open.x - g.hinge.x);
+  /** The dashed quarter circle a door sweeps, as an SVG path. */
+  function swingArcPath(zone) {
+    const a1 = Math.atan2(zone.along.y, zone.along.x);
+    const a2 = Math.atan2(zone.across.y, zone.across.x);
     let turn = a2 - a1;
     while (turn > Math.PI) turn -= Math.PI * 2;
     while (turn < -Math.PI) turn += Math.PI * 2;
     let path = '';
     for (let i = 0; i <= 16; i++) {
       const a = a1 + turn * i / 16;
-      path += `${i ? 'L' : 'M'}${(g.hinge.x + Math.cos(a) * d.width).toFixed(3)} ${(g.hinge.y + Math.sin(a) * d.width).toFixed(3)} `;
+      path += `${i ? 'L' : 'M'}${(zone.hinge.x + Math.cos(a) * zone.radius).toFixed(3)} ${(zone.hinge.y + Math.sin(a) * zone.radius).toFixed(3)} `;
     }
+    return path;
+  }
 
+  /** Quarter-circle swing path, hinge dot, and door leaf. */
+  function drawDoorSwing(d, g, group) {
+    const path = swingArcPath(doorSwings(d)[0]);
     element('path', { d: path, class: 'door-swing' }, group);
     // Wider invisible stroke so the swing is easy to grab.
     element('path', { d: path, fill: 'none', stroke: 'transparent', 'stroke-width': 0.7 }, group);
     element('line', { x1: g.hinge.x, y1: g.hinge.y, x2: g.open.x, y2: g.open.y, class: 'door-leaf' }, group);
     element('circle', { cx: g.hinge.x, cy: g.hinge.y, r: 0.13, class: 'door-hinge' }, group);
+  }
+
+  /**
+   * A bifold door drawn partly open: each pair of panels is a V, hinged at the
+   * jamb and at the fold, with its free end on the opening line. The dashed
+   * quarter circle is the area the fold sweeps.
+   */
+  function drawBifold(d, group) {
+    const openAngle = Math.PI / 6;
+    for (const zone of doorSwings(d)) {
+      const path = swingArcPath(zone);
+      element('path', { d: path, class: 'door-swing' }, group);
+      // Wider invisible stroke so the swing is easy to grab.
+      element('path', { d: path, fill: 'none', stroke: 'transparent', 'stroke-width': 0.7 }, group);
+
+      const { hinge, along, across, radius } = zone;
+      const pointAt = (alongBy, acrossBy) => ({
+        x: hinge.x + along.x * alongBy + across.x * acrossBy,
+        y: hinge.y + along.y * alongBy + across.y * acrossBy,
+      });
+      const fold = pointAt(radius * Math.cos(openAngle), radius * Math.sin(openAngle));
+      const freeEnd = pointAt(2 * radius * Math.cos(openAngle), 0);
+      element('line', { x1: hinge.x, y1: hinge.y, x2: fold.x, y2: fold.y, class: 'door-leaf' }, group);
+      element('line', { x1: fold.x, y1: fold.y, x2: freeEnd.x, y2: freeEnd.y, class: 'door-leaf' }, group);
+      element('circle', { cx: hinge.x, cy: hinge.y, r: 0.13, class: 'door-hinge' }, group);
+      element('circle', { cx: fold.x, cy: fold.y, r: 0.09, class: 'door-hinge' }, group);
+    }
   }
 
   function drawInteriorDoor(d) {
@@ -1410,8 +1456,14 @@
       element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} cased opening, no door`;
       return;
     }
+    const direction = d.swing === 'out' ? 'out' : 'in';
+    if (d.bifold) {
+      drawBifold(d, group);
+      element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} bifold door, folds ${direction}`;
+      return;
+    }
     drawDoorSwing(d, g, group);
-    element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} doorway, swings ${d.swing === 'out' ? 'out' : 'in'}`;
+    element('title', {}, group).textContent = `${g.room.name}: ${fmtLength(d.width)} doorway, swings ${direction}`;
   }
 
   function drawWindow(w) {
@@ -1865,7 +1917,7 @@
       label: floorName(floor),
       options: state.doors
         .filter(d => doorFloor(d) === floor)
-        .map(d => ({ value: d.id, text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}${d.swing === 'none' ? ' · Cased Opening' : ''}` })),
+        .map(d => ({ value: d.id, text: `${findRoom(d.roomId).name} · ${SIDE_LABEL[d.side] || d.side} Wall · ${fmtLength(d.width)}${d.swing === 'none' ? ' · Cased Opening' : d.bifold ? ' · Bifold' : ''}` })),
     }));
     fillInfo($('doorInfo'), state.doors.length, 'doorway', 'doorways', countByFloor(state.doors, doorFloor));
     fillSelect($('doorSelect'), groups.filter(g => g.options.length), state.selectedDoor, state.doors.length ? 'Select a doorway' : 'No doorways yet');
@@ -1887,9 +1939,10 @@
       $('doorHinge').value = selected.hinge;
       $('doorOffset').value = lengthField(selected.offset);
       $('doorWidth').value = lengthField(selected.width);
-      $('doorSwing').value = selected.swing;
+      $('doorSwing').value = selected.bifold ? `bifold-${selected.swing}` : selected.swing;
       // A plain opening has no hinge, so the control would do nothing.
-      $('doorHinge').disabled = selected.swing === 'none';
+      // A four-panel bifold has a pair at each jamb, so there is no single hinge side.
+      $('doorHinge').disabled = selected.swing === 'none' || (selected.bifold && bifoldPanelCount(selected.width) === 4);
     }
   }
 
@@ -2498,7 +2551,11 @@
     door.offset = snap(Math.max(0.5, (length - door.width) / 2));
   });
   onDoorChange('doorHinge', (door, value) => { door.hinge = value; });
-  onDoorChange('doorSwing', (door, value) => { door.swing = value; });
+  onDoorChange('doorSwing', (door, value) => {
+    door.swing = value.replace('bifold-', '');
+    if (value.startsWith('bifold-')) door.bifold = true;
+    else delete door.bifold;
+  });
   for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
     onLengthChange(onDoorChange, id, key);
   }
