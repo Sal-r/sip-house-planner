@@ -66,7 +66,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Outdoor spaces
 - [ ] The room Type menu has Outdoor Space. The Suggested sizes menu lists Deck, Full Bath, Garage - 1 Car, Garage - 2 Car, Half Bath, Porch, Shed in A to Z order.
 - [ ] Add Room, then pick Porch (or any outdoor size). The space moves to just outside the front wall, centered (the bottom wall if the front is Not Set), and the plan grows so nothing is cut off. Picking one on a space already outside only resizes it.
-- [ ] An outdoor space has no Partitions walls controls to edit, Add Doorway stays off for it, and it is drawn with a dashed outline and a gray fill in both themes.
+- [ ] A new outdoor space (Porch, Deck) is Open Plan, so Add Doorway is off. Picking Garage or Shed sets Enclosed Walls, draws walls on all sides just inside its box (none along the house wall it touches), and turns Add Doorway on. Switching Partitions by hand works either way. Outdoor spaces are drawn with a dashed outline and a gray fill in both themes.
+- [ ] A cased opening on a garage can be 9′ or 16′ wide (Doorways Suggested sizes has Garage - 1 Car and 2 Car), and it cuts the garage wall. The Width field accepts up to 20′ (6 m).
 - [ ] Dragging an outdoor space anywhere, and typing negative X or Y, works. The plan area follows it, and the view does not jump when you switch floor tabs.
 - [ ] A porch on the front wall pushes the ENTRANCE label, FRONT OF HOUSE, and the dimension line out past itself. A deck on the bottom or a garage on the left moves its dimension line out too. Nothing overlaps the outdoor space's own name.
 - [ ] No "extends beyond the footprint" error for an outdoor space, and that error still shows for a normal room placed outside. An outdoor space overlapping a bedroom still shows the overlap error.
@@ -164,7 +165,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Two doors whose swings cross show "The swings of ... overlap" in Layout Checks. Cased openings have no swing and are never flagged.
 - [ ] The default layout and the Tiny Cottage show no door swing warnings.
 - [ ] A cased opening (Door Type: Cased Opening) can sit 0.25′ from a corner, or flush with the end of the wall, with no warning. One that runs past the wall warns. A swinging door within 0.5′ of a corner still warns.
-- [ ] An outdoor space touching the house with its door on the touching side adds an ENTRANCE on the house wall, at the door. A door on the far side, or on a space that only sits near the house, adds none.
+- [ ] A garage, or a bath placed outside the footprint, touching the house with its door on the touching side adds an ENTRANCE on the house wall, at the door. A door on the far side, or on a space that only sits near the house, adds none.
+- [ ] At 1920 x 1080 the Basement, Main Floor, and Second Floor tabs stay on one line. Lot Footprint and Walls still sit over Rooms & Spaces and Furniture & Fixtures.
 - [ ] Two windows, a window and an entrance door, or two doorways that overlap by 0.25′ on the same wall show a warning. Ones that only touch do not.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.

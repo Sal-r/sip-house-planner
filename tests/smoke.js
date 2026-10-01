@@ -276,6 +276,33 @@ async function main() {
     return (await entranceBars([bathDoor('west', 2)], [lower])) === plainCount;
   });
 
+  await check('a bath outside the house (not an outdoor space) only gets an entrance where it touches', async () => {
+    const wet = { ...bath, id: 'test-bath', kind: 'wet' };
+    await openApp();
+    const touching = await entranceBars([bathDoor('west', 2)], [wet]);
+    await openApp();
+    const apart = await entranceBars([bathDoor('west', 2)], [{ ...wet, x: baseState.width + 3 }]);
+    return touching === plainCount + 1 && apart === plainCount;
+  });
+  await check('an enclosed outdoor space draws its own walls and an open one draws none', async () => {
+    const wallLines = async () => page.locator('#plan line.partition-wall').count();
+    await openApp();
+    const open = await entranceBars([], [bath]);
+    const openWalls = await wallLines();
+    await openApp();
+    await entranceBars([], [{ ...bath, wallMode: 'enclosed' }]);
+    const closedWalls = await wallLines();
+    return open === plainCount && closedWalls === openWalls + 3;
+  });
+  await check('a door can be as wide as a garage door', async () => {
+    await openApp();
+    await entranceBars([{ ...bathDoor('west', 1), width: 16 }], [{ ...bath, h: 20, wallMode: 'enclosed' }]);
+    await page.selectOption('#roomSelect', 'test-bath');
+    await page.selectOption('#doorSelect', 'test-door');
+    await setField('doorWidth', 16);
+    return (await saved()).doors.find(d => d.id === 'test-door').width === 16;
+  });
+
   // The top row lines up with the row below it: Lot Footprint over Rooms & Spaces, Walls over
   // Furniture & Fixtures, and the boxes read in the order the user asked for.
   for (const width of [1500, 1700, 1906]) {
@@ -296,6 +323,12 @@ async function main() {
       return aligned(lot, spaces) && aligned(walls, items) && sameRow && order === 'intro,findings,dimensions-panel,lot-panel,walls-panel';
     });
   }
+
+  await openApp({ width: 1920, height: 1080 });
+  await check('the three floor tabs stay on one line at 1920 x 1080', async () => {
+    const tops = await page.$$eval('.intro .floor-tabs button[role="tab"]', tabs => tabs.map(t => Math.round(t.getBoundingClientRect().top)));
+    return tops.length === 3 && tops.every(top => top === tops[0]);
+  });
 
   await browser.close();
   server.close();
