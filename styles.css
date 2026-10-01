@@ -30,6 +30,7 @@
   --focus: #1e88a5;
   --selected: #067990;
   --wall: #284f5b;
+  --partition-wall: #6d7d87;
   --orange: #cd8741;
   --orange-fill: #fff1dc;
   --conflict: #c2452f;
@@ -678,7 +679,8 @@ svg .grid-line { stroke: #e4efed; stroke-width: .055; }
 svg .grid-major { stroke: #bed6d7; stroke-width: .075; }
 svg .outline { fill: #fff; stroke: #294c56; stroke-width: .22; }
 svg .exterior-wall { fill: var(--wall); }
-svg .partition-wall { stroke: var(--wall); stroke-linecap: butt; }
+/* A lighter gray than the exterior wall so interior partitions read as a different kind of wall. */
+svg .partition-wall { stroke: var(--partition-wall); stroke-linecap: butt; }
 /* Lighter and dashed so a half wall reads as different without relying on color alone. */
 svg .half-wall { stroke-opacity: .55; stroke-dasharray: .8 .3; }
 
