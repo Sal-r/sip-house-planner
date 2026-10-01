@@ -45,6 +45,12 @@
   const DEFAULT_WINDOW_SILL = 3;
   const DEFAULT_WINDOW_HEAD = 80 / 12;
 
+  // The lot and its setback, in feet. 3 feet is a common minimum, but setbacks
+  // vary by town and zone, so it is editable.
+  const DEFAULT_SETBACK = 3;
+  // A new lot reaches this far past the house on every side.
+  const DEFAULT_LOT_MARGIN = 20;
+
   // Stairs. A stair is a room of kind 'stairs' with a `stair` object:
   // { type, climb, turn, landing }. `climb` is the side the first flight heads
   // toward going up, `turn` is left or right (U shape and spiral), and
@@ -222,13 +228,15 @@
   // compatibility with saved drafts and exported files. Fixtures were replaced
   // by items, but sanitizeLayout still uses them to upgrade old drafts.
   const createDefaultState = () => ({
-    schemaVersion: 5,
+    schemaVersion: 6,
     width: 32,
     depth: 42,
     exteriorWall: 1,
     interiorWall: 0.375,
     wallHeights: { basement: DEFAULT_WALL_HEIGHT, main: DEFAULT_WALL_HEIGHT, upper: DEFAULT_WALL_HEIGHT },
     floorThickness: DEFAULT_FLOOR_THICKNESS,
+    lot: { enabled: false, width: 0, depth: 0, left: 0, top: 0, setback: DEFAULT_SETBACK },
+    lot: { enabled: false, width: 0, depth: 0, left: 0, top: 0, setback: DEFAULT_SETBACK },
     zoom: 100,
     floor: 'main',
     upperEnabled: false,
@@ -358,7 +366,7 @@
 
   /**
    * Validates a saved layout (browser draft, imported file, or
-   * templates/default-layout.json) and upgrades older formats to schema version 5.
+   * templates/default-layout.json) and upgrades older formats to schema version 6.
    * Returns a clean state object, or null if the data isn't a layout.
    */
   function sanitizeLayout(saved) {
@@ -385,7 +393,7 @@
     const state = {
       ...base,
       ...saved,
-      schemaVersion: 5,
+      schemaVersion: 6,
       rooms,
       doors,
       fixtures: base.fixtures.map(f => ({ ...f, ...saved.fixtures.find(x => x.id === f.id) })),
@@ -446,6 +454,18 @@
     if (!(Number.isFinite(state.floorThickness) && state.floorThickness >= 0.25 && state.floorThickness <= 3)) {
       state.floorThickness = DEFAULT_FLOOR_THICKNESS;
     }
+    // Schema 6 added the lot. Anything out of range falls back to the default.
+    const savedLot = saved.lot && typeof saved.lot === 'object' ? saved.lot : {};
+    const inRange = (value, low, high, fallback) => (Number.isFinite(value) && value >= low && value <= high ? value : fallback);
+    state.lot = {
+      enabled: savedLot.enabled === true,
+      width: inRange(savedLot.width, 0, 1000, 0),
+      depth: inRange(savedLot.depth, 0, 1000, 0),
+      left: inRange(savedLot.left, -1000, 1000, 0),
+      top: inRange(savedLot.top, -1000, 1000, 0),
+      setback: inRange(savedLot.setback, 0, 50, DEFAULT_SETBACK),
+    };
+    if (state.lot.width <= 0 || state.lot.depth <= 0) state.lot.enabled = false;
     state.doors = state.doors.map(d => ({
       ...d,
       head: Number.isFinite(d.head) && d.head >= 5 && d.head <= 10 ? d.head : DEFAULT_DOOR_HEAD,
@@ -537,6 +557,7 @@
     interiorWall: state.interiorWall,
     wallHeights: state.wallHeights,
     floorThickness: state.floorThickness,
+    lot: state.lot,
     frontSide: state.frontSide,
     upperEnabled: state.upperEnabled,
     basementEnabled: state.basementEnabled,
@@ -692,6 +713,10 @@
   // Outdoor spaces (porch, deck, shed, garage) never get partition walls.
   const wallMode = r => (r.kind === 'outdoor' ? 'open' : r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed'));
   const isOutdoor = r => r.kind === 'outdoor';
+  /** The lot as a box in plan coordinates (the house footprint starts at 0, 0), or null when the lot is off. */
+  const lotBox = () => (state.lot?.enabled
+    ? { x: -state.lot.left, y: -state.lot.top, w: state.lot.width, h: state.lot.depth }
+    : null);
   /** True when a room sits entirely inside the house footprint. */
   const insideFootprint = r => r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= state.width + 0.01 && r.y + r.h <= state.depth + 0.01;
   const roomWallThickness = r => (Number.isFinite(r.wallT) ? r.wallT : state.interiorWall);
@@ -797,6 +822,11 @@
     doorHead: { kind: 'thickness', imperial: { min: 60, max: 120, step: 1 }, metric: { min: 150, max: 300, step: 1 } },
     windowSill: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
     stairLanding: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
+    lotWidth: { kind: 'length', imperial: { min: 10, max: 1000, step: 0.25 }, metric: { min: 3, max: 304, step: 0.05 } },
+    lotDepth: { kind: 'length', imperial: { min: 10, max: 1000, step: 0.25 }, metric: { min: 3, max: 304, step: 0.05 } },
+    lotLeft: { kind: 'length', imperial: { step: 0.25, valid: [-1000, 1000] }, metric: { step: 0.05, valid: [-304, 304] } },
+    lotTop: { kind: 'length', imperial: { step: 0.25, valid: [-1000, 1000] }, metric: { step: 0.05, valid: [-304, 304] } },
+    lotSetback: { kind: 'length', imperial: { min: 0, max: 50, step: 0.25 }, metric: { min: 0, max: 15, step: 0.05 } },
     windowHead: { kind: 'thickness', imperial: { min: 12, max: 144, step: 1 }, metric: { min: 30, max: 360, step: 1 } },
   };
 
@@ -1101,6 +1131,11 @@
       }
     }
     for (const it of state.items) turn(it);
+    if (state.lot?.width > 0) {
+      const box = { x: -state.lot.left, y: -state.lot.top, w: state.lot.width, h: state.lot.depth };
+      turn(box);
+      Object.assign(state.lot, { left: -box.x, top: -box.y, width: box.w, depth: box.h });
+    }
     for (const f of state.fixtures || []) {
       const x = H - f.y;
       const y = f.x;
@@ -1294,6 +1329,39 @@
         out.push({ level: 'warning', text: `${room.name} is about ${fmtLength(plan.minWidth)} wide. Check the passage width.` });
       }
     }
+    return out;
+  }
+
+  /**
+   * Warnings when the house, or an outdoor space on this floor, comes closer
+   * to a lot line than the setback. Quiet when the lot is off.
+   */
+  function lotChecks(rooms) {
+    const lot = lotBox();
+    if (!lot) return [];
+    const setback = state.lot.setback;
+    const out = [];
+
+    const checkBox = (box, name, isOutdoorSpace) => {
+      const gaps = {
+        west: box.x - lot.x,
+        north: box.y - lot.y,
+        east: lot.x + lot.w - (box.x + box.w),
+        south: lot.y + lot.h - (box.y + box.h),
+      };
+      for (const side of ['west', 'north', 'east', 'south']) {
+        const gap = gaps[side];
+        if (gap < -0.01) {
+          out.push({ level: 'error', text: `${name} goes ${fmtLength(-gap)} past the ${SIDE_NAME[side]} lot line.` });
+        } else if (gap < setback - 0.01) {
+          const note = isOutdoorSpace ? ` Outdoor spaces may be subject to the ${fmtLength(setback)} setback.` : ` That is inside the ${fmtLength(setback)} setback.`;
+          out.push({ level: 'warning', text: `${name} is ${fmtLength(gap)} from the ${SIDE_NAME[side]} lot line.${note}` });
+        }
+      }
+    };
+
+    checkBox({ x: 0, y: 0, w: state.width, h: state.depth }, 'The house', false);
+    for (const r of rooms.filter(isOutdoor)) checkBox(r, r.name, true);
     return out;
   }
 
@@ -1551,6 +1619,7 @@
     out.push(...windowChecks());
     out.push(...heightChecks());
     out.push(...stairChecks(rooms));
+    out.push(...lotChecks(rooms));
     if (!FLOORS.some(floor => entranceDoors(floor).length)) {
       out.push({ level: 'warning', text: 'No entrance yet. Add a doorway on an outside wall.' });
     }
@@ -2140,7 +2209,7 @@
   const PLAN_MARGIN = 3.5;
   /**
    * The area the plan shows: the footprint plus its margin, widened to take in
-   * outdoor spaces on any floor (with the same margin, for their own labels), so the
+   * the lot and outdoor spaces on any floor (with the same margin, for their own labels), so the
    * view does not jump between floors.
    */
   function planBounds() {
@@ -2148,6 +2217,13 @@
     let top = -PLAN_MARGIN;
     let right = state.width + PLAN_MARGIN;
     let bottom = state.depth + PLAN_MARGIN;
+    const lot = lotBox();
+    if (lot) {
+      left = Math.min(left, lot.x - PLAN_MARGIN);
+      top = Math.min(top, lot.y - PLAN_MARGIN);
+      right = Math.max(right, lot.x + lot.w + PLAN_MARGIN);
+      bottom = Math.max(bottom, lot.y + lot.h + PLAN_MARGIN);
+    }
     for (const r of state.rooms.filter(isOutdoor)) {
       left = Math.min(left, r.x - PLAN_MARGIN);
       top = Math.min(top, r.y - PLAN_MARGIN);
@@ -2155,6 +2231,19 @@
       bottom = Math.max(bottom, r.y + r.h + PLAN_MARGIN);
     }
     return { x: left, y: top, w: right - left, h: bottom - top };
+  }
+
+  /** The lot boundary, the setback line inside it, and a label with the lot size. */
+  function drawLot() {
+    const lot = lotBox();
+    if (!lot) return;
+    element('rect', { x: lot.x, y: lot.y, width: lot.w, height: lot.h, class: 'lot-line' });
+    const setback = state.lot.setback;
+    if (setback > 0 && lot.w > 2 * setback && lot.h > 2 * setback) {
+      element('rect', { x: lot.x + setback, y: lot.y + setback, width: lot.w - 2 * setback, height: lot.h - 2 * setback, class: 'setback-line' });
+    }
+    const size = Math.max(0.7, Math.min(lot.w, lot.h) / 45);
+    label(lot.x + size * 0.6, lot.y + size * 1.6, `Lot ${fmtSize(lot.w, lot.h)}`, 'lot-label').setAttribute('font-size', `${size}px`);
   }
 
   /** Draws the current floor. The SVG uses feet as its units. */
@@ -2170,6 +2259,7 @@
 
     element('rect', { x: 0, y: 0, width: W, height: H, class: 'outline' });
     drawGrid(W, H);
+    drawLot();
 
     for (const r of state.rooms.filter(room => room.floor === state.floor)) drawRoom(r);
     // Half walls go down first so a full wall on the same line covers them.
@@ -2506,6 +2596,17 @@
     $('showItems').checked = state.showItems !== false;
   }
 
+  /** The Lot and Setback fields. They stay disabled until Show Lot is on. */
+  function renderLot() {
+    const lot = state.lot;
+    $('lotEnabled').checked = lot.enabled;
+    for (const [id, value] of [['lotWidth', lot.width], ['lotDepth', lot.depth], ['lotLeft', lot.left], ['lotTop', lot.top], ['lotSetback', lot.setback]]) {
+      $(id).value = lengthField(value);
+      $(id).disabled = !lot.enabled;
+    }
+    $('centerLot').disabled = !lot.enabled;
+  }
+
   /** Wall height for the open floor, the floor thickness, and the floor to floor result. */
   function renderHeights() {
     $('wallHeight').value = thicknessField(wallHeight(state.floor));
@@ -2592,6 +2693,7 @@
     $('exteriorWall').value = thicknessField(state.exteriorWall);
     $('interiorWall').value = thicknessField(state.interiorWall);
     renderHeights();
+    renderLot();
     $('zoomLabel').textContent = `${state.zoom}%`;
     $('zoomOut').disabled = state.zoom <= ZOOM_MIN;
     $('zoomIn').disabled = state.zoom >= ZOOM_MAX;
@@ -2780,6 +2882,35 @@
       if (ft !== null) state[key] = ft;
     });
   }
+  // --- Lot and setback ---------------------------------------------------------
+
+  $('lotEnabled').addEventListener('change', e => {
+    const lot = state.lot;
+    lot.enabled = e.target.checked;
+    // The first time, size the lot around the house with the house in the middle.
+    if (lot.enabled && (lot.width <= 0 || lot.depth <= 0)) {
+      Object.assign(lot, {
+        width: state.width + 2 * DEFAULT_LOT_MARGIN,
+        depth: state.depth + 2 * DEFAULT_LOT_MARGIN,
+        left: DEFAULT_LOT_MARGIN,
+        top: DEFAULT_LOT_MARGIN,
+      });
+    }
+    $('lotDetails').open = lot.enabled || $('lotDetails').open;
+    render();
+  });
+  for (const [id, key] of [['lotWidth', 'width'], ['lotDepth', 'depth'], ['lotLeft', 'left'], ['lotTop', 'top'], ['lotSetback', 'setback']]) {
+    onNumberChange(id, (_, raw) => {
+      const ft = readField(id, raw);
+      if (ft !== null) state.lot[key] = snap(ft);
+    });
+  }
+  $('centerLot').addEventListener('click', () => {
+    state.lot.left = snap((state.lot.width - state.width) / 2);
+    state.lot.top = snap((state.lot.depth - state.depth) / 2);
+    render();
+  });
+
   // Heights follow the same units as thickness. The wall height belongs to the open floor.
   onNumberChange('wallHeight', (_, raw) => {
     const ft = readField('wallHeight', raw);

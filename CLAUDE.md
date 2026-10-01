@@ -7,11 +7,13 @@ A browser-based floor plan tool for concept planning SIP houses, tiny houses, an
 - `index.html`, `styles.css`, `app.js`: the whole app. `app.js` is one file.
 - `templates/`: the default layout (`default-layout.json`) and the Extreme Panels starter plans. Each is a normal exported layout.
 - `README.md`: user-facing docs. `TEST-CHECKLIST.md`: the manual test pass.
+- `tests/smoke.js`: a quick automated check for developers. The app never loads it.
+- `drafts/`: ideas that are written down but not part of the app. `drafts/code-checks.js` holds building code style checks. It is not loaded, not in the README feature list, and is not legal or code advice. Do not wire it in without being asked.
 
 ## Running and testing it
 
 - Serve it over http. It cannot read its layout files from `file://`. Use `python3 -m http.server 8000 --bind 127.0.0.1`.
-- There is no test runner. When you change behavior, drive the real app in a browser (Playwright is installed in the cloud environment) and check the result, not just the syntax.
+- Run `node tests/smoke.js` after a change. It starts its own server, drives the real app in Chromium, and prints one line per check (it needs Playwright, which the cloud environment has). It is a quick safety net, not a full test pass. When you change behavior, also drive the new feature in a browser and check the result, not just the syntax, and add a check to the smoke test if the feature is something that could quietly break.
 - When you add or change a feature, update `README.md` and `TEST-CHECKLIST.md` in the same change.
 
 ## Code conventions

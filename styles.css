@@ -989,6 +989,17 @@ svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-
   .mobile-notice:not([hidden]) { display: flex; }
 }
 
+/* Lot and setback lines on the plan, and the Lot and Setback section in the Footprint panel */
+svg .lot-line { fill: none; stroke: var(--plan-dim-line); stroke-width: .2; stroke-dasharray: 1.2 .6; pointer-events: none; }
+svg .setback-line { fill: none; stroke: var(--orange); stroke-width: .1; stroke-dasharray: .3 .3; pointer-events: none; }
+svg .lot-label { fill: var(--plan-dim-text); font-weight: 700; pointer-events: none; }
+.lot-details { margin-top: 12px; }
+.lot-details summary { cursor: pointer; font-weight: 700; font-size: .86rem; color: var(--label); }
+.lot-details[open] summary { margin-bottom: 8px; }
+.lot-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: .86rem; }
+.lot-toggle input { width: auto; margin: 0; }
+.lot-details .two-fields { margin-bottom: 8px; align-items: end; }
+
 /* Space under the stair info line before the next row of fields */
 .stair-controls { margin-bottom: 10px; }
 
