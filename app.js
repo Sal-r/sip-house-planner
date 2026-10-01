@@ -37,6 +37,14 @@
   const SIDE_LABEL = { north: 'Top', east: 'Right', south: 'Bottom', west: 'Left' };
   const FLOOR_NAME = { main: 'Main Floor', upper: 'Second Floor', basement: 'Basement' };
 
+  // Heights, in feet. Doors and windows are measured from the floor. A window
+  // sill is the bottom of the glass, and the head is the top of the opening.
+  const DEFAULT_WALL_HEIGHT = 8;
+  const DEFAULT_FLOOR_THICKNESS = 1;
+  const DEFAULT_DOOR_HEAD = 80 / 12;
+  const DEFAULT_WINDOW_SILL = 3;
+  const DEFAULT_WINDOW_HEAD = 80 / 12;
+
   // Templates offered in the Templates menu. Each file is a normal exported
   // layout. The credit shown under the plan comes from the file itself.
   // The default layout is the first entry. It is what a first visit loads and
@@ -170,11 +178,13 @@
   // compatibility with saved drafts and exported files. Fixtures were replaced
   // by items, but sanitizeLayout still uses them to upgrade old drafts.
   const createDefaultState = () => ({
-    schemaVersion: 3,
+    schemaVersion: 4,
     width: 32,
     depth: 42,
     exteriorWall: 1,
     interiorWall: 0.375,
+    wallHeights: { basement: DEFAULT_WALL_HEIGHT, main: DEFAULT_WALL_HEIGHT, upper: DEFAULT_WALL_HEIGHT },
+    floorThickness: DEFAULT_FLOOR_THICKNESS,
     zoom: 100,
     floor: 'main',
     upperEnabled: false,
@@ -304,7 +314,7 @@
 
   /**
    * Validates a saved layout (browser draft, imported file, or
-   * templates/default-layout.json) and upgrades older formats to schema version 3.
+   * templates/default-layout.json) and upgrades older formats to schema version 4.
    * Returns a clean state object, or null if the data isn't a layout.
    */
   function sanitizeLayout(saved) {
@@ -331,7 +341,7 @@
     const state = {
       ...base,
       ...saved,
-      schemaVersion: 3,
+      schemaVersion: 4,
       rooms,
       doors,
       fixtures: base.fixtures.map(f => ({ ...f, ...saved.fixtures.find(x => x.id === f.id) })),
@@ -376,6 +386,25 @@
       state.items = state.items.filter(it => it.floor !== 'basement');
       state.windows = state.windows.filter(w => w.floor !== 'basement');
     }
+
+    // Schema 4 added heights. Older files get the defaults, and so does any
+    // height that is out of range.
+    const savedHeights = saved.wallHeights && typeof saved.wallHeights === 'object' ? saved.wallHeights : {};
+    state.wallHeights = Object.fromEntries(FLOORS.map(floor => [
+      floor,
+      Number.isFinite(savedHeights[floor]) && savedHeights[floor] >= 6 && savedHeights[floor] <= 20 ? savedHeights[floor] : DEFAULT_WALL_HEIGHT,
+    ]));
+    if (!(Number.isFinite(state.floorThickness) && state.floorThickness >= 0.25 && state.floorThickness <= 3)) {
+      state.floorThickness = DEFAULT_FLOOR_THICKNESS;
+    }
+    state.doors = state.doors.map(d => ({
+      ...d,
+      head: Number.isFinite(d.head) && d.head >= 5 && d.head <= 10 ? d.head : DEFAULT_DOOR_HEAD,
+    }));
+    state.windows = state.windows.map(w => {
+      const valid = Number.isFinite(w.sill) && Number.isFinite(w.head) && w.sill >= 0 && w.sill < w.head && w.head <= 12;
+      return { ...w, sill: valid ? w.sill : DEFAULT_WINDOW_SILL, head: valid ? w.head : DEFAULT_WINDOW_HEAD };
+    });
 
     state.rooms = state.rooms.map(r => {
       const room = { ...r };
@@ -453,6 +482,8 @@
     depth: state.depth,
     exteriorWall: state.exteriorWall,
     interiorWall: state.interiorWall,
+    wallHeights: state.wallHeights,
+    floorThickness: state.floorThickness,
     frontSide: state.frontSide,
     upperEnabled: state.upperEnabled,
     basementEnabled: state.basementEnabled,
@@ -557,6 +588,20 @@
     ...(state.basementEnabled ? ['basement'] : []),
   ];
   const isHorizontalSide = side => side === 'north' || side === 'south';
+
+  // Heights. The fallback layout has no door or window heights until it is
+  // sanitized, so each reader supplies the default.
+  const wallHeight = floor => state.wallHeights?.[floor] ?? DEFAULT_WALL_HEIGHT;
+  const doorHead = door => door.head ?? DEFAULT_DOOR_HEAD;
+  const windowSill = win => win.sill ?? DEFAULT_WINDOW_SILL;
+  const windowHead = win => win.head ?? DEFAULT_WINDOW_HEAD;
+  /** The floor above a floor, or null on the top floor. */
+  const floorAbove = floor => {
+    if (floor === 'basement') return 'main';
+    return floor === 'main' && state.upperEnabled ? 'upper' : null;
+  };
+  /** Floor level to the next floor's level: the walls plus the floor between. */
+  const floorToFloor = floor => wallHeight(floor) + (state.floorThickness ?? DEFAULT_FLOOR_THICKNESS);
   const capitalize = text => text[0].toUpperCase() + text.slice(1);
 
   // Number formatting for labels. Two decimals so quarter feet show as 15.75, not 15.8.
@@ -678,6 +723,12 @@
     doorWidth: { kind: 'length', imperial: { min: 2, max: 6, step: 0.25 }, metric: { min: 0.6, max: 1.8, step: 0.05 } },
     windowOffset: { kind: 'length', imperial: { min: 0, step: 0.25, valid: [0, 80] }, metric: { min: 0, step: 0.05, valid: [0, 24.4] } },
     windowWidth: { kind: 'length', imperial: { min: 1, max: 20, step: 0.25, valid: [1, 80] }, metric: { min: 0.3, max: 6, step: 0.05, valid: [0.3, 24.4] } },
+    // Heights are typed in inches or centimeters, like wall thickness.
+    wallHeight: { kind: 'thickness', imperial: { min: 72, max: 240, step: 1 }, metric: { min: 180, max: 600, step: 1 } },
+    floorThickness: { kind: 'thickness', imperial: { min: 3, max: 36, step: 0.25 }, metric: { min: 8, max: 90, step: 0.5 } },
+    doorHead: { kind: 'thickness', imperial: { min: 60, max: 120, step: 1 }, metric: { min: 150, max: 300, step: 1 } },
+    windowSill: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
+    windowHead: { kind: 'thickness', imperial: { min: 12, max: 144, step: 1 }, metric: { min: 30, max: 360, step: 1 } },
   };
 
   /** A length in feet, shown in a form field. */
@@ -1042,6 +1093,23 @@
     return out;
   }
 
+  /** Doors and windows that reach higher than the wall they are in. */
+  function heightChecks() {
+    const out = [];
+    const limit = wallHeight(state.floor);
+    for (const w of state.windows.filter(win => win.floor === state.floor)) {
+      if (windowHead(w) > limit + 0.01) {
+        out.push({ level: 'warning', text: `A window on the ${SIDE_NAME[w.side]} wall is taller than the ${fmtLength(limit)} wall.` });
+      }
+    }
+    for (const d of state.doors) {
+      if (findRoom(d.roomId)?.floor === state.floor && doorHead(d) > limit + 0.01) {
+        out.push({ level: 'warning', text: `A doorway in ${findRoom(d.roomId).name} is taller than the ${fmtLength(limit)} wall.` });
+      }
+    }
+    return out;
+  }
+
   /** The wall opening of a doorway as a box, as thick as the wall it cuts. */
   function doorwayBox(d, g) {
     const thickness = isExteriorSide(g.room, g.side) ? state.exteriorWall : roomWallThickness(g.room);
@@ -1294,6 +1362,7 @@
 
     // Windows and entrances
     out.push(...windowChecks());
+    out.push(...heightChecks());
     if (!FLOORS.some(floor => entranceDoors(floor).length)) {
       out.push({ level: 'warning', text: 'No entrance yet. Add a doorway on an outside wall.' });
     }
@@ -1999,6 +2068,7 @@
       $('doorHinge').value = selected.hinge;
       $('doorOffset').value = lengthField(selected.offset);
       $('doorWidth').value = lengthField(selected.width);
+      $('doorHead').value = thicknessField(doorHead(selected));
       $('doorSwing').value = selected.bifold ? `bifold-${selected.swing}` : selected.swing;
       // A plain opening has no hinge, so the control would do nothing.
       // A four-panel bifold has a pair at each jamb, so there is no single hinge side.
@@ -2037,6 +2107,8 @@
       $('windowSide').value = selected.side;
       $('windowOffset').value = lengthField(selected.offset);
       $('windowWidth').value = lengthField(selected.width);
+      $('windowSill').value = thicknessField(windowSill(selected));
+      $('windowHead').value = thicknessField(windowHead(selected));
     }
   }
 
@@ -2083,6 +2155,16 @@
     const emptyText = itemsOnFloor ? 'No items overlap walls or each other.' : 'Add an item to check it against walls and other items.';
     fillChecks($('itemIssues'), out.length ? out : [{ level: 'good', text: emptyText }]);
     $('showItems').checked = state.showItems !== false;
+  }
+
+  /** Wall height for the open floor, the floor thickness, and the floor to floor result. */
+  function renderHeights() {
+    $('wallHeight').value = thicknessField(wallHeight(state.floor));
+    $('floorThickness').value = thicknessField(state.floorThickness);
+    const above = floorAbove(state.floor);
+    $('heightHelp').textContent = above
+      ? `${floorName(state.floor)} walls. Floor to floor, up to the ${floorName(above)}: ${fmtLength(floorToFloor(state.floor))}.`
+      : `${floorName(state.floor)} walls. This is the top floor.`;
   }
 
   function renderMetrics(model) {
@@ -2160,6 +2242,7 @@
     $('houseDepth').value = lengthField(state.depth);
     $('exteriorWall').value = thicknessField(state.exteriorWall);
     $('interiorWall').value = thicknessField(state.interiorWall);
+    renderHeights();
     $('zoomLabel').textContent = `${state.zoom}%`;
     $('zoomOut').disabled = state.zoom <= ZOOM_MIN;
     $('zoomIn').disabled = state.zoom >= ZOOM_MAX;
@@ -2347,6 +2430,15 @@
       if (ft !== null) state[key] = ft;
     });
   }
+  // Heights follow the same units as thickness. The wall height belongs to the open floor.
+  onNumberChange('wallHeight', (_, raw) => {
+    const ft = readField('wallHeight', raw);
+    if (ft !== null) state.wallHeights[state.floor] = ft;
+  });
+  onNumberChange('floorThickness', (_, raw) => {
+    const ft = readField('floorThickness', raw);
+    if (ft !== null) state.floorThickness = ft;
+  });
   $('frontSide').addEventListener('change', e => {
     state.frontSide = e.target.value;
     render();
@@ -2595,6 +2687,7 @@
       width,
       hinge: 'start',
       swing: 'in',
+      head: DEFAULT_DOOR_HEAD,
     };
     state.doors.push(door);
     state.selectedDoor = door.id;
@@ -2618,6 +2711,10 @@
   for (const [id, key] of [['doorOffset', 'offset'], ['doorWidth', 'width']]) {
     onLengthChange(onDoorChange, id, key);
   }
+  onDoorChange('doorHead', (door, value) => {
+    const ft = readField('doorHead', value);
+    if (ft !== null) door.head = ft;
+  });
   $('removeDoor').addEventListener('click', () => {
     if (!state.selectedDoor) return;
     state.doors = state.doors.filter(d => d.id !== state.selectedDoor);
@@ -2647,7 +2744,15 @@
         offset = a + (b - a - width) / 2;
       }
     }
-    const win = { id: newId('window'), floor: state.floor, side, offset: snap(offset), width };
+    const win = {
+      id: newId('window'),
+      floor: state.floor,
+      side,
+      offset: snap(offset),
+      width,
+      sill: DEFAULT_WINDOW_SILL,
+      head: DEFAULT_WINDOW_HEAD,
+    };
     state.windows.push(win);
     state.selectedWindow = win.id;
     render();
@@ -2672,6 +2777,15 @@
   for (const [id, key] of [['windowOffset', 'offset'], ['windowWidth', 'width']]) {
     onLengthChange(onWindowChange, id, key);
   }
+  // The sill must stay below the head, so a value that crosses it is ignored.
+  onWindowChange('windowSill', (win, value) => {
+    const ft = readField('windowSill', value);
+    if (ft !== null && ft < windowHead(win)) win.sill = ft;
+  });
+  onWindowChange('windowHead', (win, value) => {
+    const ft = readField('windowHead', value);
+    if (ft !== null && ft > windowSill(win)) win.head = ft;
+  });
   $('removeWindow').addEventListener('click', () => {
     if (!state.selectedWindow) return;
     state.windows = state.windows.filter(w => w.id !== state.selectedWindow);
@@ -3179,7 +3293,7 @@
       const title = document.createElement('h1');
       title.textContent = floorName(floor);
       const meta = document.createElement('p');
-      meta.textContent = `SIP House Planner · ${fmtSize(state.width, state.depth)} footprint · approx. ${fmtArea(Math.max(0, model.shellArea - model.partitionArea))} after walls · ${date}`;
+      meta.textContent = `SIP House Planner · ${fmtSize(state.width, state.depth)} footprint · approx. ${fmtArea(Math.max(0, model.shellArea - model.partitionArea))} after walls · ${fmtLength(wallHeight(floor))} walls · ${date}`;
       head.append(title, meta);
 
       const plan = document.createElement('div');

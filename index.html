@@ -152,12 +152,17 @@
       </section>
 
       <section class="panel walls-panel">
-        <div class="panel-title"><h2>Wall Thickness</h2><span>Approximate</span></div>
+        <div class="panel-title"><h2>Walls</h2><span>Approximate</span></div>
         <div class="two-fields">
           <label>Exterior <span data-unit="thickness">in</span><input id="exteriorWall" type="number" min="0" max="24" step="0.25" inputmode="decimal"></label>
           <label>Interior <span data-unit="thickness">in</span><input id="interiorWall" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
         </div>
-        <p class="field-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+        <p class="field-help thickness-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+        <div class="two-fields height-fields">
+          <label>Wall Height <span data-unit="thickness">in</span><input id="wallHeight" type="number" min="72" max="240" step="1" inputmode="decimal"></label>
+          <label>Floor Thickness <span data-unit="thickness">in</span><input id="floorThickness" type="number" min="3" max="36" step="0.25" inputmode="decimal"></label>
+        </div>
+        <p id="heightHelp" class="field-help"></p>
       </section>
 
       <div class="side-stack">
@@ -299,6 +304,7 @@
               <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.25"></label>
               <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.25"></label>
             </div>
+            <label class="select-label">Head Height <span><span data-unit="thickness">in</span>, top of the opening</span><input id="doorHead" type="number" min="60" max="120" step="1"></label>
             <label class="select-label">Door Type
               <select id="doorSwing">
                 <option value="in">Door Swings Into Selected Room</option>
@@ -334,6 +340,10 @@
               <label>Width <span data-unit="length">ft</span><input id="windowWidth" type="number" min="1" max="20" step="0.25"></label>
             </div>
             <label class="select-label">From Corner <span><span data-unit="length">ft</span>, from the top or left end</span><input id="windowOffset" type="number" min="0" step="0.25"></label>
+            <div class="two-fields">
+              <label>Sill Height <span data-unit="thickness">in</span><input id="windowSill" type="number" min="0" max="120" step="1"></label>
+              <label>Head Height <span data-unit="thickness">in</span><input id="windowHead" type="number" min="12" max="144" step="1"></label>
+            </div>
             <div class="room-actions">
               <button id="centerWindow" class="inline-button" type="button">Center on Room</button>
               <button id="removeWindow" class="delete-button" type="button">Remove Window</button>

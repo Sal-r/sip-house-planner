@@ -30,6 +30,17 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Exterior walls are dark teal and interior partition walls are gray, on screen and in the Print / PDF sheet. Half walls stay dashed.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 
+## Heights
+- [ ] The Walls panel shows Wall Height and Floor Thickness in inches (centimeters in metric). A new layout shows 96 and 12 inches.
+- [ ] Wall Height edits the open floor only. Switching to the Second Floor or Basement tab shows that floor's own height, and the help line names the floor.
+- [ ] With a second floor on, the Main Floor help line shows the floor to floor height (wall height plus floor thickness) up to the Second Floor. The Basement help line shows its height up to the Main Floor.
+- [ ] A new window shows Sill Height 36 and Head Height 80 inches. A new doorway shows Head Height 80 inches.
+- [ ] A window sill at or above its head, or a head at or below its sill, is ignored and the field goes back to the saved value.
+- [ ] A window or doorway head taller than the floor's wall height shows a Layout Checks warning, and the warning clears when the height is fixed.
+- [ ] Heights survive a reload, Export Layout and Import Layout, and Undo. Switching ft and m keeps the same heights.
+- [ ] A layout exported before heights existed (or a template) still loads with 8′ walls, 3′ sills, and 80 inch heads.
+- [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
+
 ## Units
 - [ ] ft / m switches every label, field, list, check message, and the grid (25 cm squares in metric).
 - [ ] Switching back and forth doesn't move or resize anything.

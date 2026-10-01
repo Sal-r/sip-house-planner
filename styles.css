@@ -967,6 +967,9 @@ svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-
   .mobile-notice:not([hidden]) { display: flex; }
 }
 
+/* A second row of fields under the wall thickness help text */
+.height-fields { margin-top: 10px; align-items: end; }
+
 /* Tap mode (touch screens with Drag to Move off) */
 svg.tap-only .room,
 svg.tap-only .item,
@@ -1069,7 +1072,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 236px auto;
+    grid-template-rows: 266px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -1113,8 +1116,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .intro .metric-note { display: none; }
 
   .dimensions-panel { grid-column: 13 / 16; }
-  .walls-panel { grid-column: 16 / 19; }
-  .findings { grid-column: 19 / 25; }
+  .walls-panel { grid-column: 16 / 20; }
+  .findings { grid-column: 20 / 25; }
   .dimensions-panel,
   .walls-panel,
   .findings {
@@ -1132,6 +1135,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .walls-panel .panel-title > span { display: none; }
   .dimensions-panel .field-help,
   .walls-panel .field-help { margin-top: 8px; }
+  /* The row is short, so the thickness explanation gives way to the heights. */
+  .walls-panel .thickness-help { display: none; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 
