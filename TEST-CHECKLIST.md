@@ -26,6 +26,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Width and Depth accept tiny house sizes down to 8′ (2.4 m), such as 8.5′ × 24′. Smaller values are rejected and the old value stays.
 - [ ] The Width and Depth arrows step by 0.25′ (0.05 m), and typed values snap to 3″ (5 cm), so 15.8 becomes 15.75.
 - [ ] Front of House moves the FRONT OF HOUSE label; Not Set hides it.
+- [ ] FRONT OF HOUSE, ENTRANCE, and the dimension labels are fully visible with the front on every side (top, bottom, left, right), in feet and metric, for a tiny footprint like 8′ × 12′ and a large one like 80′ × 80′.
 - [ ] Exterior walls are dark teal and interior partition walls are gray, on screen and in the Print / PDF sheet. Half walls stay dashed.
 - [ ] Changing Exterior and Interior wall thickness redraws the walls. Both are in inches, and 8.25 is kept exactly.
 
@@ -132,6 +133,15 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Import Layout loads that file after confirming; importing a non-layout file shows "Couldn’t Import That File" and changes nothing.
 - [ ] Reset to Defaults asks for confirmation and names what it will restore (the loaded template or the default layout). If the template file can't be read, it shows an error and changes nothing.
 - [ ] Print / PDF shows one landscape page per floor with a room list and no selection highlights.
+
+## Color theme
+- [ ] A first visit (private window) opens in the dark theme, with the moon button highlighted.
+- [ ] The sun button switches to light and the moon button switches back. The choice is still there after a reload.
+- [ ] In the dark theme the plan area, walls, rooms, labels, and items look exactly as they do in the light theme.
+- [ ] Print / PDF is light even when the app is dark.
+- [ ] With browser storage blocked, the page still loads dark and the switch still works for that visit.
+- [ ] On a phone the sun and moon buttons are the first row of the Menu, and the top bar stays on one line.
+- [ ] Text in both themes is readable: panels, inputs, dropdowns, checks (warning and error), the confirmation dialog, and disabled controls.
 
 ## Phone
 - [ ] The top buttons collapse into a Menu button, and the menu opens and closes.

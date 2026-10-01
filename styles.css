@@ -9,16 +9,31 @@
 
 /* 1. Design tokens
    Recurring colors live here. Single-use tints stay next to the rule that
-   uses them. */
+   uses them. The light values are the base. The dark theme (below) overrides
+   the page colors only. The plan drawing area stays light in both themes, like
+   a sheet of paper, so it also re-declares these light values for itself. */
 :root {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-plan: Inter, ui-sans-serif, system-ui, sans-serif;
   --font-display: Georgia, "Times New Roman", serif;
 
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--page-bg);
+  font-size: 16px;
+  line-height: 1.45;
+  color-scheme: light;
+}
+
+:root,
+.plan-scroll {
   --ink: #14313c;
   --ink-input: #173642;
+  --ink-soft: #35505a;
   --page-bg: #eef3f3;
   --surface: #fff;
+  --surface-2: #f7faf9;
+  --surface-3: #f1f6f5;
   --navy: #102c38;
   --gold: #d6a75a;
   --gold-text: #88652e;
@@ -37,10 +52,41 @@
   --danger: #a4493d;
 
   --label: #385663;
+  --subtle-text: #5d747c;
   --muted: #82959b;
   --muted-text: #71848b;
   --disabled-text: #94a4a8;
   --line: #dfe9e7;
+  --divider: #e7eeed;
+  --card-border: #d6e2e1;
+  --handle: #b3caca;
+
+  --field-border: #c9d9d8;
+  --field-border-hover: #789fa3;
+  --field-disabled-bg: #f1f5f4;
+  --btn-border: #bad0d1;
+  --btn-text: #245561;
+  --btn-hover: #e6f2f2;
+  --soft-button-bg: #e9f2f2;
+  --soft-button-text: #205765;
+  --soft-button-hover: #d5e8e9;
+  --danger-soft-bg: #f9e9e6;
+  --danger-soft-text: #9c4337;
+  --danger-soft-hover: #f2d5d0;
+  --remove-text: #b3372b;
+
+  --tab-bg: #e4eded;
+  --tab-border: #cad9d9;
+  --tab-text: #536e77;
+  --tab-selected-text: #123743;
+  --tab-toggle-bg: #d3e2e2;
+  --tab-toggle-hover: #c3d8d8;
+  --tab-disabled-bg: #edf3f3;
+
+  --info-bg: #f2f8f7;
+  --info-border: #d5e5e2;
+  --info-text: #3c5f68;
+  --info-strong: #174f5c;
 
   --check-bg: #f3f7f6;
   --check-text: #386069;
@@ -51,12 +97,73 @@
   --error-bg: #fff0eb;
   --error-text: #9a4334;
   --error-border: #d57560;
+}
 
-  font-family: var(--font-sans);
-  color: var(--ink);
-  background: var(--page-bg);
-  font-size: 16px;
-  line-height: 1.45;
+/* Dark theme. Only on screen, so printing and PDF export always stay light. */
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --ink: #e3edef;
+    --ink-input: #e3edef;
+    --ink-soft: #c5d7db;
+    --page-bg: #0d181d;
+    --surface: #15252c;
+    --surface-2: #1a2d35;
+    --surface-3: #20353e;
+    --gold-text: #d6a75a;
+    --teal-link: #7fc0cf;
+    --teal-border: #4a727c;
+    --teal-muted: #9ec5ce;
+    --focus: #4cb4d1;
+
+    --label: #a9c4cb;
+    --subtle-text: #9db5bc;
+    --muted: #86a0a8;
+    --muted-text: #8aa3aa;
+    --disabled-text: #5d747b;
+    --line: #26404a;
+    --divider: #243b44;
+    --card-border: #2a424b;
+    --handle: #3f5d68;
+
+    --field-border: #34505a;
+    --field-border-hover: #5f8892;
+    --field-disabled-bg: #1a2b32;
+    --btn-border: #3a5660;
+    --btn-text: #a9d3de;
+    --btn-hover: #223c46;
+    --soft-button-bg: #1f3a44;
+    --soft-button-text: #9fd0dc;
+    --soft-button-hover: #284a56;
+    --danger-soft-bg: #3a2320;
+    --danger-soft-text: #f0a89b;
+    --danger-soft-hover: #4b2b27;
+    --remove-text: #f08a7a;
+
+    --tab-bg: #0f1d23;
+    --tab-border: #2e4852;
+    --tab-text: #9db5bc;
+    --tab-selected-text: #e3edef;
+    --tab-toggle-bg: #24404a;
+    --tab-toggle-hover: #2d4e59;
+    --tab-disabled-bg: #131f25;
+
+    --info-bg: #1a2f37;
+    --info-border: #2c4a52;
+    --info-text: #a7c9d1;
+    --info-strong: #cfe8ee;
+
+    --check-bg: #1a2f37;
+    --check-text: #a7d0d8;
+    --check-border: #3f7f86;
+    --warning-bg: #2d2415;
+    --warning-text: #f0c98a;
+    --warning-border: #b8812f;
+    --error-bg: #321f1b;
+    --error-text: #f2b4a7;
+    --error-border: #c4604b;
+  }
 }
 
 /* 2. Base */
@@ -85,13 +192,13 @@ input, select {
   min-height: 40px;
   margin-top: 5px;
   padding: 9px 10px;
-  border: 1px solid #c9d9d8;
+  border: 1px solid var(--field-border);
   border-radius: 7px;
   background: var(--surface);
   color: var(--ink-input);
 }
-input:hover, select:hover { border-color: #789fa3; }
-input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-text); }
+input:hover, select:hover { border-color: var(--field-border-hover); }
+input:disabled, select:disabled { background: var(--field-disabled-bg); color: var(--disabled-text); }
 
 .two-fields, .four-fields { display: grid; gap: 10px; }
 .two-fields { grid-template-columns: 1fr 1fr; }
@@ -103,7 +210,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 
 /* Shared buttons */
 .quiet-button {
-  padding: 8px 12px;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: transparent;
@@ -112,11 +219,15 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .quiet-button:hover { background: #25434e; }
 
-/* Same look as .quiet-button so the Templates menu sits with the other top actions. */
+/* Same look as .quiet-button so the Templates menu sits with the other top actions.
+   A select ignores line-height, so min-height stands in for the button's one line of
+   text plus its padding and border. margin: 0 drops the top margin that selects get
+   from the general input rule. */
 .quiet-select {
   width: 8.5rem;
-  min-height: 0;
-  padding: 8px 12px;
+  min-height: calc(1.45em + 2 * var(--quiet-pad-y, 8px) + 2px);
+  margin: 0;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: var(--navy);
@@ -124,7 +235,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   font-size: .84rem;
 }
 .quiet-select:hover { background: #25434e; }
-.quiet-select option { background: #fff; color: var(--ink); }
+.quiet-select option { background: var(--surface); color: var(--ink); }
 
 .primary-button {
   display: block;
@@ -146,12 +257,12 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   padding: 9px 10px;
   border: 0;
   border-radius: 6px;
-  background: #e9f2f2;
-  color: #205765;
+  background: var(--soft-button-bg);
+  color: var(--soft-button-text);
   font-size: .78rem;
   font-weight: 700;
 }
-.inline-button:hover { background: #d5e8e9; }
+.inline-button:hover { background: var(--soft-button-hover); }
 
 /* Remove buttons: the same shape as .inline-button, tinted red */
 .delete-button,
@@ -159,41 +270,41 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   padding: 9px 10px;
   border: 0;
   border-radius: 6px;
-  background: #f9e9e6;
-  color: #9c4337;
+  background: var(--danger-soft-bg);
+  color: var(--danger-soft-text);
   font-size: .78rem;
   font-weight: 700;
 }
 .delete-button { margin-top: 12px; }
 .quiet-danger { display: block; margin: 12px 0 0; }
-.delete-button:hover, .quiet-danger:hover { background: #f2d5d0; }
+.delete-button:hover, .quiet-danger:hover { background: var(--danger-soft-hover); }
 
 .zoom-button {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid #bad0d1;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
-  background: #fff;
-  color: #245561;
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: 1.05rem;
   line-height: 1;
 }
-.zoom-button:hover { background: #e6f2f2; }
+.zoom-button:hover { background: var(--btn-hover); }
 .rotate-gap { margin-right: 8px; }
 
 .undo-button {
   height: 28px;
   margin-right: 6px;
   padding: 0 11px;
-  border: 1px solid #bad0d1;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
-  background: #fff;
-  color: #245561;
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: .75rem;
   font-weight: 700;
 }
-.undo-button:hover { background: #e6f2f2; }
+.undo-button:hover { background: var(--btn-hover); }
 
 /* 3. Top bar and menu */
 .topbar {
@@ -241,6 +352,25 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .menu-toggle { display: none; }
 
+/* Sun and moon switch for the color theme, in the same style as the other top bar controls. */
+.theme-toggle { display: inline-flex; }
+.theme-toggle button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #57727a;
+  background: transparent;
+  color: #abc3c9;
+}
+.theme-toggle button:first-child { border-radius: 8px 0 0 8px; }
+.theme-toggle button:last-child { margin-left: -1px; border-radius: 0 8px 8px 0; }
+.theme-toggle button:hover { background: #25434e; }
+.theme-toggle button[aria-pressed="true"] { background: #25434e; color: var(--gold); }
+.theme-toggle button:focus-visible { position: relative; z-index: 1; }
+.theme-toggle svg { width: 16px; height: 16px; }
+
 /* 4. Workspace and intro */
 .workspace {
   display: grid;
@@ -269,7 +399,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   letter-spacing: -.035em;
   line-height: 1.1;
 }
-.section-heading p:not(.eyebrow) { margin: 0; color: #5d747c; font-size: .94rem; }
+.section-heading p:not(.eyebrow) { margin: 0; color: var(--subtle-text); font-size: .94rem; }
 .eyebrow {
   margin: 0 0 4px;
   color: var(--gold-text);
@@ -291,7 +421,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .disclaimer {
   width: 0;
   min-width: 100%;
-  color: #35505a;
+  color: var(--ink-soft);
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.35;
@@ -300,9 +430,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: flex;
   max-width: 100%;
   padding: 4px;
-  border: 1px solid #cad9d9;
+  border: 1px solid var(--tab-border);
   border-radius: 9px;
-  background: #e4eded;
+  background: var(--tab-bg);
   white-space: nowrap;
   gap: 4px;
 }
@@ -317,13 +447,13 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #536e77;
+  color: var(--tab-text);
   font-size: .85rem;
   font-weight: 700;
 }
 .floor-tabs button[aria-selected="true"] {
-  background: #fff;
-  color: #123743;
+  background: var(--surface);
+  color: var(--tab-selected-text);
   box-shadow: 0 1px 5px #14313c21;
 }
 
@@ -334,18 +464,18 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   width: 28px;
   padding: 0;
   border-radius: 6px 0 0 6px;
-  background: #d3e2e2;
+  background: var(--tab-toggle-bg);
   color: var(--teal-link);
   font-size: 1.05rem;
   line-height: 1;
 }
-.floor-tabs .floor-tab-group .floor-toggle:hover { background: #c3d8d8; }
-.floor-tabs .floor-tab-group .floor-toggle.is-remove { color: #b3372b; }
-.floor-tabs .floor-tab-group .floor-toggle.is-remove:hover { background: #f4d9d5; }
+.floor-tabs .floor-tab-group .floor-toggle:hover { background: var(--tab-toggle-hover); }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove { color: var(--remove-text); }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove:hover { background: var(--danger-soft-hover); }
 .floor-tab-group button[role="tab"] { border-radius: 0 6px 6px 0; }
 /* A floor that is off: the tab stays but is dimmed and can't be opened. */
 .floor-tab-group button[role="tab"]:disabled {
-  background: #edf3f3;
+  background: var(--tab-disabled-bg);
   color: var(--disabled-text);
   cursor: default;
 }
@@ -353,9 +483,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .plan-card,
 .panel,
 .metric-row > div {
-  border: 1px solid #d6e2e1;
+  border: 1px solid var(--card-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 6px 24px #234b5010;
 }
 .metric-row {
@@ -366,9 +496,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .metric-row > div { padding: 15px 17px; }
 .metric-row span, .metric-row strong { display: block; }
-.metric-row span { color: #607780; font-size: .78rem; }
+.metric-row span { color: var(--subtle-text); font-size: .78rem; }
 .metric-row strong { margin-top: 3px; font-size: 1.4rem; letter-spacing: -.03em; }
-.metric-note { margin: 8px 3px 14px; color: #71838a; font-size: .76rem; }
+.metric-note { margin: 8px 3px 14px; color: var(--muted-text); font-size: .76rem; }
 
 /* 5. Plan card */
 .plan-card { overflow: hidden; }
@@ -381,7 +511,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   min-height: 44px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
-  background: #f7faf9;
+  background: var(--surface-2);
   color: var(--teal-muted);
   font-size: .83rem;
   font-weight: 650;
@@ -391,7 +521,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: #658089;
+  color: var(--subtle-text);
   font-weight: 500;
 }
 .layer-toggle {
@@ -417,27 +547,27 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1px solid #9ec2c4;
+  border: 1px solid var(--teal-border);
 }
 .unit-toggle { display: inline-flex; margin: 0 4px; }
 .unit-toggle button {
   min-width: 30px;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #bad0d1;
-  background: #fff;
-  color: #245561;
+  border: 1px solid var(--btn-border);
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: .75rem;
   font-weight: 750;
 }
 .unit-toggle button:first-child { border-radius: 6px 0 0 6px; }
 .unit-toggle button:last-child { margin-left: -1px; border-radius: 0 6px 6px 0; }
-.unit-toggle button:hover { background: #e6f2f2; }
+.unit-toggle button:hover { background: var(--btn-hover); }
 .unit-toggle button[aria-pressed="true"] { border-color: var(--teal); background: var(--teal); color: #fff; }
 .unit-toggle button:focus-visible { position: relative; z-index: 1; }
 #zoomLabel {
   min-width: 41px;
-  color: #315e69;
+  color: var(--teal-muted);
   text-align: center;
   font-size: .75rem;
   font-weight: 750;
@@ -450,6 +580,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   overflow: auto;
   container-type: size;
   background: #f9fbfa;
+  color-scheme: light;
 }
 /* Size is set inline by app.js so the plan fits the scroll box at any zoom. */
 #plan { display: block; touch-action: none; }
@@ -460,7 +591,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   place-items: center;
   height: 14px;
   border-top: 1px solid var(--line);
-  background: #f1f6f5;
+  background: var(--surface-3);
   cursor: ns-resize;
   touch-action: none;
 }
@@ -469,7 +600,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   width: 46px;
   height: 4px;
   border-radius: 2px;
-  background: #b3caca;
+  background: var(--handle);
 }
 .plan-resize:hover::before,
 .plan-resize.dragging::before { background: var(--focus); }
@@ -478,8 +609,8 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .template-credit {
   margin: 0;
   padding: 12px 17px;
-  border-bottom: 1px solid #e7eeed;
-  background: #f7faf9;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface-2);
   color: var(--teal-muted);
   font-size: 1rem;
   line-height: 1.5;
@@ -489,9 +620,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .plan-note {
   margin: 0;
   padding: 10px 17px;
-  border-top: 1px solid #e7eeed;
-  background: #fff;
-  color: #6b8088;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  color: var(--muted-text);
   font-size: .78rem;
 }
 
@@ -513,14 +644,14 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .info-box {
   margin: 0 0 10px;
   padding: 9px 11px;
-  border: 1px solid #d5e5e2;
+  border: 1px solid var(--info-border);
   border-radius: 8px;
-  background: #f2f8f7;
-  color: #3c5f68;
+  background: var(--info-bg);
+  color: var(--info-text);
   font-size: .78rem;
   line-height: 1.5;
 }
-.info-box strong { color: #174f5c; }
+.info-box strong { color: var(--info-strong); }
 /* The same stack in all four panels: pick, add, then suggested sizes */
 .pick-controls { display: grid; gap: 8px; margin-bottom: 12px; }
 .pick-controls select { margin-top: 0; font-weight: 700; }
@@ -538,7 +669,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .room-actions .delete-button { margin-top: 8px; }
 .room-actions .inline-button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.door-editor { margin-top: 12px; padding-top: 14px; border-top: 1px solid #e4ebea; }
+.door-editor { margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--divider); }
 .door-editor .two-fields { margin-bottom: 10px; }
 
 /* 7. Wall controls */
@@ -564,7 +695,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #2f5460;
+  color: var(--ink-soft);
   font-size: .82rem;
   font-weight: 600;
   cursor: pointer;
@@ -632,9 +763,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .confirm-card {
   width: min(100%, 420px);
   padding: 24px;
-  border: 1px solid #d0dedc;
+  border: 1px solid var(--card-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
   color: var(--ink-input);
   box-shadow: 0 24px 60px #0f2c3859;
 }
@@ -645,10 +776,10 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   font-weight: 500;
   line-height: 1.2;
 }
-.confirm-card p { margin: 0 0 22px; color: #5b737b; font-size: .9rem; line-height: 1.5; }
+.confirm-card p { margin: 0 0 22px; color: var(--subtle-text); font-size: .9rem; line-height: 1.5; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 9px; }
-.confirm-card .quiet-button { border-color: #b8cdcc; color: #315a64; }
-.confirm-card .quiet-button:hover { background: #edf5f3; }
+.confirm-card .quiet-button { border-color: var(--btn-border); color: var(--btn-text); }
+.confirm-card .quiet-button:hover { background: var(--btn-hover); }
 .confirm-danger {
   padding: 8px 13px;
   border: 1px solid var(--danger);
@@ -669,7 +800,7 @@ footer {
   max-width: 1600px;
   margin: 0 auto;
   padding: 0 clamp(16px, 2.5vw, 40px) 30px;
-  color: #70868b;
+  color: var(--muted-text);
   font-size: .75rem;
 }
 
@@ -834,8 +965,12 @@ svg.tap-only .interior-door { cursor: pointer; }
     box-shadow: 0 14px 34px #0f2c3866;
   }
   .action-menu.open { display: flex; }
-  .action-menu .quiet-button { padding: 11px 12px; text-align: left; font-size: .92rem; }
-  .action-menu .quiet-select { width: 100%; padding: 11px 12px; font-size: .92rem; }
+  .action-menu { --quiet-pad-y: 11px; }
+  .action-menu .quiet-button { text-align: left; font-size: .92rem; }
+  .action-menu .quiet-select { width: 100%; font-size: .92rem; }
+  /* In the dropdown the sun and moon buttons share the row and match the other items in height. */
+  .action-menu .theme-toggle { display: flex; }
+  .action-menu .theme-toggle button { flex: 1; height: calc(1.45 * .92rem + 2 * var(--quiet-pad-y) + 2px); }
   .section-heading h1 { font-size: 1.8rem; }
 }
 
