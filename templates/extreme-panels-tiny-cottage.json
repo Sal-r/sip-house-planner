@@ -1,7 +1,7 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-09-30T22:22:37.215Z",
+  "exportedAt": "2026-10-01T02:25:24.792Z",
   "layout": {
     "schemaVersion": 3,
     "width": 24,
@@ -17,7 +17,7 @@
       "by": "Lew Oliver for Extreme Panel Technologies",
       "url": "https://extremepanel.com/project/extreme-tiny-cottage-plan/"
     },
-    "selectedRoom": "closet",
+    "selectedRoom": "bath",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -69,13 +69,13 @@
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": "item-1790806898977-pawlkt",
+    "selectedItem": "shower",
     "doors": [
       {
         "id": "door-entry",
         "roomId": "living",
         "side": "west",
-        "offset": 8.25,
+        "offset": 7.75,
         "width": 3,
         "hinge": "start",
         "swing": "in"
@@ -93,7 +93,7 @@
         "id": "door-bath",
         "roomId": "bath",
         "side": "west",
-        "offset": 1,
+        "offset": 0.75,
         "width": 2.5,
         "hinge": "start",
         "swing": "out"
@@ -141,7 +141,7 @@
         "name": "Pantry Cabinet",
         "floor": "main",
         "x": 0.75,
-        "y": 12.5,
+        "y": 12,
         "w": 2,
         "h": 2.5
       },
@@ -150,7 +150,7 @@
         "name": "Base Cabinets (Sink)",
         "floor": "main",
         "x": 2.75,
-        "y": 13,
+        "y": 12.5,
         "w": 5.25,
         "h": 2
       },
@@ -159,7 +159,7 @@
         "name": "Range",
         "floor": "main",
         "x": 8,
-        "y": 12.5,
+        "y": 12,
         "w": 2.5,
         "h": 2.5
       },
@@ -168,7 +168,7 @@
         "name": "Base Cabinets",
         "floor": "main",
         "x": 10.5,
-        "y": 13,
+        "y": 12.5,
         "w": 2.25,
         "h": 2
       },
@@ -177,7 +177,7 @@
         "name": "Refrigerator",
         "floor": "main",
         "x": 12.75,
-        "y": 12.5,
+        "y": 12,
         "w": 3,
         "h": 2.5
       },
@@ -194,7 +194,7 @@
         "id": "toilet",
         "name": "Toilet",
         "floor": "main",
-        "x": 20.75,
+        "x": 20.25,
         "y": 8,
         "w": 2.5,
         "h": 1.75
@@ -203,8 +203,8 @@
         "id": "shower",
         "name": "Shower",
         "floor": "main",
-        "x": 20.25,
-        "y": 11.25,
+        "x": 19.75,
+        "y": 10.75,
         "w": 3,
         "h": 3.75
       },
@@ -213,7 +213,7 @@
         "name": "Vanity",
         "floor": "main",
         "x": 16.25,
-        "y": 13.25,
+        "y": 12.75,
         "w": 3,
         "h": 1.75
       },
@@ -244,15 +244,16 @@
         "x": 0.75,
         "y": 0.75,
         "w": 15.25,
-        "h": 14.25,
+        "h": 14,
         "kind": "social",
         "wallMode": "enclosed",
         "walls": {
           "north": false,
           "east": false,
-          "south": false,
+          "south": true,
           "west": false
-        }
+        },
+        "wallT": 0.5
       },
       {
         "id": "closet",
@@ -265,14 +266,18 @@
         "kind": "utility",
         "wallMode": "enclosed",
         "halfWalls": {
-          "south": false
+          "north": false,
+          "east": false,
+          "south": false,
+          "west": false
         },
         "walls": {
           "north": true,
           "east": true,
           "south": true,
           "west": true
-        }
+        },
+        "wallT": 0.5
       },
       {
         "id": "bath",
@@ -280,10 +285,11 @@
         "floor": "main",
         "x": 16,
         "y": 7.75,
-        "w": 7.25,
-        "h": 7.25,
+        "w": 7,
+        "h": 7,
         "kind": "wet",
-        "wallMode": "enclosed"
+        "wallMode": "enclosed",
+        "wallT": 0.5
       }
     ],
     "fixtures": [
