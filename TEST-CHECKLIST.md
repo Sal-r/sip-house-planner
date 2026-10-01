@@ -82,6 +82,9 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Wall, Hinge, From Corner, Width, and Door Type all update the doorway; dragging slides it along the wall in 3″ steps.
 - [ ] Typing 7.1 in a doorway's From Corner becomes 7, and 7.13 becomes 7.25. Rooms, windows, and items snap the same way.
 - [ ] Setting Door Type to Cased Opening (No Door) draws a dashed opening with end ticks, greys out Hinge, still cuts the wall, and can be dragged, selected, and focused by keyboard.
+- [ ] Door Type: Bifold Door Folds Into or Out of Selected Room draws a V of two panels with a dashed quarter circle half the door width. Over 4′ wide it draws a pair at each jamb (four panels) and the Hinge control is disabled.
+- [ ] A bifold stays a bifold after Rotate House, a reload, and Export then Import. Switching back to a swinging door or cased opening removes it.
+- [ ] An item inside a bifold's quarter circle shows "is in the swing of". An item beyond half the door width does not. A bifold can sit right at a corner without a warning.
 - [ ] A doorway on an outside wall shows the ENTRANCE label.
 - [ ] + Add Window, dragging, Wall, Width, From Corner, and Remove Window all work.
 - [ ] Dragging a window toward another wall moves it there, and it doesn't flicker between walls near a corner.
