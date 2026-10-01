@@ -247,6 +247,35 @@ async function main() {
     });
   }
 
+  // An outdoor space only adds an ENTRANCE where its door sits on the house wall it touches.
+  await openApp();
+  const entranceBars = async (doors, rooms) => {
+    const state = await saved();
+    state.rooms.push(...rooms);
+    state.doors.push(...doors);
+    await page.evaluate(s => localStorage.setItem('sip-house-planner-v1', JSON.stringify(s)), state);
+    await page.reload();
+    await page.waitForSelector('#plan [data-room]');
+    return page.locator('#plan .entrance-bar').count();
+  };
+  const baseState = await saved();
+  const bath = { id: 'test-bath', name: 'Test Bath', floor: 'main', x: baseState.width, y: 2, w: 5, h: 8, kind: 'outdoor' };
+  const bathDoor = (side, offset) => ({ id: 'test-door', roomId: 'test-bath', side, offset, width: 3, hinge: 'start', swing: 'in', head: 6.666 });
+  const plainCount = await entranceBars([], []);
+  await check('an outdoor door facing the house adds an entrance on the wall it touches', async () => {
+    await openApp();
+    return (await entranceBars([bathDoor('west', 2)], [bath])) === plainCount + 1;
+  });
+  await check('an outdoor door on a side away from the house adds no entrance', async () => {
+    await openApp();
+    return (await entranceBars([bathDoor('east', 2)], [bath])) === plainCount;
+  });
+  await check('an outdoor door beside the house wall, not on it, adds no entrance', async () => {
+    await openApp();
+    const lower = { ...bath, y: baseState.depth + 1 };
+    return (await entranceBars([bathDoor('west', 2)], [lower])) === plainCount;
+  });
+
   await browser.close();
   server.close();
 
