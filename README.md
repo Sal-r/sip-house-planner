@@ -12,7 +12,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 
 - **Feet or metric:** switch between feet and inches or meters and centimeters at any time. Layouts are saved the same way in both, so any file opens in either.
 - **Rooms:** add, name, move, and resize spaces on a plan drawn to scale with a 1′ grid. Rooms, doorways, windows, and items all snap to 3″ (5 cm) steps, so sizes like 15.75′ are possible. Rooms are color-coded by type (living space, bedroom, bathroom, entry, hallway or stairs, utility or storage).
-- **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness, per-side wall toggles, and per-side half walls.
+- **Walls:** set the exterior and interior wall thicknesses to match real SIP panels, like 6½″ or 8¼″ walls. Each room can be open plan or enclosed, with its own wall thickness, per-side wall toggles, and per-side half walls. Exterior walls are drawn dark teal and interior partition walls gray, so the two kinds are easy to tell apart on screen and in print.
 - **Doorways:** add interior doorways with hinge side and swing direction, or as a cased opening with no door. Doorways on an outside wall are marked as entrances automatically.
 - **Windows:** place windows along the exterior walls, and drag them along a wall or over to another wall. **Center on Room** slides the selected window to the middle of its room's wall.
 - **Furniture and fixtures:** 21 presets (beds, sofas, cabinets, appliances, bathroom fixtures, and more) plus a custom box, on their own layer. Turn any item 90° with the Rotate 90° button or the R key.
