@@ -23,6 +23,15 @@
   <meta property="og:image:alt" content="SIP House Planner showing a color-coded floor plan with rooms, doorways, and layout checks.">
   <meta name="twitter:card" content="summary_large_image">
 
+  <script>
+    // Dark is the default. Set the theme here, before the page paints, so a saved
+    // Light choice does not flash dark first. app.js reads and saves the same key.
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('sip-house-planner-theme') === 'light' ? 'light' : 'dark';
+    } catch (_) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
   <link rel="stylesheet" href="./styles.css">
   <script defer src="./app.js"></script>
 </head>
@@ -39,6 +48,9 @@
       <span class="private-pill">My Workspace</span>
       <button id="menuToggle" type="button" class="quiet-button menu-toggle" aria-expanded="false" aria-controls="actionMenu">Menu</button>
       <div id="actionMenu" class="action-menu">
+        <span class="theme-toggle" role="group" aria-label="Color theme">
+          <button id="themeLight" type="button" aria-pressed="false" aria-label="Light theme" title="Light theme"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button><button id="themeDark" type="button" aria-pressed="true" aria-label="Dark theme" title="Dark theme"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+        </span>
         <button id="printPlan" type="button" class="quiet-button">Print / PDF</button>
         <button id="exportLayout" type="button" class="quiet-button">Export Layout</button>
         <button id="importLayout" type="button" class="quiet-button">Import Layout</button>
@@ -50,6 +62,12 @@
       </div>
     </div>
   </header>
+
+  <!-- Shown only on phones and touch screens (see styles.css). app.js handles Dismiss. -->
+  <div id="mobileNotice" class="mobile-notice" role="note">
+    <p><strong>Please use a desktop browser for the best experience.</strong> Mobile is still under development. Phone testing showed it was hard to match the desktop features because of the number of menus.</p>
+    <button id="mobileNoticeDismiss" type="button" class="quiet-button">Dismiss</button>
+  </div>
 
   <main class="workspace">
     <section class="canvas-section" aria-label="Scaled floor plan">
@@ -119,8 +137,8 @@
       <section class="panel dimensions-panel">
         <div class="panel-title"><h2>Footprint</h2><span>Editable</span></div>
         <div class="two-fields">
-          <label>Width <span data-unit="length">ft</span><input id="houseWidth" type="number" min="24" max="80" step="1" inputmode="decimal"></label>
-          <label>Depth <span data-unit="length">ft</span><input id="houseDepth" type="number" min="24" max="80" step="1" inputmode="decimal"></label>
+          <label>Width <span data-unit="length">ft</span><input id="houseWidth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
+          <label>Depth <span data-unit="length">ft</span><input id="houseDepth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
         </div>
         <label class="select-label front-select">Front of House
           <select id="frontSide">
@@ -131,15 +149,37 @@
             <option value="none">Not Set</option>
           </select>
         </label>
+        <details id="lotDetails" class="lot-details">
+          <summary>Lot and Setback</summary>
+          <label class="lot-toggle"><input id="lotEnabled" type="checkbox"> Show Lot</label>
+          <div class="two-fields">
+            <label>Lot Width <span data-unit="length">ft</span><input id="lotWidth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
+            <label>Lot Depth <span data-unit="length">ft</span><input id="lotDepth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
+          </div>
+          <div class="two-fields">
+            <label>House From Left <span data-unit="length">ft</span><input id="lotLeft" type="number" step="0.25" inputmode="decimal"></label>
+            <label>House From Top <span data-unit="length">ft</span><input id="lotTop" type="number" step="0.25" inputmode="decimal"></label>
+          </div>
+          <div class="two-fields">
+            <label>Setback <span data-unit="length">ft</span><input id="lotSetback" type="number" min="0" max="50" step="0.25" inputmode="decimal"></label>
+            <button id="centerLot" class="inline-button" type="button">Center House on Lot</button>
+          </div>
+          <p class="field-help">Setbacks vary by town and zone, so check yours with the local building department. The house is measured to the outside of its exterior walls.</p>
+        </details>
       </section>
 
       <section class="panel walls-panel">
-        <div class="panel-title"><h2>Wall Thickness</h2><span>Approximate</span></div>
+        <div class="panel-title"><h2>Walls</h2><span>Approximate</span></div>
         <div class="two-fields">
           <label>Exterior <span data-unit="thickness">in</span><input id="exteriorWall" type="number" min="0" max="24" step="0.25" inputmode="decimal"></label>
           <label>Interior <span data-unit="thickness">in</span><input id="interiorWall" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
         </div>
-        <p class="field-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+        <p class="field-help thickness-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+        <div class="two-fields height-fields">
+          <label>Wall Height <span data-unit="thickness">in</span><input id="wallHeight" type="number" min="72" max="240" step="1" inputmode="decimal"></label>
+          <label>Floor Thickness <span data-unit="thickness">in</span><input id="floorThickness" type="number" min="3" max="36" step="0.25" inputmode="decimal"></label>
+        </div>
+        <p id="heightHelp" class="field-help"></p>
       </section>
 
       <div class="side-stack">
@@ -174,7 +214,9 @@
                 <option value="private">Bedroom</option>
                 <option value="wet">Bathroom</option>
                 <option value="entry">Entry / Exit</option>
-                <option value="circulation">Hallway / Stairs</option>
+                <option value="circulation">Hallway</option>
+                <option value="stairs">Stairs</option>
+                <option value="outdoor">Outdoor Space</option>
                 <option value="utility">Utility / Storage</option>
               </select>
             </label>
@@ -185,6 +227,37 @@
                 <option value="basement">Basement</option>
               </select>
             </label>
+          </div>
+          <div id="stairControls" class="stair-controls" hidden>
+            <div class="two-fields compact-row">
+              <label>Stair Type
+                <select id="stairType">
+                  <option value="straight">Straight</option>
+                  <option value="turnLeft">Turn Left</option>
+                  <option value="turnRight">Turn Right</option>
+                  <option value="u">U Shape</option>
+                  <option value="spiral">Spiral</option>
+                </select>
+              </label>
+              <label>Goes Up Toward
+                <select id="stairClimb">
+                  <option value="north">Top</option>
+                  <option value="east">Right</option>
+                  <option value="south">Bottom</option>
+                  <option value="west">Left</option>
+                </select>
+              </label>
+            </div>
+            <div class="two-fields compact-row">
+              <label id="stairTurnLabel">Turns
+                <select id="stairTurn">
+                  <option value="left">Left</option>
+                  <option value="right">Right (clockwise)</option>
+                </select>
+              </label>
+              <label id="stairLandingLabel" title="The flat landing between flights. A straight stair uses 0 for no landing. Stairs that turn need at least 12 in.">Landing <span data-unit="thickness">in</span><input id="stairLanding" type="number" min="0" max="120" step="1" inputmode="decimal"></label>
+            </div>
+            <p id="stairInfo" class="field-help"></p>
           </div>
           <div class="two-fields compact-row">
             <label>Partitions
@@ -234,7 +307,7 @@
             <select id="itemPreset" aria-label="Suggested sizes"></select>
           </div>
           <div id="itemEditor" class="door-editor" hidden>
-            <label class="select-label">Name<input id="itemName" type="text" maxlength="40" autocomplete="off"></label>
+            <label class="select-label">Name<input id="itemName" type="text" maxlength="120" autocomplete="off"></label>
             <div class="four-fields">
               <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
               <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
@@ -249,7 +322,7 @@
           </div>
           <h3 class="item-checks-title">Item Checks</h3>
           <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
-          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other. A new item starts in the selected room.</p>
+          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other, except utility markers and notes, which skip the checks. A new item starts in the selected room. Notes belong to the floor they are on, and their text is the item name.</p>
         </section>
 
         <section class="panel doors-panel">
@@ -281,16 +354,19 @@
               <label>From Corner <span data-unit="length">ft</span><input id="doorOffset" type="number" min="0" step="0.25"></label>
               <label>Width <span data-unit="length">ft</span><input id="doorWidth" type="number" min="2" max="6" step="0.25"></label>
             </div>
+            <label class="select-label">Head Height <span><span data-unit="thickness">in</span>, top of the opening</span><input id="doorHead" type="number" min="60" max="120" step="1"></label>
             <label class="select-label">Door Type
               <select id="doorSwing">
                 <option value="in">Door Swings Into Selected Room</option>
                 <option value="out">Door Swings Out of Selected Room</option>
+                <option value="bifold-in">Bifold Door Folds Into Selected Room</option>
+                <option value="bifold-out">Bifold Door Folds Out of Selected Room</option>
                 <option value="none">Cased Opening (No Door)</option>
               </select>
             </label>
             <button id="removeDoor" class="delete-button" type="button">Remove Doorway</button>
           </div>
-          <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing. Choose Cased Opening for a doorway with no door, such as a staircase entry.</p>
+          <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing. Choose Bifold for folding closet doors (two panels, or four over 4 feet wide). Choose Cased Opening for a doorway with no door, such as a staircase entry.</p>
         </section>
 
         <section class="panel windows-panel">
@@ -314,6 +390,10 @@
               <label>Width <span data-unit="length">ft</span><input id="windowWidth" type="number" min="1" max="20" step="0.25"></label>
             </div>
             <label class="select-label">From Corner <span><span data-unit="length">ft</span>, from the top or left end</span><input id="windowOffset" type="number" min="0" step="0.25"></label>
+            <div class="two-fields">
+              <label>Sill Height <span data-unit="thickness">in</span><input id="windowSill" type="number" min="0" max="120" step="1"></label>
+              <label>Head Height <span data-unit="thickness">in</span><input id="windowHead" type="number" min="12" max="144" step="1"></label>
+            </div>
             <div class="room-actions">
               <button id="centerWindow" class="inline-button" type="button">Center on Room</button>
               <button id="removeWindow" class="delete-button" type="button">Remove Window</button>

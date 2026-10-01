@@ -403,7 +403,7 @@
     "items": [
       {
         "id": "bed1",
-        "name": "King Bed",
+        "name": "Bed - King",
         "floor": "main",
         "x": 1.0,
         "y": 1.0,
@@ -484,7 +484,7 @@
       },
       {
         "id": "bed2",
-        "name": "Queen Bed",
+        "name": "Bed - Queen",
         "floor": "main",
         "x": 32.5,
         "y": 0.75,
@@ -529,7 +529,7 @@
       },
       {
         "id": "range",
-        "name": "Range",
+        "name": "Stove / Range",
         "floor": "main",
         "x": 7.0,
         "y": 23.5,

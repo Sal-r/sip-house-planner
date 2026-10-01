@@ -9,16 +9,31 @@
 
 /* 1. Design tokens
    Recurring colors live here. Single-use tints stay next to the rule that
-   uses them. */
+   uses them. The light values are the base. The dark theme (below) overrides
+   the page colors only. The plan drawing area stays light in both themes, like
+   a sheet of paper, so it also re-declares these light values for itself. */
 :root {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-plan: Inter, ui-sans-serif, system-ui, sans-serif;
   --font-display: Georgia, "Times New Roman", serif;
 
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--page-bg);
+  font-size: 16px;
+  line-height: 1.45;
+  color-scheme: light;
+}
+
+:root,
+.plan-scroll {
   --ink: #14313c;
   --ink-input: #173642;
+  --ink-soft: #35505a;
   --page-bg: #eef3f3;
   --surface: #fff;
+  --surface-2: #f7faf9;
+  --surface-3: #f1f6f5;
   --navy: #102c38;
   --gold: #d6a75a;
   --gold-text: #88652e;
@@ -30,16 +45,48 @@
   --focus: #1e88a5;
   --selected: #067990;
   --wall: #284f5b;
+  --partition-wall: #6d7d87;
   --orange: #cd8741;
   --orange-fill: #fff1dc;
   --conflict: #c2452f;
   --danger: #a4493d;
 
   --label: #385663;
+  --subtle-text: #5d747c;
   --muted: #82959b;
   --muted-text: #71848b;
   --disabled-text: #94a4a8;
   --line: #dfe9e7;
+  --divider: #e7eeed;
+  --card-border: #d6e2e1;
+  --handle: #b3caca;
+
+  --field-border: #c9d9d8;
+  --field-border-hover: #789fa3;
+  --field-disabled-bg: #f1f5f4;
+  --btn-border: #bad0d1;
+  --btn-text: #245561;
+  --btn-hover: #e6f2f2;
+  --soft-button-bg: #e9f2f2;
+  --soft-button-text: #205765;
+  --soft-button-hover: #d5e8e9;
+  --danger-soft-bg: #f9e9e6;
+  --danger-soft-text: #9c4337;
+  --danger-soft-hover: #f2d5d0;
+  --remove-text: #b3372b;
+
+  --tab-bg: #e4eded;
+  --tab-border: #cad9d9;
+  --tab-text: #536e77;
+  --tab-selected-text: #123743;
+  --tab-toggle-bg: #d3e2e2;
+  --tab-toggle-hover: #c3d8d8;
+  --tab-disabled-bg: #edf3f3;
+
+  --info-bg: #f2f8f7;
+  --info-border: #d5e5e2;
+  --info-text: #3c5f68;
+  --info-strong: #174f5c;
 
   --check-bg: #f3f7f6;
   --check-text: #386069;
@@ -51,11 +98,119 @@
   --error-text: #9a4334;
   --error-border: #d57560;
 
-  font-family: var(--font-sans);
-  color: var(--ink);
-  background: var(--page-bg);
-  font-size: 16px;
-  line-height: 1.45;
+  /* The plan drawing area. Dark mode swaps these for a muted gray sheet. */
+  --plan-bg: #f9fbfa;
+  --plan-outline: #fff;
+  --plan-grid: #e4efed;
+  --plan-grid-major: #bed6d7;
+  --plan-dim-line: #78999e;
+  --plan-dim-text: #57767f;
+  --plan-entrance-text: #ad6d2c;
+  --plan-front-text: #88652e;
+  --plan-room-dim: #5b7a83;
+
+  /* Room fills by room type. */
+  --room-social: #fff1b3;
+  --room-private: #e3d5f2;
+  --room-entry: #ffd9b0;
+  --room-wet: #cfe3f7;
+  --room-utility: #d5eccb;
+  --room-circulation: #f8d3d3;
+  --room-stairs: #e4dccb;
+  --room-outdoor: #e4e8e6;
+}
+
+/* Dark theme. Only on screen, so printing and PDF export always stay light. */
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --ink: #e3edef;
+    --ink-input: #e3edef;
+    --ink-soft: #c5d7db;
+    --page-bg: #0d181d;
+    --surface: #15252c;
+    --surface-2: #1a2d35;
+    --surface-3: #20353e;
+    --gold-text: #d6a75a;
+    --teal-link: #7fc0cf;
+    --teal-border: #4a727c;
+    --teal-muted: #9ec5ce;
+    --focus: #4cb4d1;
+
+    --label: #a9c4cb;
+    --subtle-text: #9db5bc;
+    --muted: #86a0a8;
+    --muted-text: #8aa3aa;
+    --disabled-text: #5d747b;
+    --line: #26404a;
+    --divider: #243b44;
+    --card-border: #2a424b;
+    --handle: #3f5d68;
+
+    --field-border: #34505a;
+    --field-border-hover: #5f8892;
+    --field-disabled-bg: #1a2b32;
+    --btn-border: #3a5660;
+    --btn-text: #a9d3de;
+    --btn-hover: #223c46;
+    --soft-button-bg: #1f3a44;
+    --soft-button-text: #9fd0dc;
+    --soft-button-hover: #284a56;
+    --danger-soft-bg: #3a2320;
+    --danger-soft-text: #f0a89b;
+    --danger-soft-hover: #4b2b27;
+    --remove-text: #f08a7a;
+
+    --tab-bg: #0f1d23;
+    --tab-border: #2e4852;
+    --tab-text: #9db5bc;
+    --tab-selected-text: #e3edef;
+    --tab-toggle-bg: #24404a;
+    --tab-toggle-hover: #2d4e59;
+    --tab-disabled-bg: #131f25;
+
+    --info-bg: #1a2f37;
+    --info-border: #2c4a52;
+    --info-text: #a7c9d1;
+    --info-strong: #cfe8ee;
+
+    --check-bg: #1a2f37;
+    --check-text: #a7d0d8;
+    --check-border: #3f7f86;
+    --warning-bg: #2d2415;
+    --warning-text: #f0c98a;
+    --warning-border: #b8812f;
+    --error-bg: #321f1b;
+    --error-text: #f2b4a7;
+    --error-border: #c4604b;
+  }
+
+  /* The plan sheet: a muted gray-teal, less bright than the white sheet of light mode.
+     Labels around the plan are darker so they keep their contrast on it. */
+  :root[data-theme="dark"] .plan-scroll {
+    --plan-bg: #a3b3b9;
+    --plan-outline: #b4c2c7;
+    --plan-grid: #a6b5bb;
+    --plan-grid-major: #8d9fa6;
+    --plan-dim-line: #4c6064;
+    --plan-dim-text: #34474c;
+    --plan-entrance-text: #5f3c18;
+    --plan-front-text: #56401d;
+
+    /* Room fills blended 30% toward the sheet, so the brightest pastels (yellow
+       especially) no longer glare. The size text under each room name is darker
+       to keep at least 5:1 contrast on them. */
+    --plan-room-dim: #35505a;
+    --room-social: #e3deb5;
+    --room-private: #d0cbe1;
+    --room-entry: #e3ceb3;
+    --room-wet: #c2d5e4;
+    --room-utility: #c6dbc6;
+    --room-circulation: #dec9cb;
+    --room-stairs: #d2cbbb;
+    --room-outdoor: #cfd6d3;
+  }
 }
 
 /* 2. Base */
@@ -84,13 +239,13 @@ input, select {
   min-height: 40px;
   margin-top: 5px;
   padding: 9px 10px;
-  border: 1px solid #c9d9d8;
+  border: 1px solid var(--field-border);
   border-radius: 7px;
   background: var(--surface);
   color: var(--ink-input);
 }
-input:hover, select:hover { border-color: #789fa3; }
-input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-text); }
+input:hover, select:hover { border-color: var(--field-border-hover); }
+input:disabled, select:disabled { background: var(--field-disabled-bg); color: var(--disabled-text); }
 
 .two-fields, .four-fields { display: grid; gap: 10px; }
 .two-fields { grid-template-columns: 1fr 1fr; }
@@ -102,7 +257,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 
 /* Shared buttons */
 .quiet-button {
-  padding: 8px 12px;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: transparent;
@@ -111,11 +266,15 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .quiet-button:hover { background: #25434e; }
 
-/* Same look as .quiet-button so the Templates menu sits with the other top actions. */
+/* Same look as .quiet-button so the Templates menu sits with the other top actions.
+   A select ignores line-height, so min-height stands in for the button's one line of
+   text plus its padding and border. margin: 0 drops the top margin that selects get
+   from the general input rule. */
 .quiet-select {
   width: 8.5rem;
-  min-height: 0;
-  padding: 8px 12px;
+  min-height: calc(1.45em + 2 * var(--quiet-pad-y, 8px) + 2px);
+  margin: 0;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: var(--navy);
@@ -123,7 +282,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   font-size: .84rem;
 }
 .quiet-select:hover { background: #25434e; }
-.quiet-select option { background: #fff; color: var(--ink); }
+.quiet-select option { background: var(--surface); color: var(--ink); }
 
 .primary-button {
   display: block;
@@ -145,12 +304,12 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   padding: 9px 10px;
   border: 0;
   border-radius: 6px;
-  background: #e9f2f2;
-  color: #205765;
+  background: var(--soft-button-bg);
+  color: var(--soft-button-text);
   font-size: .78rem;
   font-weight: 700;
 }
-.inline-button:hover { background: #d5e8e9; }
+.inline-button:hover { background: var(--soft-button-hover); }
 
 /* Remove buttons: the same shape as .inline-button, tinted red */
 .delete-button,
@@ -158,41 +317,41 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   padding: 9px 10px;
   border: 0;
   border-radius: 6px;
-  background: #f9e9e6;
-  color: #9c4337;
+  background: var(--danger-soft-bg);
+  color: var(--danger-soft-text);
   font-size: .78rem;
   font-weight: 700;
 }
 .delete-button { margin-top: 12px; }
 .quiet-danger { display: block; margin: 12px 0 0; }
-.delete-button:hover, .quiet-danger:hover { background: #f2d5d0; }
+.delete-button:hover, .quiet-danger:hover { background: var(--danger-soft-hover); }
 
 .zoom-button {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid #bad0d1;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
-  background: #fff;
-  color: #245561;
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: 1.05rem;
   line-height: 1;
 }
-.zoom-button:hover { background: #e6f2f2; }
+.zoom-button:hover { background: var(--btn-hover); }
 .rotate-gap { margin-right: 8px; }
 
 .undo-button {
   height: 28px;
   margin-right: 6px;
   padding: 0 11px;
-  border: 1px solid #bad0d1;
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
-  background: #fff;
-  color: #245561;
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: .75rem;
   font-weight: 700;
 }
-.undo-button:hover { background: #e6f2f2; }
+.undo-button:hover { background: var(--btn-hover); }
 
 /* 3. Top bar and menu */
 .topbar {
@@ -240,6 +399,25 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .menu-toggle { display: none; }
 
+/* Sun and moon switch for the color theme, in the same style as the other top bar controls. */
+.theme-toggle { display: inline-flex; }
+.theme-toggle button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #57727a;
+  background: transparent;
+  color: #abc3c9;
+}
+.theme-toggle button:first-child { border-radius: 8px 0 0 8px; }
+.theme-toggle button:last-child { margin-left: -1px; border-radius: 0 8px 8px 0; }
+.theme-toggle button:hover { background: #25434e; }
+.theme-toggle button[aria-pressed="true"] { background: #25434e; color: var(--gold); }
+.theme-toggle button:focus-visible { position: relative; z-index: 1; }
+.theme-toggle svg { width: 16px; height: 16px; }
+
 /* 4. Workspace and intro */
 .workspace {
   display: grid;
@@ -268,7 +446,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   letter-spacing: -.035em;
   line-height: 1.1;
 }
-.section-heading p:not(.eyebrow) { margin: 0; color: #5d747c; font-size: .94rem; }
+.section-heading p:not(.eyebrow) { margin: 0; color: var(--subtle-text); font-size: .94rem; }
 .eyebrow {
   margin: 0 0 4px;
   color: var(--gold-text);
@@ -290,7 +468,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .disclaimer {
   width: 0;
   min-width: 100%;
-  color: #35505a;
+  color: var(--ink-soft);
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.35;
@@ -299,9 +477,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: flex;
   max-width: 100%;
   padding: 4px;
-  border: 1px solid #cad9d9;
+  border: 1px solid var(--tab-border);
   border-radius: 9px;
-  background: #e4eded;
+  background: var(--tab-bg);
   white-space: nowrap;
   gap: 4px;
 }
@@ -316,13 +494,13 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #536e77;
+  color: var(--tab-text);
   font-size: .85rem;
   font-weight: 700;
 }
 .floor-tabs button[aria-selected="true"] {
-  background: #fff;
-  color: #123743;
+  background: var(--surface);
+  color: var(--tab-selected-text);
   box-shadow: 0 1px 5px #14313c21;
 }
 
@@ -333,18 +511,18 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   width: 28px;
   padding: 0;
   border-radius: 6px 0 0 6px;
-  background: #d3e2e2;
+  background: var(--tab-toggle-bg);
   color: var(--teal-link);
   font-size: 1.05rem;
   line-height: 1;
 }
-.floor-tabs .floor-tab-group .floor-toggle:hover { background: #c3d8d8; }
-.floor-tabs .floor-tab-group .floor-toggle.is-remove { color: #b3372b; }
-.floor-tabs .floor-tab-group .floor-toggle.is-remove:hover { background: #f4d9d5; }
+.floor-tabs .floor-tab-group .floor-toggle:hover { background: var(--tab-toggle-hover); }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove { color: var(--remove-text); }
+.floor-tabs .floor-tab-group .floor-toggle.is-remove:hover { background: var(--danger-soft-hover); }
 .floor-tab-group button[role="tab"] { border-radius: 0 6px 6px 0; }
 /* A floor that is off: the tab stays but is dimmed and can't be opened. */
 .floor-tab-group button[role="tab"]:disabled {
-  background: #edf3f3;
+  background: var(--tab-disabled-bg);
   color: var(--disabled-text);
   cursor: default;
 }
@@ -352,9 +530,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .plan-card,
 .panel,
 .metric-row > div {
-  border: 1px solid #d6e2e1;
+  border: 1px solid var(--card-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 6px 24px #234b5010;
 }
 .metric-row {
@@ -365,9 +543,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .metric-row > div { padding: 15px 17px; }
 .metric-row span, .metric-row strong { display: block; }
-.metric-row span { color: #607780; font-size: .78rem; }
+.metric-row span { color: var(--subtle-text); font-size: .78rem; }
 .metric-row strong { margin-top: 3px; font-size: 1.4rem; letter-spacing: -.03em; }
-.metric-note { margin: 8px 3px 14px; color: #71838a; font-size: .76rem; }
+.metric-note { margin: 8px 3px 14px; color: var(--muted-text); font-size: .76rem; }
 
 /* 5. Plan card */
 .plan-card { overflow: hidden; }
@@ -380,7 +558,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   min-height: 44px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
-  background: #f7faf9;
+  background: var(--surface-2);
   color: var(--teal-muted);
   font-size: .83rem;
   font-weight: 650;
@@ -390,7 +568,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: #658089;
+  color: var(--subtle-text);
   font-weight: 500;
 }
 .layer-toggle {
@@ -416,27 +594,27 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1px solid #9ec2c4;
+  border: 1px solid var(--teal-border);
 }
 .unit-toggle { display: inline-flex; margin: 0 4px; }
 .unit-toggle button {
   min-width: 30px;
   height: 28px;
   padding: 0 8px;
-  border: 1px solid #bad0d1;
-  background: #fff;
-  color: #245561;
+  border: 1px solid var(--btn-border);
+  background: var(--surface);
+  color: var(--btn-text);
   font-size: .75rem;
   font-weight: 750;
 }
 .unit-toggle button:first-child { border-radius: 6px 0 0 6px; }
 .unit-toggle button:last-child { margin-left: -1px; border-radius: 0 6px 6px 0; }
-.unit-toggle button:hover { background: #e6f2f2; }
+.unit-toggle button:hover { background: var(--btn-hover); }
 .unit-toggle button[aria-pressed="true"] { border-color: var(--teal); background: var(--teal); color: #fff; }
 .unit-toggle button:focus-visible { position: relative; z-index: 1; }
 #zoomLabel {
   min-width: 41px;
-  color: #315e69;
+  color: var(--teal-muted);
   text-align: center;
   font-size: .75rem;
   font-weight: 750;
@@ -448,7 +626,8 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   padding: 18px;
   overflow: auto;
   container-type: size;
-  background: #f9fbfa;
+  background: var(--plan-bg);
+  color-scheme: light;
 }
 /* Size is set inline by app.js so the plan fits the scroll box at any zoom. */
 #plan { display: block; touch-action: none; }
@@ -459,7 +638,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   place-items: center;
   height: 14px;
   border-top: 1px solid var(--line);
-  background: #f1f6f5;
+  background: var(--surface-3);
   cursor: ns-resize;
   touch-action: none;
 }
@@ -468,7 +647,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   width: 46px;
   height: 4px;
   border-radius: 2px;
-  background: #b3caca;
+  background: var(--handle);
 }
 .plan-resize:hover::before,
 .plan-resize.dragging::before { background: var(--focus); }
@@ -477,8 +656,8 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .template-credit {
   margin: 0;
   padding: 12px 17px;
-  border-bottom: 1px solid #e7eeed;
-  background: #f7faf9;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface-2);
   color: var(--teal-muted);
   font-size: 1rem;
   line-height: 1.5;
@@ -488,9 +667,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .plan-note {
   margin: 0;
   padding: 10px 17px;
-  border-top: 1px solid #e7eeed;
-  background: #fff;
-  color: #6b8088;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  color: var(--muted-text);
   font-size: .78rem;
 }
 
@@ -512,14 +691,14 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .info-box {
   margin: 0 0 10px;
   padding: 9px 11px;
-  border: 1px solid #d5e5e2;
+  border: 1px solid var(--info-border);
   border-radius: 8px;
-  background: #f2f8f7;
-  color: #3c5f68;
+  background: var(--info-bg);
+  color: var(--info-text);
   font-size: .78rem;
   line-height: 1.5;
 }
-.info-box strong { color: #174f5c; }
+.info-box strong { color: var(--info-strong); }
 /* The same stack in all four panels: pick, add, then suggested sizes */
 .pick-controls { display: grid; gap: 8px; margin-bottom: 12px; }
 .pick-controls select { margin-top: 0; font-weight: 700; }
@@ -537,7 +716,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .room-actions .delete-button { margin-top: 8px; }
 .room-actions .inline-button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.door-editor { margin-top: 12px; padding-top: 14px; border-top: 1px solid #e4ebea; }
+.door-editor { margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--divider); }
 .door-editor .two-fields { margin-bottom: 10px; }
 
 /* 7. Wall controls */
@@ -563,7 +742,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #2f5460;
+  color: var(--ink-soft);
   font-size: .82rem;
   font-weight: 600;
   cursor: pointer;
@@ -631,9 +810,9 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 .confirm-card {
   width: min(100%, 420px);
   padding: 24px;
-  border: 1px solid #d0dedc;
+  border: 1px solid var(--card-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
   color: var(--ink-input);
   box-shadow: 0 24px 60px #0f2c3859;
 }
@@ -644,10 +823,10 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
   font-weight: 500;
   line-height: 1.2;
 }
-.confirm-card p { margin: 0 0 22px; color: #5b737b; font-size: .9rem; line-height: 1.5; }
+.confirm-card p { margin: 0 0 22px; color: var(--subtle-text); font-size: .9rem; line-height: 1.5; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 9px; }
-.confirm-card .quiet-button { border-color: #b8cdcc; color: #315a64; }
-.confirm-card .quiet-button:hover { background: #edf5f3; }
+.confirm-card .quiet-button { border-color: var(--btn-border); color: var(--btn-text); }
+.confirm-card .quiet-button:hover { background: var(--btn-hover); }
 .confirm-danger {
   padding: 8px 13px;
   border: 1px solid var(--danger);
@@ -668,27 +847,44 @@ footer {
   max-width: 1600px;
   margin: 0 auto;
   padding: 0 clamp(16px, 2.5vw, 40px) 30px;
-  color: #70868b;
+  color: var(--muted-text);
   font-size: .75rem;
 }
 
 /* 11. SVG plan drawing (units are feet, so sizes here are small numbers) */
 svg text { font-family: var(--font-plan); user-select: none; }
-svg .grid-line { stroke: #e4efed; stroke-width: .055; }
-svg .grid-major { stroke: #bed6d7; stroke-width: .075; }
-svg .outline { fill: #fff; stroke: #294c56; stroke-width: .22; }
+svg .grid-line { stroke: var(--plan-grid); stroke-width: .055; }
+svg .grid-major { stroke: var(--plan-grid-major); stroke-width: .075; }
+svg .outline { fill: var(--plan-outline); stroke: #294c56; stroke-width: .22; }
 svg .exterior-wall { fill: var(--wall); }
-svg .partition-wall { stroke: var(--wall); stroke-linecap: butt; }
+/* A lighter gray than the exterior wall so interior partitions read as a different kind of wall. */
+svg .partition-wall { stroke: var(--partition-wall); stroke-linecap: butt; }
 /* Lighter and dashed so a half wall reads as different without relying on color alone. */
 svg .half-wall { stroke-opacity: .55; stroke-dasharray: .8 .3; }
 
-svg .room { stroke-width: .13; cursor: grab; transition: filter .12s; }
+svg .room { fill: var(--room-utility); stroke-width: .13; cursor: grab; transition: filter .12s; }
+svg .room-social { fill: var(--room-social); }
+svg .room-private { fill: var(--room-private); }
+svg .room-entry { fill: var(--room-entry); }
+svg .room-wet { fill: var(--room-wet); }
+svg .room-circulation { fill: var(--room-circulation); }
+svg .room-stairs { fill: var(--room-stairs); }
+/* Dashed so an outdoor space reads as different without relying on color alone. */
+svg .room-outdoor { fill: var(--room-outdoor); stroke-dasharray: .5 .3; }
+/* Stair art sits under the room label, which gets a halo in the room color so it stays readable over the tread lines. */
+svg .stair-line { fill: none; stroke: var(--partition-wall); stroke-width: .07; pointer-events: none; }
+svg .stair-arrow { fill: none; stroke: var(--wall); stroke-width: .12; stroke-linejoin: round; pointer-events: none; }
+svg .stair-arrow-head { fill: var(--wall); pointer-events: none; }
+svg .stair-text { fill: var(--wall); font-weight: 750; pointer-events: none; }
+svg .stairs-room .room-label,
+svg .stairs-room .room-dim,
+svg .stairs-room .stair-text { paint-order: stroke; stroke: var(--room-stairs); stroke-width: .3; stroke-linejoin: round; }
 svg .room:hover { filter: brightness(.97); }
 svg .room.selected { stroke: var(--selected); stroke-width: .32; }
 svg .room.path-room { stroke: #4b9d9b; stroke-dasharray: .35 .25; }
 svg .room.path-room.selected { stroke: var(--selected); }
 svg .room-label { fill: #1d3c47; font-weight: 750; pointer-events: none; }
-svg .room-dim { fill: #5b7a83; pointer-events: none; }
+svg .room-dim { fill: var(--plan-room-dim); pointer-events: none; }
 
 svg .interior-door { cursor: grab; }
 svg .door-swing {
@@ -713,10 +909,10 @@ svg .interior-door.selected .door-opening,
 svg .interior-door.selected .door-opening-tick { stroke: #ed9e28; stroke-width: .23; }
 
 svg .entrance-bar { fill: #c58235; pointer-events: none; }
-svg .door-label { fill: #ad6d2c; font-size: .53px; font-weight: 700; }
+svg .door-label { fill: var(--plan-entrance-text); font-size: .53px; font-weight: 700; }
 svg .entrance-label { text-anchor: middle; dominant-baseline: central; letter-spacing: .06em; }
 svg .front-label {
-  fill: var(--gold-text);
+  fill: var(--plan-front-text);
   font-size: .5px;
   font-weight: 800;
   letter-spacing: .14em;
@@ -741,6 +937,13 @@ svg .item.conflict rect {
   stroke-dasharray: .3 .18;
 }
 svg .item.selected.conflict rect { stroke-width: .22; }
+/* Utility markers and notes. The symbol colors reuse existing tokens. */
+svg .marker-item rect { fill: #fffdf8; }
+svg .marker-item-note rect { stroke-dasharray: .35 .2; fill-opacity: .75; }
+svg .marker-symbol { fill: var(--wall); }
+svg .marker-electrical { fill: var(--orange); }
+svg .marker-plumbing { fill: var(--focus); }
+svg .marker-symbol .marker-hub { fill: #fffdf8; }
 svg .item-label {
   fill: #6b4f28;
   font-weight: 700;
@@ -749,8 +952,8 @@ svg .item-label {
   pointer-events: none;
 }
 
-svg .dimension { stroke: #78999e; stroke-width: .09; }
-svg .dimension-text { fill: #57767f; font-size: .55px; text-anchor: middle; }
+svg .dimension { stroke: var(--plan-dim-line); stroke-width: .09; }
+svg .dimension-text { fill: var(--plan-dim-text); font-size: .55px; text-anchor: middle; }
 
 /* Keyboard focus on plan shapes: a dashed focus-blue edge, distinct from the
    solid selection highlight. Only shows for keyboard navigation. */
@@ -766,6 +969,42 @@ svg [data-door]:focus-visible .door-swing,
 svg [data-door]:focus-visible .door-leaf,
 svg [data-door]:focus-visible .door-opening,
 svg [data-door]:focus-visible .door-opening-tick { stroke: var(--focus); stroke-width: .26; }
+
+/* Tell phone and touch screen visitors that desktop works best. It is hidden
+   until the screen is narrow or touch only, and Dismiss hides it for this visit. */
+.mobile-notice {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 3px solid var(--gold);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: .86rem;
+}
+.mobile-notice p { flex: 1; margin: 0; }
+.mobile-notice .quiet-button { border-color: var(--btn-border); color: var(--btn-text); }
+.mobile-notice[hidden] { display: none; }
+@media (max-width: 800px), (pointer: coarse) {
+  .mobile-notice:not([hidden]) { display: flex; }
+}
+
+/* Lot and setback lines on the plan, and the Lot and Setback section in the Footprint panel */
+svg .lot-line { fill: none; stroke: var(--plan-dim-line); stroke-width: .2; stroke-dasharray: 1.2 .6; pointer-events: none; }
+svg .setback-line { fill: none; stroke: var(--orange); stroke-width: .1; stroke-dasharray: .3 .3; pointer-events: none; }
+svg .lot-label { fill: var(--plan-dim-text); font-weight: 700; pointer-events: none; }
+.lot-details { margin-top: 12px; }
+.lot-details summary { cursor: pointer; font-weight: 700; font-size: .86rem; color: var(--label); }
+.lot-details[open] summary { margin-bottom: 8px; }
+.lot-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: .86rem; }
+.lot-toggle input { width: auto; margin: 0; }
+.lot-details .two-fields { margin-bottom: 8px; align-items: end; }
+
+/* Space under the stair info line before the next row of fields */
+.stair-controls { margin-bottom: 10px; }
+
+/* A second row of fields under the wall thickness help text */
+.height-fields { margin-top: 10px; align-items: end; }
 
 /* Tap mode (touch screens with Drag to Move off) */
 svg.tap-only .room,
@@ -832,8 +1071,12 @@ svg.tap-only .interior-door { cursor: pointer; }
     box-shadow: 0 14px 34px #0f2c3866;
   }
   .action-menu.open { display: flex; }
-  .action-menu .quiet-button { padding: 11px 12px; text-align: left; font-size: .92rem; }
-  .action-menu .quiet-select { width: 100%; padding: 11px 12px; font-size: .92rem; }
+  .action-menu { --quiet-pad-y: 11px; }
+  .action-menu .quiet-button { text-align: left; font-size: .92rem; }
+  .action-menu .quiet-select { width: 100%; font-size: .92rem; }
+  /* In the dropdown the sun and moon buttons share the row and match the other items in height. */
+  .action-menu .theme-toggle { display: flex; }
+  .action-menu .theme-toggle button { flex: 1; height: calc(1.45 * .92rem + 2 * var(--quiet-pad-y) + 2px); }
   .section-heading h1 { font-size: 1.8rem; }
 }
 
@@ -865,7 +1108,7 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
-    grid-template-rows: 236px auto;
+    grid-template-rows: 266px auto;
     align-items: start;
     gap: 14px;
     max-width: none;
@@ -909,8 +1152,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .intro .metric-note { display: none; }
 
   .dimensions-panel { grid-column: 13 / 16; }
-  .walls-panel { grid-column: 16 / 19; }
-  .findings { grid-column: 19 / 25; }
+  .walls-panel { grid-column: 16 / 20; }
+  .findings { grid-column: 20 / 25; }
   .dimensions-panel,
   .walls-panel,
   .findings {
@@ -928,6 +1171,8 @@ svg.tap-only .interior-door { cursor: pointer; }
   .walls-panel .panel-title > span { display: none; }
   .dimensions-panel .field-help,
   .walls-panel .field-help { margin-top: 8px; }
+  /* The row is short, so the thickness explanation gives way to the heights. */
+  .walls-panel .thickness-help { display: none; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 

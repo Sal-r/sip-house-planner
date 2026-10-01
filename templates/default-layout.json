@@ -250,7 +250,7 @@
       },
       {
         "id": "item-bed1-bed",
-        "name": "Queen Bed",
+        "name": "Bed - Queen",
         "floor": "main",
         "x": 34,
         "y": 6,
@@ -304,7 +304,7 @@
       },
       {
         "id": "item-bed2-bed",
-        "name": "Queen Bed",
+        "name": "Bed - Queen",
         "floor": "main",
         "x": 3,
         "y": 6,
