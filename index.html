@@ -290,7 +290,7 @@
             <select id="itemPreset" aria-label="Suggested sizes"></select>
           </div>
           <div id="itemEditor" class="door-editor" hidden>
-            <label class="select-label">Name<input id="itemName" type="text" maxlength="40" autocomplete="off"></label>
+            <label class="select-label">Name<input id="itemName" type="text" maxlength="120" autocomplete="off"></label>
             <div class="four-fields">
               <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
               <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
@@ -305,7 +305,7 @@
           </div>
           <h3 class="item-checks-title">Item Checks</h3>
           <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
-          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other. A new item starts in the selected room.</p>
+          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other, except utility markers and notes, which skip the checks. A new item starts in the selected room. Notes belong to the floor they are on, and their text is the item name.</p>
         </section>
 
         <section class="panel doors-panel">

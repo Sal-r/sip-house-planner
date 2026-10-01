@@ -937,6 +937,13 @@ svg .item.conflict rect {
   stroke-dasharray: .3 .18;
 }
 svg .item.selected.conflict rect { stroke-width: .22; }
+/* Utility markers and notes. The symbol colors reuse existing tokens. */
+svg .marker-item rect { fill: #fffdf8; }
+svg .marker-item-note rect { stroke-dasharray: .35 .2; fill-opacity: .75; }
+svg .marker-symbol { fill: var(--wall); }
+svg .marker-electrical { fill: var(--orange); }
+svg .marker-plumbing { fill: var(--focus); }
+svg .marker-symbol .marker-hub { fill: #fffdf8; }
 svg .item-label {
   fill: #6b4f28;
   font-weight: 700;

@@ -41,6 +41,15 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] A layout exported before heights existed (or a template) still loads with 8′ walls, 3′ sills, and 80 inch heads.
 - [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
 
+## Utility markers and notes
+- [ ] The item Suggested sizes menu has headings Notes (Note) and Utility Markers (Electrical, HVAC, Plumbing), still in A to Z order.
+- [ ] Electrical draws a lightning bolt, Plumbing a water drop, and HVAC a four-blade fan, each centered in a small box. The colors read in both themes.
+- [ ] A marker or note placed on a wall, on top of furniture, or in a doorway shows no Item Checks warning. A marker outside the footprint shows no warning either. Furniture still gets its checks.
+- [ ] A Note shows its name as dashed-box text that wraps and shrinks to fit. Renaming it to a long sentence (up to 120 characters) works, and enlarging the box makes the text bigger.
+- [ ] A note on the Main Floor does not appear on the Basement or Second Floor, and each floor's print page shows only its own notes and markers.
+- [ ] Hiding Show Items hides markers and notes too.
+- [ ] Switching a marker to a furniture preset turns it back into a normal item, and Undo restores the marker. Markers and notes survive a reload, Export Layout, and Import Layout.
+
 ## Outdoor spaces
 - [ ] The room Type menu has Outdoor Space. The Suggested sizes menu lists Deck, Full Bath, Garage - 1 Car, Garage - 2 Car, Half Bath, Porch, Shed in A to Z order.
 - [ ] Add Room, then pick Porch (or any outdoor size). The space moves to just outside the front wall, centered (the bottom wall if the front is Not Set), and the plan grows so nothing is cut off. Picking one on a space already outside only resizes it.

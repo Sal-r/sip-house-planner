@@ -102,9 +102,12 @@
   // dark theme can mute them. An unknown type from an imported file draws as utility.
   const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation', 'stairs', 'outdoor'];
 
-  // [name, width, depth, menu heading] in feet for each entry in the item
+  // [name, width, depth, menu heading, marker] in feet for each entry in the item
   // Suggested sizes menu. The heading only organizes the menu, so any item can
-  // go in any room. The menu sorts itself by heading, then by name.
+  // go in any room. The menu sorts itself by heading, then by name. A marker
+  // is a symbol or note drawn in place of a furniture label: electrical,
+  // plumbing, hvac, or note. Markers skip the item checks, because they often
+  // sit on a wall.
   const ITEM_PRESETS = {
     custom: ['Custom Box', 3, 3],
 
@@ -159,6 +162,8 @@
     miniSplit: ['Mini-Split Indoor Unit', 3, 1, 'MECHANICAL'],
     heater: ['Water Heater', 2, 2, 'MECHANICAL'],
 
+    note: ['Note', 4, 1.5, 'NOTES', 'note'],
+
     desk: ['Desk', 5, 2.5, 'OFFICE'],
     filingCabinet: ['Filing Cabinet', 1.5, 2, 'OFFICE'],
     officeChair: ['Office Chair', 2, 2, 'OFFICE'],
@@ -166,7 +171,12 @@
     shelving: ['Shelving Unit', 4, 1.5, 'STORAGE AND WORKSHOP'],
     storageCabinet: ['Storage Cabinet', 3, 2, 'STORAGE AND WORKSHOP'],
     bench: ['Workbench', 6, 2.5, 'STORAGE AND WORKSHOP'],
+
+    markerElectrical: ['Electrical', 1.25, 1.25, 'UTILITY MARKERS', 'electrical'],
+    markerHvac: ['HVAC', 1.25, 1.25, 'UTILITY MARKERS', 'hvac'],
+    markerPlumbing: ['Plumbing', 1.25, 1.25, 'UTILITY MARKERS', 'plumbing'],
   };
+  const ITEM_MARKERS = ['electrical', 'plumbing', 'hvac', 'note'];
 
   // The menu list: headings A to Z, then names A to Z inside each heading.
   const ITEM_PRESET_MENU = Object.entries(ITEM_PRESETS)
@@ -387,8 +397,13 @@
       : [];
 
     if (Array.isArray(saved.items)) {
-      state.items = saved.items.filter(it => it && typeof it.id === 'string' && typeof it.name === 'string'
-        && isValidFloor(it.floor) && hasFiniteBox(it));
+      state.items = saved.items
+        .filter(it => it && typeof it.id === 'string' && typeof it.name === 'string' && isValidFloor(it.floor) && hasFiniteBox(it))
+        .map(it => {
+          const item = { ...it };
+          if (!ITEM_MARKERS.includes(item.marker)) delete item.marker;
+          return item;
+        });
     } else {
       // Drafts from before items existed: turn the old fixture markers into items.
       const sizes = {
@@ -1368,7 +1383,7 @@
     const e = state.exteriorWall;
     const W = state.width;
     const H = state.depth;
-    const items = state.items.filter(it => it.floor === state.floor);
+    const items = state.items.filter(it => it.floor === state.floor && !it.marker);
 
     const walls = model.rects.map(r => ({ ...r, kind: 'an interior wall' }));
     if (e > 0) {
@@ -2070,19 +2085,36 @@
     dims.setAttribute('font-size', `${dimSize}px`);
   }
 
+  /** The symbol inside a utility marker's box, drawn in a 1 x 1 space around its center. */
+  function drawMarkerSymbol(marker, cx, cy, size, parent) {
+    const art = element('g', { transform: `translate(${cx} ${cy}) scale(${size})`, class: `marker-symbol marker-${marker}`, 'pointer-events': 'none' }, parent);
+    if (marker === 'electrical') {
+      element('path', { d: 'M 0.08 -0.42 L -0.26 0.06 L -0.04 0.06 L -0.12 0.42 L 0.26 -0.1 L 0.04 -0.1 Z' }, art);
+    } else if (marker === 'plumbing') {
+      element('path', { d: 'M 0 -0.42 C 0.1 -0.22 0.3 -0.02 0.3 0.16 A 0.3 0.3 0 0 1 -0.3 0.16 C -0.3 -0.02 -0.1 -0.22 0 -0.42 Z' }, art);
+    } else {
+      // A fan: four blades around a hub.
+      for (let turn = 0; turn < 4; turn++) {
+        element('ellipse', { cx: 0, cy: -0.24, rx: 0.11, ry: 0.22, transform: `rotate(${turn * 90} 0 0) rotate(20 0 -0.24)` }, art);
+      }
+      element('circle', { cx: 0, cy: 0, r: 0.08, class: 'marker-hub' }, art);
+    }
+  }
+
   function drawItems(model) {
     const { bad } = itemChecks(model);
     for (const it of state.items.filter(item => item.floor === state.floor)) {
       const group = element('g', {
         'data-item': it.id,
         'data-focus-key': `plan-item:${it.id}`,
-        class: `item ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
+        class: `item ${it.marker ? `marker-item marker-item-${it.marker}` : ''} ${state.selectedItem === it.id ? 'selected' : ''} ${bad.has(it.id) ? 'conflict' : ''}`,
         role: 'button',
         tabindex: '0',
         'aria-label': `${it.name}, ${spokenSize(it.w, it.h)}. Select or drag to move.`,
       });
       element('rect', { x: it.x, y: it.y, width: it.w, height: it.h, rx: 0.12 }, group);
-      drawItemLabel(it, group);
+      if (it.marker && it.marker !== 'note') drawMarkerSymbol(it.marker, it.x + it.w / 2, it.y + it.h / 2, Math.min(it.w, it.h) * 0.85, group);
+      else drawItemLabel(it, group);
       element('title', {}, group).textContent = `${it.name}: ${fmtSize(it.w, it.h)}`;
     }
   }
@@ -2856,10 +2888,12 @@
     const preset = ITEM_PRESETS[e.target.value];
     const item = findItem(state.selectedItem);
     if (item && preset && e.target.value !== 'custom') {
-      const [name, w, h] = preset;
+      const [name, w, h, , marker] = preset;
       const centerX = item.x + item.w / 2;
       const centerY = item.y + item.h / 2;
       Object.assign(item, { name, w, h, x: snap(centerX - w / 2), y: snap(centerY - h / 2) });
+      if (marker) item.marker = marker;
+      else delete item.marker;
     }
     render();
   });
@@ -3183,7 +3217,7 @@
   $('itemName').addEventListener('change', e => {
     const item = findItem(state.selectedItem);
     if (item) {
-      const name = e.target.value.trim().slice(0, 40);
+      const name = e.target.value.trim().slice(0, 120);
       if (name) item.name = name;
     }
     render();
