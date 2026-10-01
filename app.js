@@ -65,31 +65,76 @@
   // dark theme can mute them. An unknown type from an imported file draws as utility.
   const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation'];
 
-  // [name, width, depth] in feet for each entry in the Add Item dropdown.
+  // [name, width, depth, menu heading] in feet for each entry in the item
+  // Suggested sizes menu. The heading only organizes the menu, so any item can
+  // go in any room. The menu sorts itself by heading, then by name.
   const ITEM_PRESETS = {
     custom: ['Custom Box', 3, 3],
-    base: ['Base Cabinets', 6, 2],
-    island: ['Kitchen Island', 6, 3],
-    fridge: ['Refrigerator', 3, 2.5],
-    range: ['Range', 2.5, 2.5],
-    sofa: ['Sofa', 7, 3],
-    loveseat: ['Loveseat', 5, 3],
-    chair: ['Armchair', 3, 3],
-    coffee: ['Coffee Table', 4, 2],
-    dining: ['Dining Table', 6, 3.5],
-    queen: ['Queen Bed', 5, 6.75],
-    king: ['King Bed', 6.5, 6.75],
-    twin: ['Twin Bed', 3.25, 6.25],
-    dresser: ['Dresser', 5, 1.5],
-    desk: ['Desk', 5, 2.5],
-    toilet: ['Toilet', 1.75, 2.5],
-    vanity: ['Vanity', 3, 1.75],
-    tub: ['Tub / Shower', 5, 2.5],
-    washer: ['Washer / Dryer', 2.5, 2.5],
-    heater: ['Water Heater', 2, 2],
-    handler: ['Air Handler', 2.5, 2.5],
-    bench: ['Workbench', 6, 2.5],
+
+    bathtub: ['Bathtub', 5, 2.5, 'BATHROOM'],
+    doubleVanity: ['Double Vanity', 5, 1.75, 'BATHROOM'],
+    linenCabinet: ['Linen Cabinet', 2, 1.5, 'BATHROOM'],
+    showerStall: ['Shower Stall', 3, 3, 'BATHROOM'],
+    toilet: ['Toilet', 1.75, 2.5, 'BATHROOM'],
+    tub: ['Tub / Shower', 5, 2.5, 'BATHROOM'],
+    vanity: ['Vanity', 3, 1.75, 'BATHROOM'],
+
+    bedBunk: ['Bed - Bunk', 3.25, 6.25, 'BEDROOM'],
+    bedFull: ['Bed - Full', 4.5, 6.25, 'BEDROOM'],
+    king: ['Bed - King', 6.5, 6.75, 'BEDROOM'],
+    queen: ['Bed - Queen', 5, 6.75, 'BEDROOM'],
+    twin: ['Bed - Twin', 3.25, 6.25, 'BEDROOM'],
+    crib: ['Crib', 2.5, 4.5, 'BEDROOM'],
+    dresser: ['Dresser', 5, 1.5, 'BEDROOM'],
+    nightstand: ['Nightstand', 1.5, 1.5, 'BEDROOM'],
+    wardrobe: ['Wardrobe', 3, 2, 'BEDROOM'],
+
+    buffet: ['Buffet', 5, 1.5, 'DINING'],
+    diningChair: ['Dining Chair', 1.5, 1.5, 'DINING'],
+    dining: ['Dining Table', 6, 3.5, 'DINING'],
+    roundTable: ['Round Table', 4, 4, 'DINING'],
+
+    base: ['Base Cabinets', 6, 2, 'KITCHEN'],
+    dishwasher: ['Dishwasher', 2, 2, 'KITCHEN'],
+    island: ['Kitchen Island', 6, 3, 'KITCHEN'],
+    microwave: ['Microwave', 2, 1.5, 'KITCHEN'],
+    pantry: ['Pantry Cabinet', 3, 2, 'KITCHEN'],
+    fridge: ['Refrigerator', 3, 2.5, 'KITCHEN'],
+    kitchenSink: ['Sink', 3, 2, 'KITCHEN'],
+    range: ['Stove / Range', 2.5, 2.5, 'KITCHEN'],
+
+    dryer: ['Dryer', 2.5, 2.5, 'LAUNDRY'],
+    laundrySink: ['Laundry Sink', 2, 2, 'LAUNDRY'],
+    washerOnly: ['Washer', 2.5, 2.5, 'LAUNDRY'],
+    washer: ['Washer / Dryer', 2.5, 2.5, 'LAUNDRY'],
+
+    chair: ['Armchair', 3, 3, 'LIVING'],
+    bookshelf: ['Bookshelf', 3, 1, 'LIVING'],
+    coffee: ['Coffee Table', 4, 2, 'LIVING'],
+    loveseat: ['Loveseat', 5, 3, 'LIVING'],
+    sofa: ['Sofa', 7, 3, 'LIVING'],
+    tvStand: ['TV Stand', 5, 1.5, 'LIVING'],
+    woodStove: ['Wood Stove', 3, 3, 'LIVING'],
+
+    handler: ['Air Handler', 2.5, 2.5, 'MECHANICAL'],
+    electricalPanel: ['Electrical Panel', 2, 1, 'MECHANICAL'],
+    erv: ['ERV / HRV', 2, 2, 'MECHANICAL'],
+    miniSplit: ['Mini-Split Indoor Unit', 3, 1, 'MECHANICAL'],
+    heater: ['Water Heater', 2, 2, 'MECHANICAL'],
+
+    desk: ['Desk', 5, 2.5, 'OFFICE'],
+    filingCabinet: ['Filing Cabinet', 1.5, 2, 'OFFICE'],
+    officeChair: ['Office Chair', 2, 2, 'OFFICE'],
+
+    shelving: ['Shelving Unit', 4, 1.5, 'STORAGE AND WORKSHOP'],
+    storageCabinet: ['Storage Cabinet', 3, 2, 'STORAGE AND WORKSHOP'],
+    bench: ['Workbench', 6, 2.5, 'STORAGE AND WORKSHOP'],
   };
+
+  // The menu list: headings A to Z, then names A to Z inside each heading.
+  const ITEM_PRESET_MENU = Object.entries(ITEM_PRESETS)
+    .filter(([key]) => key !== 'custom')
+    .sort(([, a], [, b]) => a[3].localeCompare(b[3]) || a[0].localeCompare(b[0]));
 
   // Suggested sizes for the menu in each panel. Choosing one applies it to the
   // selected space, doorway, window, or item. Rooms vary too much for a long
@@ -159,13 +204,13 @@
       { id: 'item-washer', name: 'Washer / Dryer', floor: 'basement', x: 1, y: 30.25, w: 2.5, h: 5 },
       { id: 'item-heater', name: 'Water Heater', floor: 'basement', x: 1, y: 36, w: 2, h: 2 },
       { id: 'item-handler', name: 'Air Handler', floor: 'basement', x: 1, y: 38.5, w: 2.5, h: 2.5 },
-      { id: 'item-bed1-bed', name: 'Queen Bed', floor: 'main', x: 1, y: 4.75, w: 6.75, h: 5 },
+      { id: 'item-bed1-bed', name: 'Bed - Queen', floor: 'main', x: 1, y: 4.75, w: 6.75, h: 5 },
       { id: 'item-bed1-nightstand-1', name: 'Nightstand', floor: 'main', x: 1, y: 2.75, w: 1.5, h: 2 },
       { id: 'item-bed1-nightstand-2', name: 'Nightstand', floor: 'main', x: 1, y: 9.75, w: 1.5, h: 2 },
       { id: 'item-bed1-dresser', name: 'Dresser', floor: 'main', x: 5.5, y: 1, w: 5, h: 1.5 },
       { id: 'item-bed1-closet', name: 'Reach-In Closet', floor: 'main', x: 10.75, y: 3, w: 2, h: 6 },
       { id: 'item-bed1-desk', name: 'Desk', floor: 'main', x: 4, y: 11.75, w: 4, h: 2 },
-      { id: 'item-bed2-bed', name: 'Queen Bed', floor: 'main', x: 1, y: 31.5, w: 6.75, h: 5 },
+      { id: 'item-bed2-bed', name: 'Bed - Queen', floor: 'main', x: 1, y: 31.5, w: 6.75, h: 5 },
       { id: 'item-bed2-nightstand-1', name: 'Nightstand', floor: 'main', x: 1, y: 29.5, w: 1.5, h: 2 },
       { id: 'item-bed2-nightstand-2', name: 'Nightstand', floor: 'main', x: 1, y: 36.5, w: 1.5, h: 2 },
       { id: 'item-bed2-dresser', name: 'Dresser', floor: 'main', x: 5, y: 39.5, w: 5, h: 1.5 },
@@ -1803,7 +1848,21 @@
     if (select.dataset.signature !== signature) {
       select.dataset.signature = signature;
       select.replaceChildren(new Option('Suggested sizes', ''));
-      for (const preset of presets) select.append(new Option(preset.text, preset.value));
+      // A preset with a group goes under a heading. Presets without one stay flat.
+      let parent = select;
+      let currentGroup;
+      for (const preset of presets) {
+        if (preset.group !== currentGroup) {
+          currentGroup = preset.group;
+          parent = select;
+          if (currentGroup) {
+            parent = document.createElement('optgroup');
+            parent.label = currentGroup;
+            select.append(parent);
+          }
+        }
+        parent.append(new Option(preset.text, preset.value));
+      }
     }
     select.value = matchingKey || '';
     select.disabled = !enabled;
@@ -2005,12 +2064,11 @@
     $('itemSelect').disabled = !state.items.length;
 
     const selected = findItem(state.selectedItem);
-    const itemPresets = Object.entries(ITEM_PRESETS).filter(([key]) => key !== 'custom');
     fillPresets(
       $('itemPreset'),
-      itemPresets.map(([value, [name, w, h]]) => ({ value, text: `${name} · ${fmtSize(w, h)}` })),
+      ITEM_PRESET_MENU.map(([value, [name, w, h, group]]) => ({ value, group, text: `${name} · ${fmtSize(w, h)}` })),
       !!selected,
-      selected && itemPresets.find(([, [name, w, h]]) => selected.name === name && sameSizeBox(selected.w, selected.h, w, h))?.[0],
+      selected && ITEM_PRESET_MENU.find(([, [name, w, h]]) => selected.name === name && sameSizeBox(selected.w, selected.h, w, h))?.[0],
     );
     $('itemEditor').hidden = !selected;
     if (selected) {

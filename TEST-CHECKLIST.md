@@ -92,6 +92,9 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Center on Room centers the selected window on its room's wall, the button names the room, and it is disabled when no room touches that wall.
 
 ## Furniture and fixtures
+- [ ] The item Suggested sizes menu has headings in A to Z order (Bathroom, Bedroom, Dining, Kitchen, Laundry, Living, Mechanical, Office, Storage and Workshop), and the items under each heading are A to Z. The beds read Bed - Bunk, Bed - Full, Bed - King, Bed - Queen, Bed - Twin.
+- [ ] Picking a preset renames and resizes the selected item, and the menu then shows that preset. An item can be placed in any room whatever its heading.
+- [ ] Items in the templates (Bed - Queen, Stove / Range) show their matching size in the menu.
 - [ ] + Add Item places the chosen preset in the selected room.
 - [ ] Name, X, Y, Width, Depth, Rotate 90°, Duplicate, and Remove all work.
 - [ ] Long item names wrap onto more lines (Round Table shows as Round, then Table), tall narrow items read bottom to top, and a name is cut off with … only when nothing else fits.
