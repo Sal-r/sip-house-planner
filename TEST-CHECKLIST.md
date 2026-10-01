@@ -164,6 +164,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Two doors whose swings cross show "The swings of ... overlap" in Layout Checks. Cased openings have no swing and are never flagged.
 - [ ] The default layout and the Tiny Cottage show no door swing warnings.
 - [ ] A cased opening (Door Type: Cased Opening) can sit 0.25′ from a corner, or flush with the end of the wall, with no warning. One that runs past the wall warns. A swinging door within 0.5′ of a corner still warns.
+- [ ] An outdoor space touching the house with its door on the touching side adds an ENTRANCE on the house wall, at the door. A door on the far side, or on a space that only sits near the house, adds none.
 - [ ] Two windows, a window and an entrance door, or two doorways that overlap by 0.25′ on the same wall show a warning. Ones that only touch do not.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.

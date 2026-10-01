@@ -935,12 +935,34 @@
     };
   }
 
-  /** Doorways on a floor that sit in the exterior wall (entrances). */
+  /**
+   * The house wall a doorway is an entrance on, or null when it is not one.
+   * A room inside the house counts when its door is in the exterior wall.
+   * An outdoor space counts only where its door sits on the stretch of house
+   * wall it touches. Its own side faces the opposite way, so west touches the
+   * house's east wall and so on. A door on the far side, or past the end of
+   * the house wall, is not an entrance.
+   */
+  function entranceSide(d) {
+    const r = findRoom(d.roomId);
+    if (!r) return null;
+    const side = d.side || 'east';
+    if (!isOutdoor(r)) return isExteriorSide(r, side) ? side : null;
+
+    const houseSide = { north: 'south', south: 'north', west: 'east', east: 'west' }[side];
+    const wallLine = { north: state.depth, south: 0, west: state.width, east: 0 }[side];
+    if (Math.abs(sidePosition(r, side) - wallLine) > 0.01) return null;
+
+    const g = doorGeometry(d);
+    const doorStart = g.horizontal ? g.start.x : g.start.y;
+    const wallLength = g.horizontal ? state.width : state.depth;
+    const overlap = Math.min(doorStart + d.width, wallLength) - Math.max(doorStart, 0);
+    return overlap > 0.01 ? houseSide : null;
+  }
+
+  /** Doorways on a floor that are entrances (see entranceSide). */
   function entranceDoors(floor) {
-    return state.doors.filter(d => {
-      const r = findRoom(d.roomId);
-      return r && r.floor === floor && isExteriorSide(r, d.side || 'east');
-    });
+    return state.doors.filter(d => findRoom(d.roomId)?.floor === floor && entranceSide(d));
   }
 
   /**
@@ -1294,10 +1316,11 @@
     for (const d of entranceDoors(state.floor)) {
       const g = doorGeometry(d);
       if (!g) continue;
+      const wallSide = entranceSide(d);
       const a = g.horizontal ? Math.min(g.start.x, g.end.x) : Math.min(g.start.y, g.end.y);
       const b = a + d.width;
       for (const w of windows) {
-        if (w.side === g.side && overlapsOnWall(a, b, w.offset, w.offset + w.width)) {
+        if (w.side === wallSide && overlapsOnWall(a, b, w.offset, w.offset + w.width)) {
           out.push({ level: 'warning', text: `A window overlaps the entrance door on the ${SIDE_NAME[w.side]} wall.` });
         }
       }
@@ -1987,18 +2010,22 @@
     if (!g) return;
     const W = state.width;
     const H = state.depth;
+    // For an outdoor space the entrance is on the house wall it touches, which
+    // is not the side the door itself is on.
+    const side = entranceSide(d);
+    if (!side) return;
     const mid = g.horizontal ? (g.start.x + g.end.x) / 2 : (g.start.y + g.end.y) / 2;
-    const reach = outsideReach(g.side);
-    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1 - reach, 0]
-      : g.side === 'south' ? [mid, H + 0.85 + reach, 0]
-      : g.side === 'west' ? [-0.8 - reach, mid, -90]
+    const reach = outsideReach(side);
+    const [x, y, rotation] = side === 'north' ? [mid, -1.1 - reach, 0]
+      : side === 'south' ? [mid, H + 0.85 + reach, 0]
+      : side === 'west' ? [-0.8 - reach, mid, -90]
       : [W + 0.95 + reach, mid, 90];
     // The bar fills the wall from face to face, so a window in the same spot
     // is visibly in conflict. With no exterior wall, use a thin bar on the edge.
     const t = state.exteriorWall > 0 ? state.exteriorWall : 0.3;
     const bar = g.horizontal
-      ? { x: g.start.x, y: g.side === 'north' ? 0 : H - t, width: d.width, height: t }
-      : { x: g.side === 'west' ? 0 : W - t, y: g.start.y, width: t, height: d.width };
+      ? { x: g.start.x, y: side === 'north' ? 0 : H - t, width: d.width, height: t }
+      : { x: side === 'west' ? 0 : W - t, y: g.start.y, width: t, height: d.width };
     element('rect', { ...bar, class: 'entrance-bar' });
     const text = label(x, y, 'ENTRANCE', 'door-label entrance-label');
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
