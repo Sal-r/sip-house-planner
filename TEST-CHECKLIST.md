@@ -137,7 +137,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 ## Color theme
 - [ ] A first visit (private window) opens in the dark theme, with the moon button highlighted.
 - [ ] The sun button switches to light and the moon button switches back. The choice is still there after a reload.
-- [ ] In the dark theme the plan area, walls, rooms, labels, and items look exactly as they do in the light theme.
+- [ ] In the dark theme the plan sits on a muted gray sheet. Walls, rooms, room names, and items keep their colors, and the dimension, ENTRANCE, and FRONT OF HOUSE labels are still easy to read. In the light theme the sheet is the original near-white.
 - [ ] Print / PDF is light even when the app is dark.
 - [ ] With browser storage blocked, the page still loads dark and the switch still works for that visit.
 - [ ] On a phone the sun and moon buttons are the first row of the Menu, and the top bar stays on one line.
