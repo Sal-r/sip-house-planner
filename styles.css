@@ -103,7 +103,7 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 
 /* Shared buttons */
 .quiet-button {
-  padding: 8px 12px;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: transparent;
@@ -112,11 +112,15 @@ input:disabled, select:disabled { background: #f1f5f4; color: var(--disabled-tex
 }
 .quiet-button:hover { background: #25434e; }
 
-/* Same look as .quiet-button so the Templates menu sits with the other top actions. */
+/* Same look as .quiet-button so the Templates menu sits with the other top actions.
+   A select ignores line-height, so min-height stands in for the button's one line of
+   text plus its padding and border. margin: 0 drops the top margin that selects get
+   from the general input rule. */
 .quiet-select {
   width: 8.5rem;
-  min-height: 0;
-  padding: 8px 12px;
+  min-height: calc(1.45em + 2 * var(--quiet-pad-y, 8px) + 2px);
+  margin: 0;
+  padding: var(--quiet-pad-y, 8px) 12px;
   border: 1px solid #57727a;
   border-radius: 8px;
   background: var(--navy);
@@ -834,8 +838,9 @@ svg.tap-only .interior-door { cursor: pointer; }
     box-shadow: 0 14px 34px #0f2c3866;
   }
   .action-menu.open { display: flex; }
-  .action-menu .quiet-button { padding: 11px 12px; text-align: left; font-size: .92rem; }
-  .action-menu .quiet-select { width: 100%; padding: 11px 12px; font-size: .92rem; }
+  .action-menu { --quiet-pad-y: 11px; }
+  .action-menu .quiet-button { text-align: left; font-size: .92rem; }
+  .action-menu .quiet-select { width: 100%; font-size: .92rem; }
   .section-heading h1 { font-size: 1.8rem; }
 }
 
