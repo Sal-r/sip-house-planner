@@ -145,6 +145,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Text in both themes is readable: panels, inputs, dropdowns, checks (warning and error), the confirmation dialog, and disabled controls.
 
 ## Phone
+- [ ] On a phone or a window narrower than 800px, a banner under the top bar says to use a desktop browser. Dismiss hides it, and it comes back in a new browser session. It does not show on a wide desktop window.
 - [ ] The top buttons collapse into a Menu button, and the menu opens and closes.
 - [ ] With Drag to Move off, swiping scrolls the page and tapping selects.
 - [ ] With Drag to Move on, dragging moves rooms and items.

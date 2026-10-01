@@ -24,7 +24,7 @@ It's plain HTML, CSS, and JavaScript: no build step, no frameworks, no dependenc
 - **Save and share:** autosaves in your browser. Export and import layouts as JSON files.
 - **Print to PDF:** prints one letter-size landscape page per floor, with a room list.
 - **Dark and light themes:** dark is the default. A sun and moon switch next to My Workspace changes it (in the Menu on phones) and your choice is remembered in your browser. In dark mode the plan sits on a muted gray sheet instead of a bright white one, and the room colors are softened to match. Walls and items keep their colors, and Print / PDF is always light with the original room colors.
-- **Works on phones:** the layout adapts to small screens, with a Drag to Move switch so swiping still scrolls the page.
+- **Best on desktop:** phones and other small touch screens show a dismissible banner saying so. Mobile is still under development because it was hard to match the desktop features with so many menus. The layout still adapts to small screens, with a Drag to Move switch so swiping scrolls the page.
 
 ## Screenshots
 

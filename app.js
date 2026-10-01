@@ -2939,6 +2939,25 @@
     render();
   });
 
+  // --- Mobile notice ---------------------------------------------------------
+  // Remembered for this visit only, so it comes back the next time someone
+  // opens the planner on a phone.
+
+  const NOTICE_KEY = 'sip-house-planner-mobile-notice';
+  try {
+    if (sessionStorage.getItem(NOTICE_KEY) === 'dismissed') $('mobileNotice').hidden = true;
+  } catch (_) {
+    // Storage unavailable: the notice just shows again.
+  }
+  $('mobileNoticeDismiss').addEventListener('click', () => {
+    $('mobileNotice').hidden = true;
+    try {
+      sessionStorage.setItem(NOTICE_KEY, 'dismissed');
+    } catch (_) {
+      // Storage unavailable: it only stays hidden until the next reload.
+    }
+  });
+
   // --- Top bar menu (collapsed into a Menu button on narrow screens) ---------
 
   const closeMenu = () => {
