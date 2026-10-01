@@ -45,6 +45,35 @@
   const DEFAULT_WINDOW_SILL = 3;
   const DEFAULT_WINDOW_HEAD = 80 / 12;
 
+  // Stairs. A stair is a room of kind 'stairs' with a `stair` object:
+  // { type, climb, turn, landing }. `climb` is the side the first flight heads
+  // toward going up, `turn` is left or right (U shape and spiral), and
+  // `landing` is the flat landing's depth in feet.
+  const STAIR_TYPES = ['straight', 'turnLeft', 'turnRight', 'u', 'spiral'];
+  const STAIR_TYPE_NAME = { straight: 'Straight', turnLeft: 'Turn Left', turnRight: 'Turn Right', u: 'U Shape', spiral: 'Spiral' };
+  const DEFAULT_LANDING = 3;
+  // Hints only, not code advice: the riser the stairs aim for, and the smallest
+  // tread, flight width, and spiral width before a warning shows.
+  const MAX_RISER = 7.75 / 12;
+  const MIN_TREAD = 10 / 12;
+  const MIN_STAIR_WIDTH = 3;
+  const MIN_SPIRAL_DIAMETER = 5;
+
+  /** A stair room's settings with anything missing or invalid filled in. */
+  function stairOf(room) {
+    const saved = room.stair || {};
+    const type = STAIR_TYPES.includes(saved.type) ? saved.type : 'straight';
+    let landing = Number.isFinite(saved.landing) ? Math.min(Math.max(saved.landing, 0), 10) : 0;
+    if (type === 'spiral') landing = 0;
+    else if (type !== 'straight' && landing < 1) landing = DEFAULT_LANDING;
+    return {
+      type,
+      climb: SIDES.includes(saved.climb) ? saved.climb : (room.h >= room.w ? 'north' : 'east'),
+      turn: saved.turn === 'right' ? 'right' : 'left',
+      landing,
+    };
+  }
+
   // Templates offered in the Templates menu. Each file is a normal exported
   // layout. The credit shown under the plan comes from the file itself.
   // The default layout is the first entry. It is what a first visit loads and
@@ -71,7 +100,7 @@
 
   // Room types. Each one's fill color is a --room-* token in styles.css, so the
   // dark theme can mute them. An unknown type from an imported file draws as utility.
-  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation'];
+  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation', 'stairs'];
 
   // [name, width, depth, menu heading] in feet for each entry in the item
   // Suggested sizes menu. The heading only organizes the menu, so any item can
@@ -178,7 +207,7 @@
   // compatibility with saved drafts and exported files. Fixtures were replaced
   // by items, but sanitizeLayout still uses them to upgrade old drafts.
   const createDefaultState = () => ({
-    schemaVersion: 4,
+    schemaVersion: 5,
     width: 32,
     depth: 42,
     exteriorWall: 1,
@@ -267,7 +296,7 @@
       { id: 'mudroom', name: 'Entry', floor: 'main', x: 13, y: 1, w: 6, h: 6, kind: 'entry', walls: { north: true, east: true, south: false, west: true } },
       { id: 'living', name: 'Living Room', floor: 'main', x: 19, y: 1, w: 12, h: 14, kind: 'social' },
       { id: 'hall', name: 'Hallway', floor: 'main', x: 13, y: 7, w: 6, h: 28, kind: 'circulation' },
-      { id: 'stairs-main', name: 'Stairs', floor: 'main', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: true }, wallMode: 'open' },
+      { id: 'stairs-main', name: 'Stairs', floor: 'main', x: 1, y: 14, w: 10, h: 8, kind: 'stairs', walls: { north: true, east: false, south: true, west: true }, wallMode: 'open' },
       { id: 'side-hall', name: 'Hall', floor: 'main', x: 11, y: 14, w: 2, h: 13, kind: 'circulation', wallMode: 'open' },
       { id: 'dining', name: 'Dining Room', floor: 'main', x: 19, y: 15, w: 12, h: 14, kind: 'social' },
       { id: 'bath1', name: 'Bathroom', floor: 'main', x: 1, y: 22, w: 10, h: 5, kind: 'wet', walls: { north: true, east: true, south: true, west: true } },
@@ -277,7 +306,7 @@
       { id: 'secure', name: 'Secure Room', floor: 'basement', x: 1, y: 1, w: 10, h: 13, kind: 'utility', walls: { north: false, east: true, south: true, west: false } },
       { id: 'basement-hall', name: 'Hallway', floor: 'basement', x: 11, y: 1, w: 6, h: 40, kind: 'circulation', wallMode: 'open' },
       { id: 'flex', name: 'Flex Space', floor: 'basement', x: 17, y: 1, w: 14, h: 30, kind: 'utility', wallMode: 'enclosed' },
-      { id: 'stairs-basement', name: 'Stairs', floor: 'basement', x: 1, y: 14, w: 10, h: 8, kind: 'circulation', walls: { north: true, east: false, south: true, west: false }, wallMode: 'open' },
+      { id: 'stairs-basement', name: 'Stairs', floor: 'basement', x: 1, y: 14, w: 10, h: 8, kind: 'stairs', walls: { north: true, east: false, south: true, west: false }, wallMode: 'open' },
       { id: 'basement-bath', name: 'Bathroom', floor: 'basement', x: 1, y: 22, w: 10, h: 5, kind: 'wet' },
       { id: 'mech', name: 'Mechanical / Laundry', floor: 'basement', x: 1, y: 27, w: 6, h: 14, kind: 'utility', walls: { north: false, east: false, south: false, west: false } },
       { id: 'basement-nook', name: 'Hallway', floor: 'basement', x: 7, y: 27, w: 4, h: 4, kind: 'circulation', wallMode: 'open' },
@@ -314,7 +343,7 @@
 
   /**
    * Validates a saved layout (browser draft, imported file, or
-   * templates/default-layout.json) and upgrades older formats to schema version 4.
+   * templates/default-layout.json) and upgrades older formats to schema version 5.
    * Returns a clean state object, or null if the data isn't a layout.
    */
   function sanitizeLayout(saved) {
@@ -341,7 +370,7 @@
     const state = {
       ...base,
       ...saved,
-      schemaVersion: 4,
+      schemaVersion: 5,
       rooms,
       doors,
       fixtures: base.fixtures.map(f => ({ ...f, ...saved.fixtures.find(x => x.id === f.id) })),
@@ -408,6 +437,10 @@
 
     state.rooms = state.rooms.map(r => {
       const room = { ...r };
+      // Schema 5 gave stairs their own kind. Older files drew them as hallways.
+      if (room.kind === 'circulation' && (room.id.startsWith('stairs') || /^stairs?$/i.test(room.name.trim()))) room.kind = 'stairs';
+      if (room.kind === 'stairs') room.stair = stairOf(room);
+      else delete room.stair;
       if (!(Number.isFinite(room.wallT) && room.wallT >= 0 && room.wallT <= 1)) delete room.wallT;
       if (room.walls && typeof room.walls === 'object') {
         room.walls = Object.fromEntries(SIDES.map(side => [side, room.walls[side] !== false]));
@@ -602,6 +635,16 @@
   };
   /** Floor level to the next floor's level: the walls plus the floor between. */
   const floorToFloor = floor => wallHeight(floor) + (state.floorThickness ?? DEFAULT_FLOOR_THICKNESS);
+  /** The floor below a floor, or null on the lowest floor. */
+  const floorBelow = floor => {
+    if (floor === 'upper') return 'main';
+    return floor === 'main' && state.basementEnabled ? 'basement' : null;
+  };
+  /** How far a stair room climbs: up to the next floor, or from the floor below. Alone on one floor, it assumes one floor to floor. */
+  const stairRise = room => {
+    const below = floorBelow(room.floor);
+    return floorToFloor((floorAbove(room.floor) || !below) ? room.floor : below);
+  };
   const capitalize = text => text[0].toUpperCase() + text.slice(1);
 
   // Number formatting for labels. Two decimals so quarter feet show as 15.75, not 15.8.
@@ -686,6 +729,7 @@
 
   // Display text
   const fmtLength = ft => (isMetric() ? `${meters(ft)} m` : `${roundText(ft)}′`);
+  const fmtInches = ft => (isMetric() ? `${roundText(ft * CM_PER_FT, 1)} cm` : `${roundText(ft * 12, 1)}″`);
   const fmtSize = (w, h) => (isMetric() ? `${meters(w)} × ${meters(h)} m` : `${roundText(w)}′ × ${roundText(h)}′`);
   const fmtArea = (sqft, grouped = true) => {
     const value = Math.round(isMetric() ? sqft * SQM_PER_SQFT : sqft);
@@ -728,6 +772,7 @@
     floorThickness: { kind: 'thickness', imperial: { min: 3, max: 36, step: 0.25 }, metric: { min: 8, max: 90, step: 0.5 } },
     doorHead: { kind: 'thickness', imperial: { min: 60, max: 120, step: 1 }, metric: { min: 150, max: 300, step: 1 } },
     windowSill: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
+    stairLanding: { kind: 'thickness', imperial: { min: 0, max: 120, step: 1 }, metric: { min: 0, max: 300, step: 1 } },
     windowHead: { kind: 'thickness', imperial: { min: 12, max: 144, step: 1 }, metric: { min: 30, max: 360, step: 1 } },
   };
 
@@ -1013,6 +1058,7 @@
     }
     for (const r of state.rooms) {
       turn(r);
+      if (r.stair) r.stair = { ...r.stair, climb: next[r.stair.climb] || r.stair.climb };
       if (r.walls) {
         r.walls = {
           north: r.walls.west !== false,
@@ -1040,6 +1086,101 @@
     if (next[state.frontSide]) state.frontSide = next[state.frontSide];
     state.width = H;
     state.depth = W;
+  }
+
+  /** Where a spot on a stair lands on the plan. `along` runs the way the stairs climb, and `across` is measured from the left side when facing that way. */
+  function stairPoint(room, climb, [along, across]) {
+    if (climb === 'north') return { x: room.x + across, y: room.y + room.h - along };
+    if (climb === 'south') return { x: room.x + room.w - across, y: room.y + along };
+    if (climb === 'east') return { x: room.x + along, y: room.y + across };
+    return { x: room.x + room.w - along, y: room.y + room.h - across };
+  }
+
+  /**
+   * One flight of stairs, as a strip of the stair box in stair coordinates.
+   * `axis` is the way it runs, `dir` is 1 or -1 along that axis, and `treads`
+   * are spread evenly, so each is a step's share of the strip. Returns the
+   * strip with its tread lines and the depth of one tread.
+   */
+  function stairFlight(axis, dir, along, across, treads) {
+    const [lo, hi] = axis === 'along' ? along : across;
+    const start = dir > 0 ? lo : hi;
+    const lines = [];
+    for (let i = 1; i <= treads; i++) {
+      const pos = start + dir * (hi - lo) * i / (treads + 1);
+      lines.push(axis === 'along' ? [[pos, across[0]], [pos, across[1]]] : [[along[0], pos], [along[1], pos]]);
+    }
+    const strip = axis === 'along' ? across : along;
+    return { along, across, lines, treadDepth: (hi - lo) / (treads + 1), width: strip[1] - strip[0] };
+  }
+
+  /**
+   * Lays a stair out as flights, landings, and an arrow path, all in stair
+   * coordinates (see stairPoint). The risers come from the floor to floor
+   * height. A landing counts as one step, so it takes one tread away.
+   */
+  function stairPlan(room) {
+    const stair = stairOf(room);
+    const vertical = stair.climb === 'north' || stair.climb === 'south';
+    const length = vertical ? room.h : room.w;
+    const width = vertical ? room.w : room.h;
+    const rise = stairRise(room);
+    const risers = Math.max(1, Math.ceil(rise / MAX_RISER - 0.001));
+    const plan = { stair, length, width, rise, risers, flights: [], landings: [], path: [], spiral: stair.type === 'spiral' };
+    if (plan.spiral) {
+      plan.treads = risers - 1;
+      return plan;
+    }
+
+    const turns = stair.type === 'turnLeft' || stair.type === 'turnRight';
+    const landing = Math.min(stair.landing, length, turns ? width : length);
+    const treads = Math.max(0, risers - 1 - (landing > 0 ? 1 : 0));
+    const first = Math.ceil(treads / 2);
+    const second = treads - first;
+    const edge = 0.3;
+    plan.treads = treads;
+
+    if (stair.type === 'straight') {
+      const run = (length - landing) / 2;
+      if (landing > 0) {
+        plan.flights.push(
+          stairFlight('along', 1, [0, run], [0, width], first),
+          stairFlight('along', 1, [run + landing, length], [0, width], second),
+        );
+        plan.landings.push({ along: [run, run + landing], across: [0, width] });
+      } else {
+        plan.flights.push(stairFlight('along', 1, [0, length], [0, width], treads));
+      }
+      plan.path = [[edge, width / 2], [length - edge, width / 2]];
+    } else if (turns) {
+      // The first flight hugs the side opposite the turn, so the second flight crosses the rest of the box.
+      const left = stair.type === 'turnLeft';
+      const near = left ? [width - landing, width] : [0, landing];
+      const far = left ? [0, width - landing] : [landing, width];
+      plan.flights.push(
+        stairFlight('along', 1, [0, length - landing], near, first),
+        stairFlight('across', left ? -1 : 1, [length - landing, length], far, second),
+      );
+      plan.landings.push({ along: [length - landing, length], across: near });
+      const nearMiddle = (near[0] + near[1]) / 2;
+      plan.path = [[edge, nearMiddle], [length - landing / 2, nearMiddle], [length - landing / 2, left ? edge : width - edge]];
+    } else {
+      const left = stair.turn === 'left';
+      const out = left ? [width / 2, width] : [0, width / 2];
+      const back = left ? [0, width / 2] : [width / 2, width];
+      plan.flights.push(
+        stairFlight('along', 1, [0, length - landing], out, first),
+        stairFlight('along', -1, [0, length - landing], back, second),
+      );
+      plan.landings.push({ along: [length - landing, length], across: [0, width] });
+      const outMiddle = (out[0] + out[1]) / 2;
+      const backMiddle = (back[0] + back[1]) / 2;
+      plan.path = [[edge, outMiddle], [length - landing / 2, outMiddle], [length - landing / 2, backMiddle], [edge, backMiddle]];
+    }
+
+    plan.minTread = Math.min(...plan.flights.map(f => f.treadDepth));
+    plan.minWidth = Math.min(...plan.flights.map(f => f.width));
+    return plan;
   }
 
   // ==========================================================================
@@ -1105,6 +1246,28 @@
     for (const d of state.doors) {
       if (findRoom(d.roomId)?.floor === state.floor && doorHead(d) > limit + 0.01) {
         out.push({ level: 'warning', text: `A doorway in ${findRoom(d.roomId).name} is taller than the ${fmtLength(limit)} wall.` });
+      }
+    }
+    return out;
+  }
+
+  /** Hints for the stairs on this floor. Not code advice. */
+  function stairChecks(rooms) {
+    const out = [];
+    for (const room of rooms.filter(r => r.kind === 'stairs')) {
+      if (!floorAbove(room.floor) && !floorBelow(room.floor)) continue;
+      const plan = stairPlan(room);
+      if (plan.spiral) {
+        if (Math.min(room.w, room.h) < MIN_SPIRAL_DIAMETER) {
+          out.push({ level: 'warning', text: `${room.name} is ${fmtLength(Math.min(room.w, room.h))} across. A spiral stair usually needs about ${fmtLength(MIN_SPIRAL_DIAMETER)}.` });
+        }
+        continue;
+      }
+      if (plan.minTread < MIN_TREAD - 0.01) {
+        out.push({ level: 'warning', text: `${room.name} treads come out about ${fmtInches(plan.minTread)} deep. Make the box longer, or use a turn or U shape.` });
+      }
+      if (plan.minWidth < MIN_STAIR_WIDTH - 0.01) {
+        out.push({ level: 'warning', text: `${room.name} is about ${fmtLength(plan.minWidth)} wide. Check the passage width.` });
       }
     }
     return out;
@@ -1363,6 +1526,7 @@
     // Windows and entrances
     out.push(...windowChecks());
     out.push(...heightChecks());
+    out.push(...stairChecks(rooms));
     if (!FLOORS.some(floor => entranceDoors(floor).length)) {
       out.push({ level: 'warning', text: 'No entrance yet. Add a doorway on an outside wall.' });
     }
@@ -1443,9 +1607,87 @@
     return el;
   }
 
+  /** An arrow along a path (plan points), with UP or DN at the end where the climb starts. */
+  function drawStairArrow(points, goesUp, parent) {
+    element('path', { d: `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`, class: 'stair-arrow' }, parent);
+    const last = points.length - 1;
+    const tip = points[goesUp ? last : 0];
+    const before = points[goesUp ? last - 1 : 1];
+    const length = Math.hypot(tip.x - before.x, tip.y - before.y) || 1;
+    const dx = (tip.x - before.x) / length;
+    const dy = (tip.y - before.y) / length;
+    const size = 0.5;
+    const base = { x: tip.x - dx * size, y: tip.y - dy * size };
+    const side = size * 0.45;
+    element('path', {
+      d: `M ${tip.x} ${tip.y} L ${base.x - dy * side} ${base.y + dx * side} L ${base.x + dy * side} ${base.y - dx * side} Z`,
+      class: 'stair-arrow-head',
+    }, parent);
+
+    // The label sits at the tail, a little way along the path.
+    const tail = points[goesUp ? 0 : last];
+    const next = points[goesUp ? 1 : last - 1];
+    const run = Math.hypot(next.x - tail.x, next.y - tail.y) || 1;
+    const text = label(tail.x + (next.x - tail.x) / run * 0.75, tail.y + (next.y - tail.y) / run * 0.75 + 0.25, goesUp ? 'UP' : 'DN', 'stair-text', parent);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-size', '0.7px');
+  }
+
+  /** A spiral stair: a circle with a tread line every so often and an arrow winding around it. */
+  function drawSpiral(room, plan, goesUp, parent) {
+    const cx = room.x + room.w / 2;
+    const cy = room.y + room.h / 2;
+    const radius = Math.max(0.5, Math.min(room.w, room.h) / 2 - 0.1);
+    const hub = Math.min(0.35, radius / 4);
+    element('circle', { cx, cy, r: radius, class: 'stair-line' }, parent);
+    element('circle', { cx, cy, r: hub, class: 'stair-line' }, parent);
+
+    // The first tread sits behind the climb direction. Turn right winds clockwise going up.
+    const startAngle = { north: Math.PI / 2, east: Math.PI, south: -Math.PI / 2, west: 0 }[plan.stair.climb];
+    const sign = plan.stair.turn === 'right' ? 1 : -1;
+    const spot = (angle, r) => ({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+    for (let i = 1; i <= plan.treads; i++) {
+      const angle = startAngle + sign * 2 * Math.PI * i / (plan.treads + 1);
+      const from = spot(angle, hub);
+      const to = spot(angle, radius);
+      element('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'stair-line' }, parent);
+    }
+    const arc = [];
+    for (let step = 0; step <= 18; step++) arc.push(spot(startAngle + sign * 2 * Math.PI * 0.85 * step / 18, radius * 0.62));
+    drawStairArrow(arc, goesUp, parent);
+  }
+
+  /** Tread lines, landings, and the climb arrow for a stair room. */
+  function drawStairs(room, group) {
+    const plan = stairPlan(room);
+    const art = element('g', { class: 'stair-art' }, group);
+    const goesUp = !!floorAbove(room.floor);
+    if (plan.spiral) {
+      drawSpiral(room, plan, goesUp, art);
+      return;
+    }
+
+    const at = spot => stairPoint(room, plan.stair.climb, spot);
+    const outline = (along, across) => {
+      const corners = [[along[0], across[0]], [along[1], across[0]], [along[1], across[1]], [along[0], across[1]]].map(at);
+      return `M ${corners.map(p => `${p.x} ${p.y}`).join(' L ')} Z`;
+    };
+    for (const flight of plan.flights) {
+      element('path', { d: outline(flight.along, flight.across), class: 'stair-line' }, art);
+      for (const [a, b] of flight.lines) {
+        const from = at(a);
+        const to = at(b);
+        element('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'stair-line' }, art);
+      }
+    }
+    for (const landing of plan.landings) element('path', { d: outline(landing.along, landing.across), class: 'stair-line' }, art);
+    drawStairArrow(plan.path.map(at), goesUp, art);
+  }
+
   function drawRoom(r) {
     const group = element('g', {
       'data-room': r.id,
+      ...(r.kind === 'stairs' ? { class: 'stairs-room' } : {}),
       'data-focus-key': `plan-room:${r.id}`,
       role: 'button',
       tabindex: '0',
@@ -1461,6 +1703,7 @@
       class: `room room-${ROOM_KINDS.includes(r.kind) ? r.kind : 'utility'} ${r.id === 'hall' ? 'path-room' : ''} ${state.selectedRoom === r.id ? 'selected' : ''}`,
     }, group);
 
+    if (r.kind === 'stairs') drawStairs(r, group);
     drawRoomLabel(r, group);
     element('title', {}, group).textContent = `${r.name}: ${spokenSize(r.w, r.h)}, ${spokenArea(r.w * r.h)}`;
   }
@@ -2031,10 +2274,34 @@
       box.closest('label').classList.toggle('exterior', !wallOn);
     }
 
+    renderStairControls(room);
     $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
     $('selectedClear').textContent = room
       ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
       : 'Add a space to edit it.';
+  }
+
+  /** The stair section of the room editor. Only stairs show it. */
+  function renderStairControls(room) {
+    const isStairs = room?.kind === 'stairs';
+    $('stairControls').hidden = !isStairs;
+    if (!isStairs) return;
+
+    const stair = stairOf(room);
+    $('stairType').value = stair.type;
+    $('stairClimb').value = stair.climb;
+    $('stairTurn').value = stair.turn;
+    $('stairLanding').value = thicknessField(stair.landing);
+    $('stairTurnLabel').hidden = stair.type !== 'u' && stair.type !== 'spiral';
+    $('stairLandingLabel').hidden = stair.type === 'spiral';
+
+    const plan = stairPlan(room);
+    const connected = floorAbove(room.floor) || floorBelow(room.floor);
+    let info = `${plan.risers} risers of about ${fmtInches(plan.rise / plan.risers)} to climb ${fmtLength(plan.rise)}.`;
+    if (!connected) info = 'Add a basement or second floor to size the risers and treads.';
+    else if (plan.spiral) info += ` The spiral is ${fmtLength(Math.min(room.w, room.h))} across.`;
+    else info += ` ${plan.treads} treads, about ${fmtInches(plan.minTread)} deep.`;
+    $('stairInfo').textContent = info;
   }
 
   /** Interior Doorways panel. */
@@ -2359,7 +2626,8 @@
 
   /** Adds a floor with a staircase that lines up with the main floor stairs. */
   function addStairsFloor(floor, stairsId) {
-    state.rooms.push({ id: stairsId, name: 'Stairs', floor, kind: 'circulation', ...stairsBoxFromMain() });
+    const box = stairsBoxFromMain();
+    state.rooms.push({ id: stairsId, name: 'Stairs', floor, kind: 'stairs', ...box, stair: stairOf(findRoom('stairs-main') || box) });
     state.floor = floor;
     state.selectedRoom = stairsId;
   }
@@ -2477,6 +2745,7 @@
       ...(source && Number.isFinite(source.wallT) ? { wallT: source.wallT } : {}),
       ...(source?.walls ? { walls: { ...source.walls } } : {}),
       ...(source?.halfWalls ? { halfWalls: { ...source.halfWalls } } : {}),
+      ...(source?.stair ? { stair: { ...source.stair } } : {}),
     };
     state.rooms.push(room);
     state.selectedRoom = room.id;
@@ -2623,7 +2892,36 @@
     const name = value.trim().slice(0, 48);
     if (name) room.name = name;
   });
-  onRoomChange('roomKind', (room, value) => { room.kind = value; });
+  onRoomChange('roomKind', (room, value) => {
+    room.kind = value;
+    if (value === 'stairs') room.stair = stairOf(room);
+    else delete room.stair;
+  });
+
+  // Stair settings. Each edit starts from the room's complete settings.
+  const onStairChange = (id, edit) => onRoomChange(id, (room, value) => {
+    const stair = stairOf(room);
+    edit(stair, value);
+    room.stair = stair;
+  });
+  onStairChange('stairType', (stair, value) => {
+    if (!STAIR_TYPES.includes(value)) return;
+    stair.type = value;
+    if (value === 'straight' || value === 'spiral') stair.landing = 0;
+    else if (stair.landing < 1) stair.landing = DEFAULT_LANDING;
+  });
+  onStairChange('stairClimb', (stair, value) => {
+    if (SIDES.includes(value)) stair.climb = value;
+  });
+  onStairChange('stairTurn', (stair, value) => {
+    if (value === 'left' || value === 'right') stair.turn = value;
+  });
+  // A landing is at least 12″ on stairs that turn. A straight stair uses 0 for none.
+  onStairChange('stairLanding', (stair, value) => {
+    const ft = readField('stairLanding', value);
+    if (ft === null || stair.type === 'spiral') return;
+    stair.landing = stair.type === 'straight' ? ft : Math.max(ft, 1);
+  });
   onRoomChange('roomWalls', (room, value) => { room.wallMode = value; });
   onRoomChange('roomFloor', (room, value) => {
     if (floorOrder().includes(value)) {

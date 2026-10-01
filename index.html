@@ -197,7 +197,8 @@
                 <option value="private">Bedroom</option>
                 <option value="wet">Bathroom</option>
                 <option value="entry">Entry / Exit</option>
-                <option value="circulation">Hallway / Stairs</option>
+                <option value="circulation">Hallway</option>
+                <option value="stairs">Stairs</option>
                 <option value="utility">Utility / Storage</option>
               </select>
             </label>
@@ -208,6 +209,37 @@
                 <option value="basement">Basement</option>
               </select>
             </label>
+          </div>
+          <div id="stairControls" class="stair-controls" hidden>
+            <div class="two-fields compact-row">
+              <label>Stair Type
+                <select id="stairType">
+                  <option value="straight">Straight</option>
+                  <option value="turnLeft">Turn Left</option>
+                  <option value="turnRight">Turn Right</option>
+                  <option value="u">U Shape</option>
+                  <option value="spiral">Spiral</option>
+                </select>
+              </label>
+              <label>Goes Up Toward
+                <select id="stairClimb">
+                  <option value="north">Top</option>
+                  <option value="east">Right</option>
+                  <option value="south">Bottom</option>
+                  <option value="west">Left</option>
+                </select>
+              </label>
+            </div>
+            <div class="two-fields compact-row">
+              <label id="stairTurnLabel">Turns
+                <select id="stairTurn">
+                  <option value="left">Left</option>
+                  <option value="right">Right (clockwise)</option>
+                </select>
+              </label>
+              <label id="stairLandingLabel" title="The flat landing between flights. A straight stair uses 0 for no landing. Stairs that turn need at least 12 in.">Landing <span data-unit="thickness">in</span><input id="stairLanding" type="number" min="0" max="120" step="1" inputmode="decimal"></label>
+            </div>
+            <p id="stairInfo" class="field-help"></p>
           </div>
           <div class="two-fields compact-row">
             <label>Partitions
