@@ -2629,12 +2629,22 @@
       : `${floorName(state.floor)} walls. This is the top floor.`;
   }
 
+  /** Shows an area in a tile with the unit smaller than the number, so five digits still fit. */
+  function showArea(id, sqft) {
+    const unit = isMetric() ? 'm²' : 'sq ft';
+    const number = fmtArea(sqft).slice(0, -unit.length).trim();
+    const unitText = document.createElement('span');
+    unitText.className = 'area-unit';
+    unitText.textContent = ` ${unit}`;
+    $(id).replaceChildren(number, unitText);
+  }
+
   function renderMetrics(model) {
     const footprint = state.width * state.depth;
-    $('footprintArea').textContent = fmtArea(footprint);
-    $('shellArea').textContent = fmtArea(model.shellArea);
-    $('clearArea').textContent = fmtArea(Math.max(0, model.shellArea - model.partitionArea));
-    $('aboveGradeArea').textContent = fmtArea(footprint * (state.upperEnabled ? 2 : 1));
+    showArea('footprintArea', footprint);
+    showArea('shellArea', model.shellArea);
+    showArea('clearArea', Math.max(0, model.shellArea - model.partitionArea));
+    showArea('aboveGradeArea', footprint * (state.upperEnabled ? 2 : 1));
   }
 
   // Keyboard users keep their place: when a render rebuilds the element that
