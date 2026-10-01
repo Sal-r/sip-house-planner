@@ -19,7 +19,7 @@ A browser-based floor plan tool for concept planning SIP houses, tiny houses, an
 - Layouts are stored in feet. Metric only changes what is shown and how typed values are read.
 - Snapping uses one function, `snap`, for the footprint, rooms, doorways, windows, and items: 3 inches (5 cm in metric). Do not add another snapping function. Wall thickness is a different quantity and rounds to 1/4 inch separately.
 - `roundTo` is the one rounding helper, `roundText` is the one number-to-text helper, and `overlapBox` is the one rectangle overlap helper. Reuse them.
-- Colors are tokens at the top of `styles.css`. A new token needs a light value and a dark value, and the dark values only change the page. The plan drawing area keeps the light palette for walls, rooms, and items (it re-declares it), and only its sheet and the labels around it use the `--plan-*` tokens, which dark mode swaps for a muted gray set. Printing is always light. Do not hardcode a color in a page rule.
+- Colors are tokens at the top of `styles.css`. A new token needs a light value and a dark value, and the dark values only change the page. The plan drawing area keeps the light palette for walls and items (it re-declares it). Its sheet, the labels around it, and the room fills (`--room-*`) are the exceptions, and dark mode swaps them for a muted set. Printing is always light. Do not hardcode a color in a page rule.
 - Keep code simple and readable. Comments explain why, not what.
 
 ## Git and pull requests
