@@ -41,6 +41,19 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] A layout exported before heights existed (or a template) still loads with 8′ walls, 3′ sills, and 80 inch heads.
 - [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
 
+## Lot and setback
+- [ ] The Footprint panel has a collapsed Lot and Setback section. Its fields stay off until Show Lot is on, and turning Show Lot on opens the section.
+- [ ] The first time Show Lot is turned on, the lot is the house plus 20 ft on every side with the house centered, a dashed lot line and a dotted setback line (3 ft inside it) are drawn, a "Lot W × D" label shows, and the whole lot is visible in the plan.
+- [ ] House From Left set to 2 ft shows a warning naming the left lot line, the distance, and the 3 ft setback. A negative value shows an error that the house goes past the lot line. Raising it to 3 ft clears the warning, and a setback of 0 clears it too.
+- [ ] Setback and the lot fields accept metric entry (setback 1 m works). A new lot shows the 3 ft setback as 0.91 m.
+- [ ] Center House on Lot centers the house. Changing the lot width or depth redraws the lot and its setback line.
+- [ ] An outdoor space within 3 ft of a lot line shows a "may be subject to the setback" warning, and one past the line shows an error. The warning only appears on the floor the outdoor space is on.
+- [ ] Rotating the house turns the lot with it, and a warning for the left side becomes a warning for the top side after a right turn.
+- [ ] Turning Show Lot off hides the lines and clears the lot warnings, and turning it back on keeps the values you set. Undo steps back through lot edits.
+- [ ] The lot survives a reload, Export Layout, and Import Layout. A file from before the lot existed, and all templates, open with the lot off. A damaged lot in a file falls back to off.
+- [ ] Print / PDF shows the lot lines and label on each floor's page.
+- [ ] At 1500px and wider the Footprint panel scrolls inside its box when the lot section is open, and nothing is cut off.
+
 ## Utility markers and notes
 - [ ] The item Suggested sizes menu has headings Notes (Note) and Utility Markers (Electrical, HVAC, Plumbing), still in A to Z order.
 - [ ] Electrical draws a lightning bolt, Plumbing a water drop, and HVAC a four-blade fan, each centered in a small box. The colors read in both themes.
