@@ -100,7 +100,7 @@
 
   // Room types. Each one's fill color is a --room-* token in styles.css, so the
   // dark theme can mute them. An unknown type from an imported file draws as utility.
-  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation', 'stairs'];
+  const ROOM_KINDS = ['social', 'private', 'entry', 'wet', 'utility', 'circulation', 'stairs', 'outdoor'];
 
   // [name, width, depth, menu heading] in feet for each entry in the item
   // Suggested sizes menu. The heading only organizes the menu, so any item can
@@ -175,10 +175,15 @@
 
   // Suggested sizes for the menu in each panel. Choosing one applies it to the
   // selected space, doorway, window, or item. Rooms vary too much for a long
-  // list, so only the two bathrooms are offered.
+  // list, so only the two bathrooms and the outdoor spaces are offered.
   const ROOM_PRESETS = {
-    halfBath: ['Half Bath', 'wet', 5, 5],
+    deck: ['Deck', 'outdoor', 12, 12],
     fullBath: ['Full Bath', 'wet', 5, 8],
+    garageOne: ['Garage - 1 Car', 'outdoor', 12, 20],
+    garageTwo: ['Garage - 2 Car', 'outdoor', 22, 22],
+    halfBath: ['Half Bath', 'wet', 5, 5],
+    porch: ['Porch', 'outdoor', 6, 12],
+    shed: ['Shed', 'outdoor', 8, 10],
   };
   const DOOR_PRESETS = {
     closet: ['Closet', 2],
@@ -669,7 +674,11 @@
 
   // A room is open plan (no partition walls) or enclosed. Living spaces and
   // the main hallway default to open.
-  const wallMode = r => r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed');
+  // Outdoor spaces (porch, deck, shed, garage) never get partition walls.
+  const wallMode = r => (r.kind === 'outdoor' ? 'open' : r.wallMode || ((r.kind === 'social' || r.id === 'hall') ? 'open' : 'enclosed'));
+  const isOutdoor = r => r.kind === 'outdoor';
+  /** True when a room sits entirely inside the house footprint. */
+  const insideFootprint = r => r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= state.width + 0.01 && r.y + r.h <= state.depth + 0.01;
   const roomWallThickness = r => (Number.isFinite(r.wallT) ? r.wallT : state.interiorWall);
   const hasSide = (r, side) => r.walls?.[side] !== false;
   const sidePosition = (r, side) => (
@@ -1432,7 +1441,7 @@
 
     // Footprint, size, and overlap
     for (const r of rooms) {
-      if (r.x < 0 || r.y < 0 || r.x + r.w > state.width + 0.01 || r.y + r.h > state.depth + 0.01) {
+      if (!isOutdoor(r) && !insideFootprint(r)) {
         out.push({ level: 'error', text: `${r.name} extends beyond the ${fmtSize(state.width, state.depth)} footprint.` });
       }
       if (r.w < 3 || r.h < 3) {
@@ -1844,16 +1853,34 @@
     element('title', {}, group).textContent = `Window: ${fmtLength(w.width)} on the ${SIDE_NAME[w.side]} wall, ${fmtLength(w.offset)} from the corner`;
   }
 
+  /**
+   * How far outdoor spaces on this floor stick out past a wall, where they
+   * overlap the house's length. The labels and dimension lines on that side
+   * move out by this much so they stay clear of a porch or deck.
+   */
+  function outsideReach(side) {
+    const W = state.width;
+    const H = state.depth;
+    let reach = 0;
+    for (const r of state.rooms.filter(room => isOutdoor(room) && room.floor === state.floor)) {
+      const touchesSpan = isHorizontalSide(side) ? r.x < W && r.x + r.w > 0 : r.y < H && r.y + r.h > 0;
+      const past = { north: -r.y, south: r.y + r.h - H, west: -r.x, east: r.x + r.w - W }[side];
+      if (touchesSpan) reach = Math.max(reach, past);
+    }
+    return Math.max(0, reach);
+  }
+
   function drawFrontSide() {
     const side = state.frontSide;
     const W = state.width;
     const H = state.depth;
     if (!side || side === 'none') return;
+    const reach = outsideReach(side);
     const [x, y, rotation] = {
-      north: [W / 2, -2.2, 0],
-      south: [W / 2, H + 2.85, 0],
-      west: [-2.7, H / 2, -90],
-      east: [W + 2.35, H / 2, 90],
+      north: [W / 2, -2.2 - reach, 0],
+      south: [W / 2, H + 2.85 + reach, 0],
+      west: [-2.7 - reach, H / 2, -90],
+      east: [W + 2.35 + reach, H / 2, 90],
     }[side];
     const text = label(x, y, 'FRONT OF HOUSE', 'front-label');
     if (rotation) text.setAttribute('transform', `rotate(${rotation} ${x} ${y})`);
@@ -1865,10 +1892,11 @@
     const W = state.width;
     const H = state.depth;
     const mid = g.horizontal ? (g.start.x + g.end.x) / 2 : (g.start.y + g.end.y) / 2;
-    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1, 0]
-      : g.side === 'south' ? [mid, H + 0.85, 0]
-      : g.side === 'west' ? [-0.8, mid, -90]
-      : [W + 0.95, mid, 90];
+    const reach = outsideReach(g.side);
+    const [x, y, rotation] = g.side === 'north' ? [mid, -1.1 - reach, 0]
+      : g.side === 'south' ? [mid, H + 0.85 + reach, 0]
+      : g.side === 'west' ? [-0.8 - reach, mid, -90]
+      : [W + 0.95 + reach, mid, 90];
     // The bar fills the wall from face to face, so a window in the same spot
     // is visibly in conflict. With no exterior wall, use a thin bar on the edge.
     const t = state.exteriorWall > 0 ? state.exteriorWall : 0.3;
@@ -2078,15 +2106,32 @@
   // FRONT OF HOUSE, which ends about 3.1 ft out. The margin leaves room past that
   // on every side, so nothing is cut off at the edge.
   const PLAN_MARGIN = 3.5;
-  const planSize = () => ({ w: state.width + 2 * PLAN_MARGIN, h: state.depth + 2 * PLAN_MARGIN });
+  /**
+   * The area the plan shows: the footprint plus its margin, widened to take in
+   * outdoor spaces on any floor (with the same margin, for their own labels), so the
+   * view does not jump between floors.
+   */
+  function planBounds() {
+    let left = -PLAN_MARGIN;
+    let top = -PLAN_MARGIN;
+    let right = state.width + PLAN_MARGIN;
+    let bottom = state.depth + PLAN_MARGIN;
+    for (const r of state.rooms.filter(isOutdoor)) {
+      left = Math.min(left, r.x - PLAN_MARGIN);
+      top = Math.min(top, r.y - PLAN_MARGIN);
+      right = Math.max(right, r.x + r.w + PLAN_MARGIN);
+      bottom = Math.max(bottom, r.y + r.h + PLAN_MARGIN);
+    }
+    return { x: left, y: top, w: right - left, h: bottom - top };
+  }
 
   /** Draws the current floor. The SVG uses feet as its units. */
   function renderPlan(model) {
     const W = state.width;
     const H = state.depth;
-    const size = planSize();
+    const size = planBounds();
     svg.replaceChildren();
-    svg.setAttribute('viewBox', `${-PLAN_MARGIN} ${-PLAN_MARGIN} ${size.w} ${size.h}`);
+    svg.setAttribute('viewBox', `${size.x} ${size.y} ${size.w} ${size.h}`);
     // Fit the plan inside the scroll box (a size container), then apply zoom.
     const ratio = (size.w / size.h).toFixed(5);
     svg.setAttribute('style', `width:calc(min(100cqw, 100cqh * ${ratio}) * ${state.zoom / 100});min-width:0;max-height:none;height:auto;aspect-ratio:${size.w}/${size.h};margin:0 auto`);
@@ -2113,14 +2158,15 @@
     // Overall dimensions
     // The lines sit past the ENTRANCE labels (which end about 1.1' from the
     // wall) so the two never touch.
-    const lineGap = 1.45;
-    const textGap = 2.3;
-    element('line', { x1: 0, y1: H + lineGap, x2: W, y2: H + lineGap, class: 'dimension' });
-    label(W / 2, H + textGap, fmtLength(W), 'dimension-text');
-    element('line', { x1: -lineGap, y1: 0, x2: -lineGap, y2: H, class: 'dimension' });
+    // An outdoor space on the bottom or left pushes its line out past itself.
+    const bottomGap = 1.45 + outsideReach('south');
+    const leftGap = 1.45 + outsideReach('west');
+    element('line', { x1: 0, y1: H + bottomGap, x2: W, y2: H + bottomGap, class: 'dimension' });
+    label(W / 2, H + bottomGap + 0.85, fmtLength(W), 'dimension-text');
+    element('line', { x1: -leftGap, y1: 0, x2: -leftGap, y2: H, class: 'dimension' });
     // Rotated text grows leftward from its baseline, so its baseline sits
     // nearer the plan than the bottom label's does.
-    const depthTextX = -(textGap - 0.55);
+    const depthTextX = -(leftGap + 0.85 - 0.55);
     const depthLabel = label(depthTextX, H / 2, fmtLength(H), 'dimension-text');
     depthLabel.setAttribute('transform', `rotate(-90 ${depthTextX} ${H / 2})`);
   }
@@ -2223,6 +2269,8 @@
         .map(r => ({ value: r.id, text: `${r.name} · ${fmtSize(r.w, r.h)}` })),
     }));
     fillInfo($('roomInfo'), state.rooms.length, 'space', 'spaces', countByFloor(state.rooms, r => r.floor));
+    const outdoorArea = state.rooms.filter(isOutdoor).reduce((sum, r) => sum + r.w * r.h, 0);
+    if (outdoorArea > 0) $('roomInfo').append(document.createElement('br'), `Outdoor: ${fmtArea(outdoorArea)}, not in the house areas.`);
     fillSelect($('roomSelect'), groups.filter(g => g.options.length), state.selectedRoom, state.selectedRoom ? '' : 'No space selected');
     $('roomSelect').disabled = !state.rooms.length;
   }
@@ -2276,7 +2324,9 @@
 
     renderStairControls(room);
     $('alignStairs').disabled = !findRoom('stairs-main') || (!findRoom('stairs-basement') && !findRoom('stairs-upper'));
-    $('selectedClear').textContent = room
+    $('selectedClear').textContent = room && isOutdoor(room)
+      ? `Outdoor space, ${fmtArea(room.w * room.h, false)}. It has no walls and is not counted in the house areas.`
+      : room
       ? `Approximate clear area within this ${fmtSize(room.w, room.h)} box: ${fmtArea(approximateRoomClear(room, model), false)}. Wall edges and openings affect it.`
       : 'Add a space to edit it.';
   }
@@ -2731,7 +2781,8 @@
     const floor = state.floor;
     const w = source?.w ?? 10;
     const h = source?.h ?? 10;
-    const pos = freePosition(floor, w, h);
+    // A copy of an outdoor space goes beside it, since the free spots are all inside the house.
+    const pos = source && isOutdoor(source) ? { x: snap(source.x + source.w + 1), y: source.y } : freePosition(floor, w, h);
     const room = {
       id: newId('space'),
       name: source ? `${source.name} Copy` : `New Room ${state.rooms.filter(r => r.floor === floor).length + 1}`,
@@ -2754,6 +2805,17 @@
     $('roomName').select();
   }
 
+  /** Puts an outdoor space just outside the front wall (the bottom if no front is set), centered on it. */
+  function moveOutsideFront(room) {
+    const side = SIDES.includes(state.frontSide) ? state.frontSide : 'south';
+    if (isHorizontalSide(side)) room.x = snap((state.width - room.w) / 2);
+    else room.y = snap((state.depth - room.h) / 2);
+    if (side === 'north') room.y = -room.h;
+    else if (side === 'south') room.y = state.depth;
+    else if (side === 'west') room.x = -room.w;
+    else room.x = state.width;
+  }
+
   // Suggested sizes: applied to the selected record. Windows, doorways, and
   // items resize around their middle so they stay where they are.
   $('roomPreset').addEventListener('change', e => {
@@ -2762,6 +2824,9 @@
     if (room && preset) {
       const [name, kind, w, h] = preset;
       Object.assign(room, { name, kind, w, h });
+      if (kind === 'stairs') room.stair = stairOf(room);
+      else delete room.stair;
+      if (kind === 'outdoor' && insideFootprint(room)) moveOutsideFront(room);
     }
     render();
   });
@@ -3573,7 +3638,7 @@
     state.selectedWindow = null;
 
     const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    const ratio = `${planSize().w}/${planSize().h}`;
+    const ratio = `${planBounds().w}/${planBounds().h}`;
     for (const floor of floorOrder()) {
       state.floor = floor;
       const model = wallModel(floor);
@@ -3604,7 +3669,7 @@
         const li = document.createElement('li');
         const name = document.createElement('strong');
         name.textContent = r.name;
-        li.append(name, ` ${fmtSize(r.w, r.h)}`);
+        li.append(name, ` ${fmtSize(r.w, r.h)}${isOutdoor(r) ? ' (outdoor)' : ''}`);
         list.append(li);
       }
 

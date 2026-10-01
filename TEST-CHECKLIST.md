@@ -41,6 +41,17 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] A layout exported before heights existed (or a template) still loads with 8′ walls, 3′ sills, and 80 inch heads.
 - [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
 
+## Outdoor spaces
+- [ ] The room Type menu has Outdoor Space. The Suggested sizes menu lists Deck, Full Bath, Garage - 1 Car, Garage - 2 Car, Half Bath, Porch, Shed in A to Z order.
+- [ ] Add Room, then pick Porch (or any outdoor size). The space moves to just outside the front wall, centered (the bottom wall if the front is Not Set), and the plan grows so nothing is cut off. Picking one on a space already outside only resizes it.
+- [ ] An outdoor space has no Partitions walls controls to edit, Add Doorway stays off for it, and it is drawn with a dashed outline and a gray fill in both themes.
+- [ ] Dragging an outdoor space anywhere, and typing negative X or Y, works. The plan area follows it, and the view does not jump when you switch floor tabs.
+- [ ] A porch on the front wall pushes the ENTRANCE label, FRONT OF HOUSE, and the dimension line out past itself. A deck on the bottom or a garage on the left moves its dimension line out too. Nothing overlaps the outdoor space's own name.
+- [ ] No "extends beyond the footprint" error for an outdoor space, and that error still shows for a normal room placed outside. An outdoor space overlapping a bedroom still shows the overlap error.
+- [ ] The four house area figures do not change when outdoor spaces are added. The Rooms & Spaces box shows "Outdoor: N sq ft, not in the house areas." and the selected outdoor space says it is not counted in the house areas.
+- [ ] Duplicating an outdoor space puts the copy beside it. Rotating the house, Undo, a reload, Export Layout, and Import Layout all keep the outdoor spaces where they were. Metric shows the outdoor area in m².
+- [ ] Print / PDF includes the outdoor spaces in the plan and marks them "(outdoor)" in the room list.
+
 ## Stairs
 - [ ] The room Type menu has Hallway and Stairs as separate choices. Choosing Stairs shows Stair Type, Goes Up Toward, Landing, and an info line. Other types hide them.
 - [ ] Each stair type draws on the plan: Straight (tread lines and arrow), Turn Left and Turn Right (a flight, a landing square, and a flight across), U Shape (two flights side by side with a landing across the end), Spiral (circle with radiating treads and a curved arrow).

@@ -117,6 +117,7 @@
   --room-utility: #d5eccb;
   --room-circulation: #f8d3d3;
   --room-stairs: #e4dccb;
+  --room-outdoor: #e4e8e6;
 }
 
 /* Dark theme. Only on screen, so printing and PDF export always stay light. */
@@ -208,6 +209,7 @@
     --room-utility: #c6dbc6;
     --room-circulation: #dec9cb;
     --room-stairs: #d2cbbb;
+    --room-outdoor: #cfd6d3;
   }
 }
 
@@ -867,6 +869,8 @@ svg .room-entry { fill: var(--room-entry); }
 svg .room-wet { fill: var(--room-wet); }
 svg .room-circulation { fill: var(--room-circulation); }
 svg .room-stairs { fill: var(--room-stairs); }
+/* Dashed so an outdoor space reads as different without relying on color alone. */
+svg .room-outdoor { fill: var(--room-outdoor); stroke-dasharray: .5 .3; }
 /* Stair art sits under the room label, which gets a halo in the room color so it stays readable over the tread lines. */
 svg .stair-line { fill: none; stroke: var(--partition-wall); stroke-width: .07; pointer-events: none; }
 svg .stair-arrow { fill: none; stroke: var(--wall); stroke-width: .12; stroke-linejoin: round; pointer-events: none; }
