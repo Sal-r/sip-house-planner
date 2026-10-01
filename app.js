@@ -1723,15 +1723,23 @@
     }
   }
 
+  // Feet of space around the house for the labels and dimension lines. From the
+  // wall outward they run: entrance label, dimension line, dimension text, then
+  // FRONT OF HOUSE, which ends about 3.1 ft out. The margin leaves room past that
+  // on every side, so nothing is cut off at the edge.
+  const PLAN_MARGIN = 3.5;
+  const planSize = () => ({ w: state.width + 2 * PLAN_MARGIN, h: state.depth + 2 * PLAN_MARGIN });
+
   /** Draws the current floor. The SVG uses feet as its units. */
   function renderPlan(model) {
     const W = state.width;
     const H = state.depth;
+    const size = planSize();
     svg.replaceChildren();
-    svg.setAttribute('viewBox', `-3 -3 ${W + 6} ${H + 6}`);
+    svg.setAttribute('viewBox', `${-PLAN_MARGIN} ${-PLAN_MARGIN} ${size.w} ${size.h}`);
     // Fit the plan inside the scroll box (a size container), then apply zoom.
-    const ratio = ((W + 6) / (H + 6)).toFixed(5);
-    svg.setAttribute('style', `width:calc(min(100cqw, 100cqh * ${ratio}) * ${state.zoom / 100});min-width:0;max-height:none;height:auto;aspect-ratio:${W + 6}/${H + 6};margin:0 auto`);
+    const ratio = (size.w / size.h).toFixed(5);
+    svg.setAttribute('style', `width:calc(min(100cqw, 100cqh * ${ratio}) * ${state.zoom / 100});min-width:0;max-height:none;height:auto;aspect-ratio:${size.w}/${size.h};margin:0 auto`);
 
     element('rect', { x: 0, y: 0, width: W, height: H, class: 'outline' });
     drawGrid(W, H);
@@ -3059,7 +3067,7 @@
     state.selectedWindow = null;
 
     const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    const ratio = `${state.width + 6}/${state.depth + 6}`;
+    const ratio = `${planSize().w}/${planSize().h}`;
     for (const floor of floorOrder()) {
       state.floor = floor;
       const model = wallModel(floor);
