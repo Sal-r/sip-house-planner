@@ -238,7 +238,7 @@ async function main() {
     await openApp({ width, height: 1000 });
     await check(`area tiles fit "99,999 sq ft" at ${width}px wide`, async () => {
       await page.evaluate(() => {
-        for (const id of ['footprintArea', 'shellArea', 'clearArea', 'aboveGradeArea']) document.getElementById(id).textContent = '99,999 sq ft';
+        for (const id of ['footprintArea', 'shellArea', 'clearArea', 'aboveGradeArea']) document.getElementById(id).innerHTML = '99,999<span class="area-unit"> sq ft</span>';
       });
       const clipped = await page.$$eval('.metric-row strong', tiles => tiles.filter(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().right > el.parentElement.getBoundingClientRect().right - 4));
       const pageScrolls = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
@@ -275,6 +275,27 @@ async function main() {
     const lower = { ...bath, y: baseState.depth + 1 };
     return (await entranceBars([bathDoor('west', 2)], [lower])) === plainCount;
   });
+
+  // The top row lines up with the row below it: Lot Footprint over Rooms & Spaces, Walls over
+  // Furniture & Fixtures, and the boxes read in the order the user asked for.
+  for (const width of [1500, 1700, 1906]) {
+    await openApp({ width, height: 1000 });
+    await check(`top row boxes line up with the boxes below at ${width}px wide`, async () => {
+      const edges = selector => page.$eval(selector, el => {
+        const box = el.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top };
+      });
+      const [lot, spaces, walls, items] = await Promise.all(['.lot-panel', '.spaces-panel', '.walls-panel', '.items-panel'].map(edges));
+      const aligned = (a, b) => Math.abs(a.left - b.left) <= 1 && Math.abs(a.right - b.right) <= 1;
+
+      const rowOne = await page.$$eval('.intro, .findings, .dimensions-panel, .lot-panel, .walls-panel', els => els
+        .map(el => ({ name: ['intro', 'findings', 'dimensions-panel', 'lot-panel', 'walls-panel'].find(cls => el.classList.contains(cls)), left: el.getBoundingClientRect().left, top: el.getBoundingClientRect().top }))
+        .sort((a, b) => a.left - b.left));
+      const order = rowOne.map(box => box.name).join(',');
+      const sameRow = rowOne.every(box => Math.abs(box.top - rowOne[0].top) <= 1);
+      return aligned(lot, spaces) && aligned(walls, items) && sameRow && order === 'intro,findings,dimensions-panel,lot-panel,walls-panel';
+    });
+  }
 
   await browser.close();
   server.close();
