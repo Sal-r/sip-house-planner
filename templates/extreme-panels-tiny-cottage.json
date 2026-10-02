@@ -1,13 +1,27 @@
 {
   "app": "sip-house-planner",
   "format": 1,
-  "exportedAt": "2026-10-01T02:25:24.792Z",
+  "exportedAt": "2026-10-02T18:44:12.691Z",
   "layout": {
-    "schemaVersion": 3,
+    "schemaVersion": 6,
     "width": 24,
     "depth": 15.75,
     "exteriorWall": 0.75,
     "interiorWall": 0.375,
+    "wallHeights": {
+      "main": 8,
+      "upper": 8,
+      "basement": 8
+    },
+    "floorThickness": 1,
+    "lot": {
+      "enabled": false,
+      "width": 0,
+      "depth": 0,
+      "left": 0,
+      "top": 0,
+      "setback": 3
+    },
     "zoom": 100,
     "floor": "main",
     "upperEnabled": false,
@@ -17,7 +31,7 @@
       "by": "Lew Oliver for Extreme Panel Technologies",
       "url": "https://extremepanel.com/project/extreme-tiny-cottage-plan/"
     },
-    "selectedRoom": "bath",
+    "selectedRoom": "living",
     "selectedDoor": null,
     "selectedFixture": "washer",
     "scenario": "preferred",
@@ -28,48 +42,78 @@
         "id": "win-w1",
         "floor": "main",
         "side": "west",
-        "offset": 1.5,
-        "width": 2.5
+        "offset": 1,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
       },
       {
         "id": "win-w2",
         "floor": "main",
         "side": "west",
-        "offset": 5.5,
-        "width": 2.5
+        "offset": 3.5,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
       },
       {
         "id": "win-n1",
         "floor": "main",
         "side": "north",
-        "offset": 1.75,
-        "width": 3
+        "offset": 1,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
       },
       {
         "id": "win-n2",
         "floor": "main",
         "side": "north",
-        "offset": 9.5,
-        "width": 4
+        "offset": 6,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
       },
       {
         "id": "win-s1",
         "floor": "main",
         "side": "south",
         "offset": 4,
-        "width": 3
+        "width": 3,
+        "sill": 3,
+        "head": 6.666666666666667
       },
       {
         "id": "win-e1",
         "floor": "main",
         "side": "east",
         "offset": 8,
-        "width": 1.75
+        "width": 1.75,
+        "sill": 3,
+        "head": 6.666666666666667
+      },
+      {
+        "id": "window-1790966612092-16h4mb",
+        "floor": "main",
+        "side": "north",
+        "offset": 3.5,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
+      },
+      {
+        "id": "window-1790966612774-xxn7ty",
+        "floor": "main",
+        "side": "west",
+        "offset": 6,
+        "width": 2,
+        "sill": 3,
+        "head": 6.666666666666667
       }
     ],
     "selectedWindow": null,
     "showItems": true,
-    "selectedItem": "shower",
+    "selectedItem": "item-1790966302539-c2j7p3",
     "doors": [
       {
         "id": "door-entry",
@@ -78,7 +122,8 @@
         "offset": 7.75,
         "width": 3,
         "hinge": "start",
-        "swing": "in"
+        "swing": "in",
+        "head": 6.666666666666667
       },
       {
         "id": "door-closet",
@@ -87,7 +132,8 @@
         "offset": 0.25,
         "width": 3,
         "hinge": "start",
-        "swing": "none"
+        "swing": "none",
+        "head": 6.666666666666667
       },
       {
         "id": "door-bath",
@@ -96,7 +142,8 @@
         "offset": 0.75,
         "width": 2.5,
         "hinge": "start",
-        "swing": "out"
+        "swing": "out",
+        "head": 6.666666666666667
       }
     ],
     "items": [
@@ -234,6 +281,24 @@
         "y": 0.75,
         "w": 1.75,
         "h": 1.5
+      },
+      {
+        "id": "item-1790966302539-c2j7p3",
+        "name": "Shelves + Hangers",
+        "floor": "main",
+        "x": 16.25,
+        "y": 0.75,
+        "w": 7,
+        "h": 2
+      },
+      {
+        "id": "item-1790966406046-ixbkdt",
+        "name": "Coat & Shoe Rack",
+        "floor": "main",
+        "x": 0.75,
+        "y": 6,
+        "w": 2,
+        "h": 2
       }
     ],
     "rooms": [
@@ -257,7 +322,7 @@
       },
       {
         "id": "closet",
-        "name": "Closet",
+        "name": "Walk-in Closet",
         "floor": "main",
         "x": 16,
         "y": 0.75,
