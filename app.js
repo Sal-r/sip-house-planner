@@ -85,7 +85,7 @@
   // The default layout is the first entry. It is what a first visit loads and
   // what Reset goes back to when no other template is loaded. To change it,
   // export a layout and save it as templates/default-layout.json.
-  const DEFAULT_TEMPLATE = { id: 'default', name: 'Default Layout', file: 'templates/default-layout.json' };
+  const DEFAULT_TEMPLATE = { id: 'default', name: 'Ranch 2BR 2BA w/ Basement', file: 'templates/default-layout.json' };
   const TEMPLATES = [
     DEFAULT_TEMPLATE,
     { id: 'tiny-cottage', name: 'EXTREME PANELS TINY COTTAGE', file: 'templates/extreme-panels-tiny-cottage.json' },
