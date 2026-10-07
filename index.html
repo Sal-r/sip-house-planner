@@ -134,57 +134,64 @@
     </section>
 
     <aside class="sidebar" aria-label="Planning controls">
-      <section class="panel dimensions-panel">
-        <div class="panel-title"><h2>Building Footprint</h2><span>Editable</span></div>
-        <div class="two-fields">
-          <label>Width <span data-unit="length">ft</span><input id="houseWidth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
-          <label>Depth <span data-unit="length">ft</span><input id="houseDepth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
-        </div>
-        <label class="select-label front-select">Front of House
-          <select id="frontSide">
-            <option value="north">Top</option>
-            <option value="east">Right</option>
-            <option value="south">Bottom</option>
-            <option value="west">Left</option>
-            <option value="none">Not Set</option>
-          </select>
-        </label>
-        <div class="rotate-building" role="group" aria-label="Rotate the building">
-          <span>Rotate Building</span>
-          <span class="rotate-buttons"><button id="rotateBuildingLeft" class="zoom-button" type="button" aria-label="Rotate the building 90° left inside the lot" title="Turn the house 90° left inside the lot. The lot stays where it is.">↺</button><button id="rotateBuildingRight" class="zoom-button" type="button" aria-label="Rotate the building 90° right inside the lot" title="Turn the house 90° right inside the lot. The lot stays where it is.">↻</button></span>
-        </div>
-      </section>
-
-      <section class="panel lot-panel">
-        <div class="panel-title"><h2>Lot Footprint</h2><span>Optional</span></div>
-        <label class="lot-toggle"><input id="lotEnabled" type="checkbox"> Show Lot</label>
-        <div class="lot-fields">
-          <label>Lot Width <span data-unit="length">ft</span><input id="lotWidth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
-          <label>Lot Depth <span data-unit="length">ft</span><input id="lotDepth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
-          <label>Setback <span data-unit="length">ft</span><input id="lotSetback" type="number" min="0" max="50" step="0.25" inputmode="decimal"></label>
-          <label title="How far the house is from the lot's left edge">From Left <span data-unit="length">ft</span><input id="lotLeft" type="number" step="0.25" inputmode="decimal"></label>
-          <label title="How far the house is from the lot's top edge">From Top <span data-unit="length">ft</span><input id="lotTop" type="number" step="0.25" inputmode="decimal"></label>
-          <button id="centerLot" class="inline-button" type="button" title="Put the house in the middle of the lot">Center House</button>
-        </div>
-        <p class="field-help lot-help">Setbacks vary by town and zone, so check yours with the local building department. The house is measured to the outside of its exterior walls.</p>
-      </section>
-
-      <section class="panel walls-panel">
-        <div class="panel-title"><h2>Walls</h2><span>Approximate</span></div>
-        <div class="two-fields">
-          <label>Exterior <span data-unit="thickness">in</span><input id="exteriorWall" type="number" min="0" max="24" step="0.25" inputmode="decimal"></label>
-          <label>Interior <span data-unit="thickness">in</span><input id="interiorWall" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
-        </div>
-        <p class="field-help thickness-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
-        <div class="two-fields height-fields">
-          <label>Wall Height <span data-unit="thickness">in</span><input id="wallHeight" type="number" min="72" max="240" step="1" inputmode="decimal"></label>
-          <label>Floor Thickness <span data-unit="thickness">in</span><input id="floorThickness" type="number" min="3" max="36" step="0.25" inputmode="decimal"></label>
-        </div>
-        <p id="heightHelp" class="field-help"></p>
-      </section>
+      <nav class="step-bar" aria-label="Planning steps">
+        <button type="button" class="step-tab" data-step-tab="1"><span class="step-number">1</span> Footprint</button>
+        <button type="button" class="step-tab" data-step-tab="2"><span class="step-number">2</span> Rooms</button>
+        <button type="button" class="step-tab" data-step-tab="3"><span class="step-number">3</span> Doors &amp; Windows</button>
+        <button type="button" class="step-tab" data-step-tab="4"><span class="step-number">4</span> Items</button>
+      </nav>
 
       <div class="side-stack">
-        <section class="panel spaces-panel">
+        <section data-step="1" class="panel dimensions-panel">
+          <div class="panel-title"><h2>Building Footprint</h2><span>Editable</span></div>
+          <div class="two-fields">
+            <label>Width <span data-unit="length">ft</span><input id="houseWidth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
+            <label>Depth <span data-unit="length">ft</span><input id="houseDepth" type="number" min="8" max="80" step="0.25" inputmode="decimal"></label>
+          </div>
+          <label class="select-label front-select">Front of House
+            <select id="frontSide">
+              <option value="north">Top</option>
+              <option value="east">Right</option>
+              <option value="south">Bottom</option>
+              <option value="west">Left</option>
+              <option value="none">Not Set</option>
+            </select>
+          </label>
+          <div class="rotate-building" role="group" aria-label="Rotate the building">
+            <span>Rotate Building</span>
+            <span class="rotate-buttons"><button id="rotateBuildingLeft" class="zoom-button" type="button" aria-label="Rotate the building 90° left inside the lot" title="Turn the house 90° left inside the lot. The lot stays where it is.">↺</button><button id="rotateBuildingRight" class="zoom-button" type="button" aria-label="Rotate the building 90° right inside the lot" title="Turn the house 90° right inside the lot. The lot stays where it is.">↻</button></span>
+          </div>
+        </section>
+
+        <section data-step="1" class="panel lot-panel">
+          <div class="panel-title"><h2>Lot Footprint</h2><span>Optional</span></div>
+          <label class="lot-toggle"><input id="lotEnabled" type="checkbox"> Show Lot</label>
+          <div class="lot-fields">
+            <label>Lot Width <span data-unit="length">ft</span><input id="lotWidth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
+            <label>Lot Depth <span data-unit="length">ft</span><input id="lotDepth" type="number" min="10" max="1000" step="0.25" inputmode="decimal"></label>
+            <label>Setback <span data-unit="length">ft</span><input id="lotSetback" type="number" min="0" max="50" step="0.25" inputmode="decimal"></label>
+            <label title="How far the house is from the lot's left edge">From Left <span data-unit="length">ft</span><input id="lotLeft" type="number" step="0.25" inputmode="decimal"></label>
+            <label title="How far the house is from the lot's top edge">From Top <span data-unit="length">ft</span><input id="lotTop" type="number" step="0.25" inputmode="decimal"></label>
+            <button id="centerLot" class="inline-button" type="button" title="Put the house in the middle of the lot">Center House</button>
+          </div>
+          <p class="field-help lot-help">Setbacks vary by town and zone, so check yours with the local building department. The house is measured to the outside of its exterior walls.</p>
+        </section>
+
+        <section data-step="1" class="panel walls-panel">
+          <div class="panel-title"><h2>Walls</h2><span>Approximate</span></div>
+          <div class="two-fields">
+            <label>Exterior <span data-unit="thickness">in</span><input id="exteriorWall" type="number" min="0" max="24" step="0.25" inputmode="decimal"></label>
+            <label>Interior <span data-unit="thickness">in</span><input id="interiorWall" type="number" min="0" max="12" step="0.25" inputmode="decimal"></label>
+          </div>
+          <p class="field-help thickness-help">Exterior is the SIP allowance. Interior is the default for rooms without their own thickness.</p>
+          <div class="two-fields height-fields">
+            <label>Wall Height <span data-unit="thickness">in</span><input id="wallHeight" type="number" min="72" max="240" step="1" inputmode="decimal"></label>
+            <label>Floor Thickness <span data-unit="thickness">in</span><input id="floorThickness" type="number" min="3" max="36" step="0.25" inputmode="decimal"></label>
+          </div>
+          <p id="heightHelp" class="field-help"></p>
+        </section>
+
+        <section data-step="2" class="panel spaces-panel">
           <div class="panel-title"><h2>Rooms &amp; Spaces</h2></div>
           <p id="roomInfo" class="info-box" aria-live="polite"></p>
           <div class="pick-controls">
@@ -299,34 +306,7 @@
           </div>
         </section>
 
-        <section class="panel items-panel">
-          <div class="panel-title"><h2>Furniture &amp; Fixtures</h2></div>
-          <p id="itemInfo" class="info-box" aria-live="polite"></p>
-          <div class="pick-controls">
-            <select id="itemSelect" aria-label="Item"></select>
-            <button id="addItem" class="primary-button" type="button">+ Add Item</button>
-            <select id="itemPreset" aria-label="Suggested sizes"></select>
-          </div>
-          <div id="itemEditor" class="door-editor" hidden>
-            <label class="select-label">Name<input id="itemName" type="text" maxlength="120" autocomplete="off"></label>
-            <div class="four-fields">
-              <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
-              <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
-              <label>Width <span data-unit="length">ft</span><input id="itemW" type="number" min="0.5" max="80" step="0.25"></label>
-              <label>Depth <span data-unit="length">ft</span><input id="itemH" type="number" min="0.5" max="80" step="0.25"></label>
-            </div>
-            <div class="room-actions">
-              <button id="rotateItem" class="inline-button" type="button" title="Turn the selected item 90° (R)">Rotate 90°</button>
-              <button id="duplicateItem" class="inline-button" type="button">Duplicate</button>
-              <button id="removeItem" class="delete-button" type="button">Remove</button>
-            </div>
-          </div>
-          <h3 class="item-checks-title">Item Checks</h3>
-          <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
-          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other, except utility markers and notes, which skip the checks. A new item starts in the selected room. Notes belong to the floor they are on, and their text is the item name.</p>
-        </section>
-
-        <section class="panel doors-panel">
+        <section data-step="3" class="panel doors-panel">
           <div class="panel-title"><h2>Interior Doorways</h2></div>
           <p id="doorInfo" class="info-box" aria-live="polite"></p>
           <div class="pick-controls">
@@ -370,7 +350,7 @@
           <p class="field-help">A new doorway goes on the selected room. The quarter circle shows the swing. Choose Bifold for folding closet doors (two panels, or four over 4 feet wide). Choose Cased Opening for a doorway with no door, such as a staircase entry.</p>
         </section>
 
-        <section class="panel windows-panel">
+        <section data-step="3" class="panel windows-panel">
           <div class="panel-title"><h2>Windows</h2></div>
           <p id="windowInfo" class="info-box" aria-live="polite"></p>
           <div class="pick-controls">
@@ -402,6 +382,38 @@
           </div>
           <p class="field-help">Windows sit in the outside walls. A new window starts on the selected room’s outside wall.</p>
         </section>
+
+        <section data-step="4" class="panel items-panel">
+          <div class="panel-title"><h2>Furniture &amp; Fixtures</h2></div>
+          <p id="itemInfo" class="info-box" aria-live="polite"></p>
+          <div class="pick-controls">
+            <select id="itemSelect" aria-label="Item"></select>
+            <button id="addItem" class="primary-button" type="button">+ Add Item</button>
+            <select id="itemPreset" aria-label="Suggested sizes"></select>
+          </div>
+          <div id="itemEditor" class="door-editor" hidden>
+            <label class="select-label">Name<input id="itemName" type="text" maxlength="120" autocomplete="off"></label>
+            <div class="four-fields">
+              <label>X <span data-unit="length">ft</span><input id="itemX" type="number" step="0.25"></label>
+              <label>Y <span data-unit="length">ft</span><input id="itemY" type="number" step="0.25"></label>
+              <label>Width <span data-unit="length">ft</span><input id="itemW" type="number" min="0.5" max="80" step="0.25"></label>
+              <label>Depth <span data-unit="length">ft</span><input id="itemH" type="number" min="0.5" max="80" step="0.25"></label>
+            </div>
+            <div class="room-actions">
+              <button id="rotateItem" class="inline-button" type="button" title="Turn the selected item 90° (R)">Rotate 90°</button>
+              <button id="duplicateItem" class="inline-button" type="button">Duplicate</button>
+              <button id="removeItem" class="delete-button" type="button">Remove</button>
+            </div>
+          </div>
+          <h3 class="item-checks-title">Item Checks</h3>
+          <ul id="itemIssues" class="item-checks" aria-live="polite"></ul>
+          <p class="field-help">Items sit on their own layer above the rooms. They are only checked against walls and each other, except utility markers and notes, which skip the checks. A new item starts in the selected room. Notes belong to the floor they are on, and their text is the item name.</p>
+        </section>
+
+        <div class="step-nav">
+          <button id="stepBack" class="inline-button" type="button">Back</button>
+          <button id="stepNext" class="primary-button" type="button">Next</button>
+        </div>
       </div>
 
       <section class="panel findings">

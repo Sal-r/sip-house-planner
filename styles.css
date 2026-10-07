@@ -431,6 +431,53 @@ input:disabled, select:disabled { background: var(--field-disabled-bg); color: v
 .sidebar { display: flex; flex-direction: column; gap: 14px; }
 .side-stack { display: flex; flex-direction: column; gap: 14px; }
 
+/* Step bar: one tab per planning step. Only the current step's panels show. */
+.step-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--tab-border);
+  border-radius: 9px;
+  background: var(--tab-bg);
+}
+.step-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tab-text);
+  font-size: .85rem;
+  font-weight: 700;
+  text-align: left;
+}
+.step-tab[aria-current="step"] {
+  background: var(--surface);
+  color: var(--tab-selected-text);
+  box-shadow: 0 1px 5px #14313c21;
+}
+.step-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tab-toggle-bg);
+  color: var(--teal-link);
+  font-size: .75rem;
+}
+.step-tab[aria-current="step"] .step-number { background: var(--teal); color: #fff; }
+
+/* Back on the left, Next on the right. When Back is hidden, Next stays right. */
+.step-nav { display: flex; align-items: center; gap: 10px; }
+.step-nav .primary-button { width: auto; margin: 0 0 0 auto; padding: 10px 22px; }
+.step-nav .inline-button { padding: 10px 22px; }
+
 .section-heading {
   display: flex;
   align-items: flex-end;
@@ -1054,11 +1101,6 @@ svg.tap-only .interior-door { cursor: pointer; }
 @media (max-width: 800px) {
   .workspace { display: block; padding-top: 20px; }
   .sidebar { margin-top: 16px; }
-  .side-stack { order: 1; }
-  .findings { order: 6; }
-  .dimensions-panel { order: 7; }
-  .lot-panel { order: 8; }
-  .walls-panel { order: 9; }
 
   .metric-row { gap: 8px; }
   .metric-note { display: none; }
@@ -1124,13 +1166,9 @@ svg.tap-only .interior-door { cursor: pointer; }
 }
 
 /* Wide screens (1500px+): a 24-column dashboard.
-   Row 1: intro and the four area tiles, Layout Checks, Building Footprint,
-          Lot Footprint, Walls.
-   Row 2: the plan on the left. Next to it, a 2 x 2 grid of equal boxes:
-          Spaces and Furniture & Fixtures on top, Doorways and Windows below.
-   Lot Footprint sits over Spaces and Walls over Furniture & Fixtures. The side
-   stack has an even number of columns and the same gap as the page, so each of
-   its boxes is exactly 4 page columns wide and lines up with the box above. */
+   Row 1: intro and the four area tiles, Layout Checks, and the step bar.
+   Row 2: the plan on the left. Next to it, the panels for the current step,
+          with Back and Next at the bottom. */
 @media (min-width: 1500px) {
   .workspace {
     grid-template-columns: repeat(24, minmax(0, 1fr));
@@ -1177,13 +1215,14 @@ svg.tap-only .interior-door { cursor: pointer; }
   .intro .metric-row strong { font-size: clamp(.95rem, 20cqw, 1.5rem); }
   .intro .metric-note { display: none; }
 
-  .findings { grid-column: 9 / 13; }
-  .dimensions-panel { grid-column: 13 / 17; }
-  .lot-panel { grid-column: 17 / 21; }
-  .walls-panel { grid-column: 21 / 25; }
-  .dimensions-panel,
-  .lot-panel,
-  .walls-panel,
+  .findings { grid-column: 9 / 17; }
+  .step-bar {
+    grid-column: 17 / 25;
+    grid-row: 1;
+    grid-auto-rows: 1fr;
+    height: 100%;
+  }
+  .step-tab { font-size: .95rem; }
   .findings {
     align-self: stretch;
     grid-row: 1;
@@ -1192,40 +1231,18 @@ svg.tap-only .interior-door { cursor: pointer; }
     padding: 14px 16px;
     overflow: auto;
   }
-  .dimensions-panel .panel-title,
-  .lot-panel .panel-title,
-  .walls-panel .panel-title,
   .findings .panel-title { margin-bottom: 10px; }
-  .dimensions-panel .panel-title > span,
-  .lot-panel .panel-title > span,
-  .walls-panel .panel-title > span { display: none; }
-  .dimensions-panel .field-help,
-  .walls-panel .field-help { margin-top: 8px; }
-  /* Smaller titles keep "Building Footprint" and "Lot Footprint" on one line at 1500px. */
-  .dimensions-panel .panel-title h2,
-  .lot-panel .panel-title h2 { font-size: 1rem; white-space: nowrap; }
-  .dimensions-panel,
-  .lot-panel { padding: 12px 13px; }
-  .rotate-building { margin-top: 8px; padding: 5px 8px; }
-  /* The row is short, so the lot's setback note is left to the README here. */
-  .lot-panel .lot-help { display: none; }
-  /* The row is short, so the thickness explanation gives way to the heights. */
-  .walls-panel .thickness-help { display: none; }
   .findings ul { max-height: none; }
   .findings li { padding: 8px 10px; font-size: .77rem; }
 
   .plan-card { grid-column: 1 / 17; grid-row: 2; min-width: 0; }
   .plan-scroll { height: min(calc(100vh - 110px), 1100px); }
   .side-stack {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
     grid-column: 17 / 25;
     grid-row: 2;
-    gap: 14px;
     min-width: 0;
   }
-  .side-stack > .panel { min-width: 0; container-type: inline-size; }
+  .side-stack > .panel { container-type: inline-size; }
 
   /* Item sizes use quarter steps (like 32.25), which need more room per field. */
   .items-panel .four-fields { grid-template-columns: repeat(2, 1fr); }
@@ -1244,21 +1261,13 @@ svg.tap-only .interior-door { cursor: pointer; }
 }
 
 /* From 1800px the three floor tabs need about 410px to stay on one line, so the
-   intro takes 10 columns and Layout Checks and Building Footprint take 3 each.
-   Lot Footprint and Walls keep their columns over the boxes below. */
+   intro takes 10 columns and Layout Checks takes the 6 between it and the steps. */
 @media (min-width: 1800px) {
   .intro {
     grid-column: 1 / 11;
     grid-template-columns: minmax(410px, 1.15fr) minmax(0, 1fr);
   }
-  .findings { grid-column: 11 / 14; }
-  .dimensions-panel { grid-column: 14 / 17; }
-}
-
-/* Between 1500px and 1599px the footprint boxes are only about 170px wide. */
-@media (min-width: 1500px) and (max-width: 1599px) {
-  .dimensions-panel .panel-title h2,
-  .lot-panel .panel-title h2 { font-size: .88rem; }
+  .findings { grid-column: 11 / 17; }
 }
 
 /* 13. Print: only the per-floor sheets built by app.js are printed */

@@ -8,6 +8,14 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Refresh after making a change: the change is still there.
 - [ ] The tab shows the grid favicon.
 
+## Steps
+- [ ] The planner opens on step 1 (Footprint) after every load, import, template, and reset. Step 1 shows Building Footprint, Lot Footprint, and Walls only. Back is hidden, and Next says "Next: Rooms".
+- [ ] Step 2 shows Rooms & Spaces only, step 3 shows Interior Doorways and Windows, and step 4 shows Furniture & Fixtures. On step 4 Next is hidden and Back names step 3.
+- [ ] Clicking a step name jumps straight to it, forward or backward, and the current step is highlighted.
+- [ ] The plan, the four area figures, and Layout Checks stay visible and keep updating on every step.
+- [ ] Clicking a doorway or window on the plan opens step 3. Clicking an item opens step 4. Clicking a room opens step 2 only when you are on step 1, and stays put on steps 3 and 4.
+- [ ] The step bar, Back, and Next work by keyboard and look right in light and dark mode, at 1500px and wider, at 1200px, and at phone width.
+
 ## Floors
 - [ ] Basement and Main Floor tabs switch the plan and the Rooms & Spaces panel.
 - [ ] The Basement and Second Floor tabs each have a small button on their left edge, about a quarter of the tab's width. It shows − when the floor is on and + when it is off.
@@ -42,7 +50,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] At 1500px and wider the Walls panel is wide enough to show both height fields without cutting off the labels.
 
 ## Lot and setback
-- [ ] At 1500px and wider the top row reads left to right: the title, floor tabs and the four area tiles, then Layout Checks, Building Footprint, Lot Footprint, and Walls. The lot fields stay off until Show Lot is on.
+- [ ] At 1500px and wider the top row reads left to right: the title, floor tabs and the four area tiles, then Layout Checks, then the step bar. The lot fields stay off until Show Lot is on.
 - [ ] The first time Show Lot is turned on, the lot is the house plus 20 ft on every side with the house centered, a dashed lot line and a dotted setback line (3 ft inside it) are drawn, a "Lot W × D" label shows, and the whole lot is visible in the plan.
 - [ ] House From Left set to 2 ft shows a warning naming the left lot line, the distance, and the 3 ft setback. A negative value shows an error that the house goes past the lot line. Raising it to 3 ft clears the warning, and a setback of 0 clears it too.
 - [ ] Setback and the lot fields accept metric entry (setback 1 m works). A new lot shows the 3 ft setback as 0.91 m.
@@ -52,7 +60,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] Turning Show Lot off hides the lines and clears the lot warnings, and turning it back on keeps the values you set. Undo steps back through lot edits.
 - [ ] The lot survives a reload, Export Layout, and Import Layout. A file from before the lot existed, and all templates, open with the lot off. A damaged lot in a file falls back to off.
 - [ ] Print / PDF shows the lot lines and label on each floor's page.
-- [ ] At 1500, 1700, and 1906 px wide the top row fits with no sideways scrolling and nothing is cut off (titles, fields, tiles). Lot Footprint is exactly as wide as Rooms & Spaces below it, and Walls is exactly as wide as Furniture & Fixtures below it, with matching left and right edges. Under 1500px the Lot Footprint box follows Building Footprint.
+- [ ] At 1500, 1700, and 1906 px wide the top row fits with no sideways scrolling and nothing is cut off (titles, fields, tiles, step bar).
 
 ## Utility markers and notes
 - [ ] The item Suggested sizes menu has headings Notes (Note) and Utility Markers (Electrical, HVAC, Plumbing), still in A to Z order.
@@ -108,8 +116,8 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 
 ## Sidebar layout
 
-- [ ] At 1500px wide or more, Rooms & Spaces and Furniture & Fixtures sit side by side with Doorways and Windows below, and all four boxes are the same width and height.
-- [ ] Below 1500px the four boxes stack in one column, and nothing is clipped.
+- [ ] At 1500px wide or more, the current step's panels sit in one column beside the plan, under the step bar, with Back and Next at the bottom.
+- [ ] Below 1500px the step bar, the step's panels, and Layout Checks stack in one column, and nothing is clipped.
 
 ## Undo
 
@@ -166,7 +174,7 @@ Run through this after deploying (or locally with Start-Planner.bat). Test once 
 - [ ] The default layout and the Tiny Cottage show no door swing warnings.
 - [ ] A cased opening (Door Type: Cased Opening) can sit 0.25′ from a corner, or flush with the end of the wall, with no warning. One that runs past the wall warns. A swinging door within 0.5′ of a corner still warns.
 - [ ] A garage, or a bath placed outside the footprint, touching the house with its door on the touching side adds an ENTRANCE on the house wall, at the door. A door on the far side, or on a space that only sits near the house, adds none.
-- [ ] At 1920 x 1080 the Basement, Main Floor, and Second Floor tabs stay on one line. Lot Footprint and Walls still sit over Rooms & Spaces and Furniture & Fixtures.
+- [ ] At 1920 x 1080 the Basement, Main Floor, and Second Floor tabs stay on one line. The step bar still fits in the top row.
 - [ ] Two windows, a window and an entrance door, or two doorways that overlap by 0.25′ on the same wall show a warning. Ones that only touch do not.
 - [ ] Overlapping two rooms adds an error to Layout Checks.
 - [ ] Moving the main floor stairs away from the basement stairs adds a "do not line up" error.
