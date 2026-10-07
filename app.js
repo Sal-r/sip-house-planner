@@ -3608,6 +3608,7 @@
   applyDragMode();
 
   function selectShape(group) {
+    showStepFor(group);
     if (group.dataset.door) {
       state.selectedDoor = group.dataset.door;
       state.selectedRoom = findDoor(group.dataset.door).roomId;
@@ -3636,6 +3637,7 @@
     const group = e.target.closest(SHAPE_SELECTOR);
     if (!group) return;
     const p = planPoint(e);
+    showStepFor(group);
     if (group.dataset.door) {
       const d = findDoor(group.dataset.door);
       const g = doorGeometry(d);
@@ -3708,6 +3710,7 @@
     const group = e.target.closest(SHAPE_SELECTOR);
     if (!group) return;
     e.preventDefault();
+    showStepFor(group);
     const isArrow = e.key.startsWith('Arrow');
 
     if (group.dataset.window) {
@@ -3751,6 +3754,47 @@
     }
     render();
   });
+
+  // --- Planning steps ----------------------------------------------------------
+  // The sidebar shows one step at a time. The plan stays editable in every step,
+  // and Layout Checks stays visible so a mistake is noticed right away. The step
+  // is only a view choice, so it is not saved and every page load starts at 1.
+
+  const STEP_NAMES = ['Footprint', 'Rooms', 'Doors & Windows', 'Items'];
+  let currentStep = 1;
+
+  function showStep(step) {
+    currentStep = Math.max(1, Math.min(STEP_NAMES.length, step));
+    document.querySelectorAll('[data-step]').forEach(panel => {
+      panel.hidden = Number(panel.dataset.step) !== currentStep;
+    });
+    document.querySelectorAll('[data-step-tab]').forEach(tab => {
+      const isCurrent = Number(tab.dataset.stepTab) === currentStep;
+      if (isCurrent) tab.setAttribute('aria-current', 'step');
+      else tab.removeAttribute('aria-current');
+    });
+    $('stepBack').hidden = currentStep === 1;
+    $('stepNext').hidden = currentStep === STEP_NAMES.length;
+    $('stepBack').textContent = `Back: ${STEP_NAMES[currentStep - 2] || ''}`;
+    $('stepNext').textContent = `Next: ${STEP_NAMES[currentStep] || ''}`;
+  }
+
+  /**
+   * Picking a shape on the plan opens the step that edits it. A room only moves
+   * you from step 1, because steps 3 and 4 use the selected room as context.
+   */
+  function showStepFor(group) {
+    if (group.dataset.door || group.dataset.window) showStep(3);
+    else if (group.dataset.item) showStep(4);
+    else if (group.dataset.room && currentStep === 1) showStep(2);
+  }
+
+  document.querySelectorAll('[data-step-tab]').forEach(tab => {
+    tab.addEventListener('click', () => showStep(Number(tab.dataset.stepTab)));
+  });
+  $('stepBack').addEventListener('click', () => showStep(currentStep - 1));
+  $('stepNext').addEventListener('click', () => showStep(currentStep + 1));
+  showStep(1);
 
   // --- Mobile notice ---------------------------------------------------------
   // Remembered for this visit only, so it comes back the next time someone
@@ -3822,6 +3866,7 @@
           return;
         }
         state = next;
+        showStep(1);
         render();
       },
       $('templateSelect'),
@@ -3851,6 +3896,7 @@
           return;
         }
         state = next;
+        showStep(1);
         render();
       },
       $('reset'),
@@ -3893,6 +3939,7 @@
     const count = next.rooms.length;
     askConfirmation('Import This Layout?', `“${file.name}” has ${count} space${count === 1 ? '' : 's'}. It will replace the layout currently in this browser.`, 'Import Layout', () => {
       state = next;
+      showStep(1);
       render();
     }, $('importLayout'));
   });

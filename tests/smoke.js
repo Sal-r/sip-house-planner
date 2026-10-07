@@ -83,6 +83,8 @@ async function main() {
   const confirmIfAsked = async () => {
     if (await page.locator('#confirmYes').isVisible()) await page.click('#confirmYes');
   };
+  // The sidebar shows one step at a time, so open a step before using its controls.
+  const goStep = async number => page.click(`[data-step-tab="${number}"]`);
   const setField = async (id, value) => {
     await page.fill(`#${id}`, String(value));
     await page.press(`#${id}`, 'Tab');
@@ -110,6 +112,7 @@ async function main() {
   // --- Editing and undo -------------------------------------------------------
 
   await check('Add Room then Undo restores the room count', async () => {
+    await goStep(2);
     const before = (await saved()).rooms.length;
     await page.click('#addRoom');
     const added = (await saved()).rooms.length === before + 1;
@@ -129,11 +132,13 @@ async function main() {
   // --- Heights and stairs -----------------------------------------------------
 
   await check('wall height edits stick and change the floor to floor help', async () => {
+    await goStep(1);
     await setField('wallHeight', 108);
     return (await saved()).wallHeights.main === 9 && /Floor to floor/.test(await page.textContent('#heightHelp'));
   });
 
   await check('every stair type draws without errors', async () => {
+    await goStep(2);
     await page.selectOption('#roomSelect', 'stairs-main');
     for (const type of ['straight', 'turnLeft', 'turnRight', 'u', 'spiral']) {
       await page.selectOption('#stairType', type);
@@ -145,6 +150,7 @@ async function main() {
   // --- Outdoor spaces, markers, lot -------------------------------------------
 
   await check('an outdoor space sits outside the footprint and the plan grows', async () => {
+    await goStep(2);
     const before = await page.getAttribute('#plan', 'viewBox');
     await page.click('#addRoom');
     await page.selectOption('#roomPreset', 'porch');
@@ -155,6 +161,7 @@ async function main() {
   });
 
   await check('item menu is grouped and the utility markers draw', async () => {
+    await goStep(4);
     const headings = await page.$$eval('#itemPreset optgroup', groups => groups.map(g => g.label));
     const sorted = JSON.stringify(headings) === JSON.stringify([...headings].sort());
     await page.click('#addItem');
@@ -163,6 +170,7 @@ async function main() {
   });
 
   await check('the lot draws and warns when the house is inside the setback', async () => {
+    await goStep(1);
     await page.check('#lotEnabled');
     const drawn = (await page.locator('.lot-line').count()) === 1 && (await page.locator('.setback-line').count()) === 1;
     await setField('lotLeft', 2);
@@ -196,6 +204,7 @@ async function main() {
   // --- Units, saving, printing ------------------------------------------------
 
   await check('switching to metric and back keeps the layout', async () => {
+    await goStep(1);
     const before = (await saved()).width;
     await page.click('#unitsMetric');
     const shown = await page.inputValue('#houseWidth');
@@ -297,32 +306,72 @@ async function main() {
   await check('a door can be as wide as a garage door', async () => {
     await openApp();
     await entranceBars([{ ...bathDoor('west', 1), width: 16 }], [{ ...bath, h: 20, wallMode: 'enclosed' }]);
+    await goStep(2);
     await page.selectOption('#roomSelect', 'test-bath');
+    await goStep(3);
     await page.selectOption('#doorSelect', 'test-door');
     await setField('doorWidth', 16);
     return (await saved()).doors.find(d => d.id === 'test-door').width === 16;
   });
 
-  // The top row lines up with the row below it: Lot Footprint over Rooms & Spaces, Walls over
-  // Furniture & Fixtures, and the boxes read in the order the user asked for.
-  for (const width of [1500, 1700, 1906]) {
+  // The sidebar steps: one step's panels at a time, Layout Checks always, and Back / Next walk the steps.
+  const visibleStepPanels = () => page.$$eval('[data-step]', panels => panels.filter(p => !p.hidden).map(p => p.dataset.step));
+  for (const width of [1500, 1700, 1906, 1200, 390]) {
     await openApp({ width, height: 1000 });
-    await check(`top row boxes line up with the boxes below at ${width}px wide`, async () => {
-      const edges = selector => page.$eval(selector, el => {
-        const box = el.getBoundingClientRect();
-        return { left: box.left, right: box.right, top: box.top };
-      });
-      const [lot, spaces, walls, items] = await Promise.all(['.lot-panel', '.spaces-panel', '.walls-panel', '.items-panel'].map(edges));
-      const aligned = (a, b) => Math.abs(a.left - b.left) <= 1 && Math.abs(a.right - b.right) <= 1;
-
-      const rowOne = await page.$$eval('.intro, .findings, .dimensions-panel, .lot-panel, .walls-panel', els => els
-        .map(el => ({ name: ['intro', 'findings', 'dimensions-panel', 'lot-panel', 'walls-panel'].find(cls => el.classList.contains(cls)), left: el.getBoundingClientRect().left, top: el.getBoundingClientRect().top }))
-        .sort((a, b) => a.left - b.left));
-      const order = rowOne.map(box => box.name).join(',');
-      const sameRow = rowOne.every(box => Math.abs(box.top - rowOne[0].top) <= 1);
-      return aligned(lot, spaces) && aligned(walls, items) && sameRow && order === 'intro,findings,dimensions-panel,lot-panel,walls-panel';
+    await check(`steps show the right panels and Layout Checks stays visible at ${width}px wide`, async () => {
+      const expected = { 1: ['1', '1', '1'], 2: ['2'], 3: ['3', '3'], 4: ['4'] };
+      for (const step of [1, 2, 3, 4]) {
+        await goStep(step);
+        if (JSON.stringify(await visibleStepPanels()) !== JSON.stringify(expected[step])) return false;
+        if (!(await page.locator('.findings').isVisible())) return false;
+      }
+      const pageScrolls = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      return !pageScrolls;
     });
   }
+
+  // A click can land on a shape drawn on top (an item over its room), so select with the keyboard.
+  const pick = async selector => {
+    await page.locator(`#plan ${selector}`).first().focus();
+    await page.keyboard.press('Enter');
+  };
+  await openApp();
+  await check('the planner opens on step 1 and Back / Next move between steps', async () => {
+    const current = () => page.$eval('[aria-current="step"]', el => el.dataset.stepTab);
+    const startsAtOne = (await current()) === '1' && (await page.locator('#stepBack').isHidden());
+    await page.click('#stepNext');
+    await page.click('#stepNext');
+    await page.click('#stepNext');
+    const atFour = (await current()) === '4' && (await page.locator('#stepNext').isHidden());
+    await page.click('#stepBack');
+    return startsAtOne && atFour && (await current()) === '3';
+  });
+  await check('clicking a door, window, or item on the plan opens its step', async () => {
+    const current = () => page.$eval('[aria-current="step"]', el => el.dataset.stepTab);
+    await goStep(1);
+    await pick('[data-door]');
+    const door = await current();
+    await pick('[data-item]');
+    const item = await current();
+    await pick('[data-window]');
+    return door === '3' && item === '4' && (await current()) === '3';
+  });
+  await check('loading a template starts again at step 1', async () => {
+    await goStep(3);
+    await page.selectOption('#templateSelect', templates[0]);
+    await confirmIfAsked();
+    await page.waitForTimeout(250);
+    return (await page.$eval('[aria-current="step"]', el => el.dataset.stepTab)) === '1';
+  });
+  await check('clicking a room moves you from step 1 to step 2, and stays on steps 3 and 4', async () => {
+    const current = () => page.$eval('[aria-current="step"]', el => el.dataset.stepTab);
+    await goStep(1);
+    await pick('[data-room]');
+    const fromOne = await current();
+    await goStep(4);
+    await pick('[data-room]');
+    return fromOne === '2' && (await current()) === '4';
+  });
 
   await openApp({ width: 1920, height: 1080 });
   await check('the three floor tabs stay on one line at 1920 x 1080', async () => {
